@@ -1,0 +1,26 @@
+{
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "minecraft:paper",
+      "components": {
+        "minecraft:item_model": "thesift:sky_fragment"
+      }
+    },
+    "title": "Eye of the Storm",
+    "description": "Defeat the Storm Wisp in the Sky Sanctum",
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ],
+  "parent": "thesift:prismatic"
+}

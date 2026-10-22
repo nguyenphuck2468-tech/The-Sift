@@ -1,0 +1,34 @@
+plugins {
+    id "java"
+}
+
+group = "com.gamepathics"
+version = "2.0.0-foundation"
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+def paperApiVersion = providers.gradleProperty("paperApiVersion")
+        .orElse("1.21.4-R0.1-SNAPSHOT")
+
+dependencies {
+    compileOnly("io.papermc.paper:paper-api:${paperApiVersion.get()}")
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+    options.release = 25
+}
+
+processResources {
+    filesMatching("plugin.yml") {
+        expand(version: project.version)
+    }
+}
+
+jar {
+    archiveBaseName = "TheSift-foundation"
+}

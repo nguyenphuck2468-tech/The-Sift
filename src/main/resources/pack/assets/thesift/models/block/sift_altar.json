@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_bottom_top",
+  "textures": {
+    "top": "thesift:block/altar_top",
+    "side": "thesift:block/altar_side",
+    "bottom": "thesift:block/chiseled_siftstone"
+  }
+}

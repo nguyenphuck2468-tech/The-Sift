@@ -1,0 +1,26 @@
+{
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "minecraft:paper",
+      "components": {
+        "minecraft:item_model": "thesift:sift_crown"
+      }
+    },
+    "title": "The World Moves Back",
+    "description": "Defeat The Sifter in the Rift Citadel",
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ],
+  "parent": "thesift:rift_key"
+}

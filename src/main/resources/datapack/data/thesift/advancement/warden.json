@@ -1,0 +1,26 @@
+{
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "minecraft:paper",
+      "components": {
+        "minecraft:item_model": "thesift:heart_of_the_sift"
+      }
+    },
+    "title": "Heart of the Matter",
+    "description": "Defeat the Prism Warden at a Sift Shrine",
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ],
+  "parent": "thesift:shard_gear"
+}

@@ -1,0 +1,65 @@
+config-version: 2
+
+content:
+  ichor: true
+  ichor_bottle: true
+  ichor_glass: true
+  ichor_glass_pane: true
+  siftslate: true
+  charoite: true
+  charoite_item: true
+  siftite: true
+  siftite_ingot: true
+  resonance: true
+  rift-events: true
+  singer: true
+  echo_golem: true
+
+resonance:
+  enabled: true
+  singer:
+    max-health: 40.0
+    range: 16.0
+    pulse-seconds: 5
+    damage: 4.0
+    slowness-seconds: 3
+    slowness-amplifier: 0
+    charoite-protection: true
+    drop-charoite: true
+
+ichor:
+  enabled: true
+  cauldron-material: WATER_CAULDRON
+  cauldron:
+    max-level: 3
+    bottle-cost: 1
+    refill-from-source: true
+    particles: true
+    sounds: true
+  bottle-material: GLASS_BOTTLE
+  glass-material: GLASS
+  glass-pane-material: GLASS_PANE
+  snow-material: SNOW
+  snow-block-material: SNOW_BLOCK
+
+charoite:
+  enabled: true
+  material: AMETHYST_SHARD
+  ore-material: AMETHYST_BLOCK
+  drop-min: 1
+  drop-max: 2
+
+siftite:
+  enabled: true
+  ingot-material: NETHERITE_INGOT
+  nugget-material: IRON_NUGGET
+  template-material: NETHERITE_UPGRADE_SMITHING_TEMPLATE
+  smithing-only: true
+  durability-multiplier: 1.2
+  armor-toughness: 3.0
+  knockback-resistance: 0.1
+  spear-damage: 9.0
+  spear-reach: 4.5
+
+compatibility:
+  minecraft-target: "26.3"

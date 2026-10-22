@@ -1,0 +1,26 @@
+{
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "minecraft:paper",
+      "components": {
+        "minecraft:item_model": "thesift:spire_fragment"
+      }
+    },
+    "title": "Crimson Conqueror",
+    "description": "Defeat the Spire Tyrant in the Crimson Keep",
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ],
+  "parent": "thesift:prismatic"
+}

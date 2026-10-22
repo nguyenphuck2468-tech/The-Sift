@@ -1,0 +1,14 @@
+{
+  "layers": {
+    "humanoid": [
+      {
+        "texture": "thesift:prism"
+      }
+    ],
+    "humanoid_leggings": [
+      {
+        "texture": "thesift:prism"
+      }
+    ]
+  }
+}

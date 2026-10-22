@@ -1,0 +1,17 @@
+name: TheSift
+version: '${version}'
+main: com.gamepathics.thesift.foundation.TheSiftFoundationPlugin
+description: Foundation for the next The Sift content update
+author: Gamepathics
+api-version: '1.21'
+
+commands:
+  sift:
+    description: The Sift administration command
+    usage: /sift <doctor|reload|give|summon>
+    permission: thesift.foundation.admin
+
+permissions:
+  thesift.foundation.admin:
+    description: Use The Sift foundation administration commands
+    default: op

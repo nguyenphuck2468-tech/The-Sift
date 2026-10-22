@@ -1,0 +1,16 @@
+{
+  "pack": {
+    "description": "The Sift biomes (installed by the TheSift plugin)",
+    "min_format": 101,
+    "max_format": 121
+  },
+  "overlays": {
+    "entries": [
+      {
+        "directory": "overlay_26_3",
+        "min_format": 121,
+        "max_format": 999
+      }
+    ]
+  }
+}

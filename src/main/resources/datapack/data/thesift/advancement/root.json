@@ -1,0 +1,26 @@
+{
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "minecraft:paper",
+      "components": {
+        "minecraft:item_model": "thesift:sift_grass"
+      }
+    },
+    "title": "The Sift",
+    "description": "Step through an amethyst portal into the Sift",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false,
+    "background": "thesift:gui/advancements/backgrounds/sift"
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

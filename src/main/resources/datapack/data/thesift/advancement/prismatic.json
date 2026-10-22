@@ -1,0 +1,26 @@
+{
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "minecraft:paper",
+      "components": {
+        "minecraft:item_model": "thesift:prism_chestplate"
+      }
+    },
+    "title": "Prismatic",
+    "description": "Wear a full set of Prism armour",
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ],
+  "parent": "thesift:warden"
+}
