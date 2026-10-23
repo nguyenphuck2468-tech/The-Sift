@@ -14,8 +14,18 @@ java {
 def paperApiVersion = providers.gradleProperty("paperApiVersion")
         .orElse("1.21.4-R0.1-SNAPSHOT")
 
+repositories {
+    mavenCentral()
+    maven { url = "https://repo.papermc.io/repository/maven-public/" }
+}
+
 dependencies {
     compileOnly("io.papermc.paper:paper-api:${paperApiVersion.get()}")
+
+    // Test dependencies
+    testImplementation("org.junit.jupiter:junit-jupiter:5.11.0")
+    testImplementation("org.mockito:mockito-core:5.12.0")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.12.0")
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -31,4 +41,11 @@ processResources {
 
 jar {
     archiveBaseName = "TheSift-foundation"
+}
+
+test {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
 }
