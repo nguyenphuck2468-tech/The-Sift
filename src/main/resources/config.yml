@@ -14,6 +14,7 @@ content:
   rift-events: true
   singer: true
   echo_golem: true
+  rift: true
 
 resonance:
   enabled: true
@@ -26,6 +27,34 @@ resonance:
     slowness-amplifier: 0
     charoite-protection: true
     drop-charoite: true
+
+echo-golem:
+  enabled: true
+  max-health: 80.0
+  attack-damage: 12.0
+  resonance-period: 8
+  resonance-range: 20.0
+  resonance-damage: 6.0
+  slowness-seconds: 4
+  slowness-amplifier: 1
+  mining-fatigue-seconds: 6
+  mining-fatigue-amplifier: 2
+  heal-amount: 4.0
+  charoite-protection: true
+  drop-siftite: true
+
+rift:
+  enabled: true
+  opening-duration-seconds: 5
+  active-duration-seconds: 30
+  closing-duration-seconds: 5
+  mob-spawn-interval-seconds: 60
+  initial-mobs: 3
+  periodic-mobs: 1
+  resonance-pulse-interval-seconds: 60
+  resonance-range: 20.0
+  reward-drops: 3
+  rift-key-chance: 0.3
 
 ichor:
   enabled: true

@@ -14,6 +14,8 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     private IchorState ichorState;
     private SiftiteContent siftiteContent;
     private ResonanceManager resonanceManager;
+    private EchoGolemManager echoGolemManager;
+    private RiftManager riftManager;
 
     @Override
     public void onEnable() {
@@ -40,6 +42,16 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             getServer().getPluginManager().registerEvents(resonanceManager, this);
             resonanceManager.start();
         }
+        if (contentRegistry.isEnabled(ContentId.ECHO_GOLEM)) {
+            echoGolemManager = new EchoGolemManager(this);
+            getServer().getPluginManager().registerEvents(echoGolemManager, this);
+            echoGolemManager.start();
+        }
+        if (contentRegistry.isEnabled(ContentId.RIFT)) {
+            riftManager = new RiftManager(this);
+            getServer().getPluginManager().registerEvents(riftManager, this);
+            riftManager.start();
+        }
         getLogger().info("The Sift foundation enabled for Minecraft "
                 + getConfig().getString("compatibility.minecraft-target", "unknown") + ".");
     }
@@ -51,6 +63,12 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         }
         if (resonanceManager != null) {
             resonanceManager.shutdown();
+        }
+        if (echoGolemManager != null) {
+            echoGolemManager.shutdown();
+        }
+        if (riftManager != null) {
+            riftManager.shutdown();
         }
     }
 
@@ -71,6 +89,12 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             }
             if (resonanceManager != null) {
                 resonanceManager.shutdown();
+            }
+            if (echoGolemManager != null) {
+                echoGolemManager.shutdown();
+            }
+            if (riftManager != null) {
+                riftManager.shutdown();
             }
             getServer().getPluginManager().disablePlugin(this);
             // Re-enable with new config
@@ -136,7 +160,54 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             }
             return true;
         }
-        sender.sendMessage("Usage: /sift <doctor|reload|give|summon singer>");
+        if (args.length >= 2 && args[0].equalsIgnoreCase("summon")
+                && args[1].equalsIgnoreCase("echo_golem")) {
+            if (echoGolemManager == null) {
+                sender.sendMessage("Echo Golem content is disabled.");
+                return true;
+            }
+            Player target = args.length >= 3 ? getServer().getPlayerExact(args[2])
+                    : sender instanceof Player player ? player : null;
+            if (target == null) {
+                sender.sendMessage("Usage: /sift summon echo_golem <player>");
+            } else {
+                echoGolemManager.summonEchoGolem(target.getLocation());
+                sender.sendMessage("Summoned an Echo Golem near " + target.getName() + ".");
+            }
+            return true;
+        }
+        if (args.length >= 2 && args[0].equalsIgnoreCase("summon")
+                && args[1].equalsIgnoreCase("rift")) {
+            if (riftManager == null) {
+                sender.sendMessage("Rift content is disabled.");
+                return true;
+            }
+            Player target = args.length >= 3 ? getServer().getPlayerExact(args[2])
+                    : sender instanceof Player player ? player : null;
+            if (target == null) {
+                sender.sendMessage("Usage: /sift summon rift <player>");
+            } else {
+                riftManager.openRift(target.getLocation().add(0, 1, 0), target);
+                sender.sendMessage("Opened a Rift near " + target.getName() + ".");
+            }
+            return true;
+        }
+        if (args.length == 2 && args[0].equalsIgnoreCase("give")
+                && args[1].equalsIgnoreCase("rift_key")) {
+            if (riftManager == null) {
+                sender.sendMessage("Rift content is disabled.");
+                return true;
+            }
+            Player target = getServer().getPlayerExact(args[2]);
+            if (target == null) {
+                sender.sendMessage("Player not found.");
+                return true;
+            }
+            target.getInventory().addItem(riftManager.createRiftKey());
+            sender.sendMessage("Gave Rift Key to " + target.getName() + ".");
+            return true;
+        }
+        sender.sendMessage("Usage: /sift <doctor|reload|give|summon singer|summon echo_golem|summon rift|give rift_key>");
         return true;
     }
 
