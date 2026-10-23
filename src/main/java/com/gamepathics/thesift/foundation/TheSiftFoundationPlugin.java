@@ -45,6 +45,16 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     }
 
     @Override
+    public void onDisable() {
+        if (ichorState != null) {
+            ichorState.shutdown();
+        }
+        if (resonanceManager != null) {
+            resonanceManager.shutdown();
+        }
+    }
+
+    @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (!command.getName().equalsIgnoreCase("sift")) {
             return false;
@@ -55,8 +65,17 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                 sender.sendMessage("The Sift config is newer than this build; reload was rejected.");
                 return true;
             }
-            loadContentFlags();
-            sender.sendMessage("The Sift foundation config reloaded.");
+            // Teardown existing modules
+            if (ichorState != null) {
+                ichorState.shutdown();
+            }
+            if (resonanceManager != null) {
+                resonanceManager.shutdown();
+            }
+            getServer().getPluginManager().disablePlugin(this);
+            // Re-enable with new config
+            getServer().getPluginManager().enablePlugin(this);
+            sender.sendMessage("The Sift foundation fully reloaded.");
             return true;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("doctor")) {

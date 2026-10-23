@@ -35,6 +35,7 @@ public final class ResonanceManager implements Listener {
     private final NamespacedKey itemKey;
     private final Map<UUID, BossBar> bars = new HashMap<>();
     private long tick;
+    private int taskId = -1;
 
     public ResonanceManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -44,7 +45,19 @@ public final class ResonanceManager implements Listener {
 
     public void start() {
         long interval = 20L;
-        Bukkit.getScheduler().runTaskTimer(plugin, this::pulse, interval, interval);
+        taskId = Bukkit.getScheduler().runTaskTimer(plugin, this::pulse, interval, interval).getTaskId();
+    }
+
+    public void shutdown() {
+        if (taskId != -1) {
+            Bukkit.getScheduler().cancelTask(taskId);
+            taskId = -1;
+        }
+        for (BossBar bar : bars.values()) {
+            bar.removeAll();
+            bar.setVisible(false);
+        }
+        bars.clear();
     }
 
     public Allay summonSinger(Location location) {
