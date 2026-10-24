@@ -51,6 +51,8 @@ prototype uses vanilla Overworld noise and vanilla block/entity substitutes;
   The Sifter encounters can also appear naturally in selected biomes.
 - Rare natural Rift events in Shattered Peaks, using the existing opening,
   wave, resonance-pulse, closing, and reward flow.
+- `/sift summon <species> [player]` for direct prototype spawns, including
+  Blub, Bulb, Koi, Thornback, The Sifter, Prism Warden, and Lumen Tulip.
 - A cycling Sift Tide that changes movement/mining effects for players and
   nearby creatures.
 - The bundled Java item/block model assets can be built into

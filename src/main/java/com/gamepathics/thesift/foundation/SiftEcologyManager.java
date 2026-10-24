@@ -332,6 +332,61 @@ public final class SiftEcologyManager implements Listener {
         }
     }
 
+    public boolean summonCreature(String species, Location location) {
+        String id = species.toLowerCase(Locale.ROOT);
+        if (id.equals("lumen_tulip")) {
+            Block plant = location.getBlock();
+            if (!plant.getType().isAir()) plant = plant.getRelative(0, 1, 0);
+            plant.setType(Material.TORCHFLOWER, false);
+            return true;
+        }
+
+        EntityType type;
+        String display;
+        switch (id) {
+            case "blub" -> { type = EntityType.AXOLOTL; display = "Blub"; }
+            case "bulb" -> { type = EntityType.SLIME; display = "Bulb"; }
+            case "loomer" -> { type = EntityType.RABBIT; display = "Loomer"; }
+            case "wisp" -> { type = EntityType.ALLAY; display = "Wisp"; }
+            case "violet_wisp" -> { type = EntityType.VEX; display = "Violet Wisp"; }
+            case "koi" -> { type = EntityType.TROPICAL_FISH; display = "Koi"; }
+            case "hollow_bulb" -> { type = EntityType.ZOMBIE; display = "Hollow Bulb"; }
+            case "glowbell" -> { type = EntityType.BAT; display = "Glowbell"; }
+            case "thornback" -> { type = EntityType.TURTLE; display = "Thornback"; }
+            case "glimmerwing" -> { type = EntityType.BEE; display = "Glimmerwing"; }
+            case "the_sifter" -> { type = EntityType.RAVAGER; display = "The Sifter"; }
+            case "frost_stalker" -> { type = EntityType.STRAY; display = "Frost Stalker"; }
+            case "sunspore" -> { type = EntityType.MOOSHROOM; display = "Sunspore"; }
+            case "drifter" -> { type = EntityType.ENDERMAN; display = "Drifter"; }
+            case "shardling" -> { type = EntityType.ENDERMITE; display = "Shardling"; }
+            case "prism_warden" -> { type = EntityType.WARDEN; display = "Prism Warden"; }
+            case "prismite" -> { type = EntityType.SILVERFISH; display = "Prismite"; }
+            default -> { return false; }
+        }
+
+        boolean boss = id.equals("the_sifter") || id.equals("prism_warden");
+        Entity entity = location.getWorld().spawnEntity(location, type);
+        entity.setPersistent(true);
+        entity.setCustomName((boss ? "§5§l" : "§d") + display);
+        entity.setCustomNameVisible(true);
+        entity.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING, id);
+        if (entity instanceof LivingEntity living) {
+            living.setRemoveWhenFarAway(false);
+            if (boss) {
+                double health = id.equals("the_sifter") ? 220.0 : 180.0;
+                double damage = id.equals("the_sifter") ? 24.0 : 28.0;
+                if (living.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH) != null) {
+                    living.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).setBaseValue(health);
+                    living.setHealth(health);
+                }
+                if (living.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE) != null) {
+                    living.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE).setBaseValue(damage);
+                }
+            }
+        }
+        return true;
+    }
+
     private boolean isSift(World world) {
         return world.getKey().toString().equals(DIMENSION);
     }

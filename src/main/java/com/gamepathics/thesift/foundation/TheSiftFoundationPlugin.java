@@ -260,6 +260,22 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             }
             return true;
         }
+        if (args.length >= 2 && args[0].equalsIgnoreCase("summon")) {
+            if (siftEcologyManager == null) {
+                sender.sendMessage("Sift creature content is disabled.");
+                return true;
+            }
+            Player target = args.length >= 3 ? getServer().getPlayerExact(args[2])
+                    : sender instanceof Player player ? player : null;
+            if (target == null) {
+                sender.sendMessage("Usage: /sift summon <species> [player]");
+            } else if (siftEcologyManager.summonCreature(args[1], target.getLocation())) {
+                sender.sendMessage("Summoned Sift creature " + args[1] + " near " + target.getName() + ".");
+            } else {
+                sender.sendMessage("Unknown Sift creature: " + args[1]);
+            }
+            return true;
+        }
         sender.sendMessage("Usage: /sift <doctor|reload|dimension|return|give|summon singer|summon echo_golem|summon rift|give rift_key>");
         return true;
     }
