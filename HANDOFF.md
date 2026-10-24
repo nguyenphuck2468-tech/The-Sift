@@ -341,6 +341,11 @@ git status
 - `NOTICE.draft.md` records only the current source investigation. No LICENSE
   was created. Step 1 follow-up added config no-effect comments, archive
   reproducibility, current stable CI actions, and a Paper 26.3 run-paper task.
+  The owner has since prioritized provider-first dimension readiness. Strict
+  gating is not implemented yet: decide the version-3 config migration policy,
+  approve the primary provider pair, and confirm that `/sift return` remains an
+  exit path if providers are missing. The current provider audit is in
+  `docs/parity-matrix.md`.
   The note-block/Rift implementation is paused until the owner chooses how
   portal stations are registered; see the design options in
   `IMPLEMENTATION_REPORT.md`. Server testing, external-provider validation,

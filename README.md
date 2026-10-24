@@ -116,6 +116,12 @@ this build because both use the `TheSift` plugin identity.
 
 ## Custom content providers
 
+Provider parity and current definition coverage are tracked in
+`docs/parity-matrix.md`. The current build still permits vanilla fallbacks;
+strict provider readiness enforcement has not been implemented yet. The
+intended release behavior is provider-first, with fallback reserved for
+development/CI.
+
 For the intended custom-content presentation, install **Nexo**, **ItemsAdder**,
 or **Oraxen** (choose one) and serve The Sift resource pack through it. Without
 a custom-content provider, the plugin uses built-in material/entity fallbacks.
