@@ -12,27 +12,31 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.logging.Level;
+import org.bukkit.scheduler.BukkitTask;
 
 public final class IchorState {
     private final JavaPlugin plugin;
     private final File storageFile;
+    private final BukkitTask saveTask;
     private final Map<String, Integer> cauldrons = new HashMap<>();
     private final Map<String, String> blocks = new HashMap<>();
-    private boolean dirty = false;
+    private volatile boolean dirty = false;
+    private long revision;
 
     public IchorState(JavaPlugin plugin) {
         this.plugin = Objects.requireNonNull(plugin);
         this.storageFile = new File(plugin.getDataFolder(), "ichor-state.yml");
         load();
         // Schedule periodic saves to avoid saving on every single change
-        plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, this::saveIfDirty, 20 * 60, 20 * 60);
+        this.saveTask = plugin.getServer().getScheduler()
+                .runTaskTimerAsynchronously(plugin, this::saveIfDirty, 20 * 60, 20 * 60);
     }
 
-    public int level(Location location) {
+    public synchronized int level(Location location) {
         return cauldrons.getOrDefault(key(location), 0);
     }
 
-    public void setLevel(Location location, int level) {
+    public synchronized void setLevel(Location location, int level) {
         String key = key(location);
         if (level <= 0) {
             cauldrons.remove(key);
@@ -42,21 +46,22 @@ public final class IchorState {
         markDirty();
     }
 
-    public void setBlock(Location location, String id) {
+    public synchronized void setBlock(Location location, String id) {
         blocks.put(key(location), id);
         markDirty();
     }
 
-    public String block(Location location) {
+    public synchronized String block(Location location) {
         return blocks.get(key(location));
     }
 
-    public void removeBlock(Location location) {
+    public synchronized void removeBlock(Location location) {
         blocks.remove(key(location));
         markDirty();
     }
 
     public void shutdown() {
+        saveTask.cancel();
         save();
     }
 
@@ -85,23 +90,32 @@ public final class IchorState {
         }
     }
 
-    private void save() {
-        if (!dirty && storageFile.exists()) {
-            return;
+    private synchronized void save() {
+        final Map<String, Integer> cauldronSnapshot;
+        final Map<String, String> blockSnapshot;
+        final long savedRevision;
+        synchronized (this) {
+            if (!dirty && storageFile.exists()) return;
+            cauldronSnapshot = new HashMap<>(cauldrons);
+            blockSnapshot = new HashMap<>(blocks);
+            savedRevision = revision;
         }
         FileConfiguration config = new YamlConfiguration();
-        config.set("cauldrons", cauldrons);
-        config.set("blocks", blocks);
+        config.set("cauldrons", cauldronSnapshot);
+        config.set("blocks", blockSnapshot);
         try {
             config.save(storageFile);
-            dirty = false;
+            synchronized (this) {
+                if (revision == savedRevision) dirty = false;
+            }
         } catch (IOException e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to save Ichor state", e);
         }
     }
 
-    private void markDirty() {
+    private synchronized void markDirty() {
         dirty = true;
+        revision++;
     }
 
     private String key(Location location) {

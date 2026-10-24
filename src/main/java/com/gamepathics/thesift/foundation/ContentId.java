@@ -2,6 +2,7 @@ package com.gamepathics.thesift.foundation;
 
 public enum ContentId {
     SIFTSLATE("siftslate"),
+    SOUL_BLOCK("soul_block"),
     CHAROITE("charoite"),
     SIFTITE("siftite"),
     ICHOR("ichor"),
@@ -11,6 +12,7 @@ public enum ContentId {
     CHAROITE_ITEM("charoite_item"),
     CHAROITE_ORE("charoite_ore"),
     SIFTITE_INGOT("siftite_ingot"),
+    SIFTITE_ORE("siftite_ore"),
     SIFTITE_NUGGET("siftite_nugget"),
     SIFTITE_TEMPLATE("siftite_upgrade_smithing_template"),
     SIFTITE_SWORD("siftite_sword"),

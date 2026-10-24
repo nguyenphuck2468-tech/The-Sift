@@ -23,6 +23,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     private RiftManager riftManager;
     private SiftDimensionManager siftDimensionManager;
     private SiftEcologyManager siftEcologyManager;
+    private SiftAdvancementManager advancementManager;
 
     @Override
     public void onEnable() {
@@ -50,14 +51,18 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             getServer().getPluginManager().registerEvents(new IchorListener(this, ichorContent, ichorState), this);
         }
         if (contentRegistry.isEnabled(ContentId.CHAROITE_ITEM)
-                || contentRegistry.isEnabled(ContentId.SIFTITE_INGOT)) {
+                || contentRegistry.isEnabled(ContentId.CHAROITE_ORE)
+                || contentRegistry.isEnabled(ContentId.SIFTITE_INGOT)
+                || contentRegistry.isEnabled(ContentId.SIFTITE_ORE)
+                || contentRegistry.isEnabled(ContentId.SOUL_BLOCK)) {
             siftiteContent = new SiftiteContent(this);
             siftiteContent.registerRecipes();
-            getServer().getPluginManager().registerEvents(new SiftiteListener(siftiteContent), this);
+            getServer().getPluginManager().registerEvents(siftiteContent, this);
+            getServer().getPluginManager().registerEvents(new SiftiteListener(this, siftiteContent), this);
             getServer().getPluginManager().registerEvents(new SiftiteRecoveryManager(this), this);
             getServer().getPluginManager().registerEvents(new CharoiteEnchantingListener(this), this);
         }
-        if (contentRegistry.isEnabled(ContentId.SINGER)) {
+        if (contentRegistry.isEnabled(ContentId.SINGER) && contentRegistry.isEnabled(ContentId.RESONANCE)) {
             resonanceManager = new ResonanceManager(this);
             getServer().getPluginManager().registerEvents(resonanceManager, this);
             resonanceManager.start();
@@ -77,6 +82,11 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             siftEcologyManager = new SiftEcologyManager(this, resonanceManager, echoGolemManager, riftManager);
             getServer().getPluginManager().registerEvents(siftEcologyManager, this);
             siftEcologyManager.populateLoadedSpawnChunks();
+            advancementManager = new SiftAdvancementManager(this);
+            getServer().getPluginManager().registerEvents(advancementManager, this);
+        }
+        if (contentRegistry.isEnabled(ContentId.SOUL_BLOCK)) {
+            getServer().getPluginManager().registerEvents(new SoulBlockListener(this), this);
         }
         registerContentPluginReloadHooks();
         // Keep a delayed initial refresh as a fallback for providers without a load event.
@@ -146,23 +156,9 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                 sender.sendMessage("The Sift config is newer than this build; reload was rejected.");
                 return true;
             }
-            // Teardown existing modules
-            if (ichorState != null) {
-                ichorState.shutdown();
-            }
-            if (resonanceManager != null) {
-                resonanceManager.shutdown();
-            }
-            if (echoGolemManager != null) {
-                echoGolemManager.shutdown();
-            }
-            if (riftManager != null) {
-                riftManager.shutdown();
-            }
-            getServer().getPluginManager().disablePlugin(this);
-            // Re-enable with new config
-            getServer().getPluginManager().enablePlugin(this);
-            sender.sendMessage("The Sift foundation fully reloaded.");
+            loadContentFlags();
+            refreshContentRecipes();
+            sender.sendMessage("The Sift config was reloaded. Restart the server to apply content flag changes.");
             return true;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("doctor")) {
@@ -202,7 +198,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("give")
                 && args[1].equalsIgnoreCase("ichor_bottle")) {
-            if (ichorContent == null) {
+            if (ichorContent == null || !contentRegistry.isEnabled(ContentId.ICHOR_BOTTLE)) {
                 sender.sendMessage("Ichor content is disabled.");
                 return true;
             }
@@ -211,7 +207,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                 sender.sendMessage("Player not found.");
                 return true;
             }
-            target.getInventory().addItem(ichorContent.ichorBottle());
+            giveOrDrop(target, ichorContent.ichorBottle());
             sender.sendMessage("Gave Ichor Bottle to " + target.getName() + ".");
             return true;
         }
@@ -225,7 +221,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             if (target == null) {
                 sender.sendMessage("Player not found.");
             } else {
-                target.getInventory().addItem(riftManager.createRiftKey());
+                giveOrDrop(target, riftManager.createRiftKey());
                 sender.sendMessage("Gave Rift Key to " + target.getName() + ".");
             }
             return true;
@@ -242,7 +238,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             } else if (item == null) {
                 sender.sendMessage("Unknown Charoite/Siftite item.");
             } else {
-                target.getInventory().addItem(item);
+                giveOrDrop(target, item);
                 sender.sendMessage("Gave " + args[1] + " to " + target.getName() + ".");
             }
             return true;
@@ -290,8 +286,9 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             if (target == null) {
                 sender.sendMessage("Usage: /sift summon rift <player>");
             } else {
-                riftManager.openRift(target.getLocation().add(0, 1, 0), target);
-                sender.sendMessage("Opened a Rift near " + target.getName() + ".");
+                if (riftManager.openRift(target.getLocation().add(0, 1, 0), target)) {
+                    sender.sendMessage("Opened a Rift near " + target.getName() + ".");
+                } else sender.sendMessage("Rift content is currently disabled.");
             }
             return true;
         }
@@ -317,10 +314,29 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
 
     private void loadContentFlags() {
         for (ContentId id : ContentId.values()) {
-            boolean enabledByDefault = id == ContentId.SIFT_DIMENSION;
+            boolean enabledByDefault = switch (id) {
+                case SIFT_DIMENSION, SOUL_BLOCK -> true;
+                case ICHOR, ICHOR_BOTTLE, ICHOR_GLASS, ICHOR_GLASS_PANE ->
+                        getConfig().getBoolean("ichor.enabled", true);
+                case CHAROITE, CHAROITE_ITEM, CHAROITE_ORE ->
+                        getConfig().getBoolean("charoite.enabled", true);
+                case SIFTITE, SIFTITE_ORE, SIFTITE_INGOT, SIFTITE_NUGGET, SIFTITE_TEMPLATE, SIFTITE_SWORD,
+                        SIFTITE_AXE, SIFTITE_PICKAXE, SIFTITE_SHOVEL, SIFTITE_HOE, SIFTITE_SPEAR,
+                        SIFTITE_HELMET, SIFTITE_CHESTPLATE, SIFTITE_LEGGINGS, SIFTITE_BOOTS ->
+                        getConfig().getBoolean("siftite.enabled", true);
+                case SINGER, RESONANCE -> getConfig().getBoolean("resonance.enabled", true);
+                case ECHO_GOLEM -> getConfig().getBoolean("echo-golem.enabled", true);
+                case RIFT, RIFT_EVENTS -> getConfig().getBoolean("rift.enabled", true);
+                default -> true;
+            };
             contentRegistry.setEnabled(id,
                     getConfig().getBoolean("content." + id.key(), enabledByDefault));
         }
+    }
+
+    private void giveOrDrop(Player player, ItemStack item) {
+        player.getInventory().addItem(item).values()
+                .forEach(leftover -> player.getWorld().dropItemNaturally(player.getLocation(), leftover));
     }
 
     public ContentRegistry contentRegistry() {

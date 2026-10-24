@@ -20,13 +20,14 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -54,6 +55,7 @@ public final class RiftManager implements Listener {
     private final SiftMobFactory mobFactory;
     private final Map<UUID, RiftInstance> rifts = new HashMap<>();
     private final Set<UUID> travelling = new HashSet<>();
+    private BukkitTask updateTask;
     private final Map<UUID, List<Integer>> portalSongProgress = new HashMap<>();
     private static final List<Integer> PORTAL_SONG = List.of(1, 3, 7, 6, 5, 2, 4, 8);
 
@@ -66,19 +68,15 @@ public final class RiftManager implements Listener {
 
     public void start() {
         // Periodic rift state updates
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                updateRifts();
-            }
-        }.runTaskTimer(plugin, 20L, 20L); // Every second
+        if (updateTask == null) updateTask = Bukkit.getScheduler().runTaskTimer(plugin, this::updateRifts, 20L, 20L);
     }
 
     public void shutdown() {
-        for (RiftInstance rift : rifts.values()) {
-            rift.forceClose();
-        }
+        if (updateTask != null) updateTask.cancel();
+        rifts.values().forEach(RiftInstance::discard);
         rifts.clear();
+        travelling.clear();
+        portalSongProgress.clear();
     }
 
     public ItemStack createRiftKey() {
@@ -95,15 +93,15 @@ public final class RiftManager implements Listener {
                 .get(riftKey, PersistentDataType.STRING));
     }
 
-    public void openRift(Location location, Player opener) {
+    public boolean openRift(Location location, Player opener) {
         if (!plugin.getConfig().getBoolean("rift.enabled", true)
-                || !plugin.getConfig().getBoolean("content.rift", true)) {
-            return;
-        }
+                || !plugin.getConfig().getBoolean("content.rift", true)
+                || location == null || location.getWorld() == null) return false;
         UUID id = UUID.randomUUID();
         RiftInstance rift = new RiftInstance(id, location, opener);
         rifts.put(id, rift);
         rift.beginOpening();
+        return true;
     }
 
     private void updateRifts() {
@@ -162,21 +160,25 @@ public final class RiftManager implements Listener {
 
     @EventHandler
     public void onRiftKeyUse(PlayerInteractEvent event) {
-        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        if (event.getHand() != EquipmentSlot.HAND || event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         ItemStack item = event.getItem();
         if (!isRiftKey(item)) return;
 
         Block block = event.getClickedBlock();
         if (block == null || block.getType() != Material.BEDROCK) return; // Rift opens on bedrock
 
+        if (!openRift(block.getLocation().add(0, 1, 0), event.getPlayer())) return;
         event.setCancelled(true);
-        event.getPlayer().getInventory().removeItem(item);
-        openRift(block.getLocation().add(0, 1, 0), event.getPlayer());
+        if (item.getAmount() <= 1) event.getPlayer().getInventory().setItemInMainHand(new ItemStack(Material.AIR));
+        else item.setAmount(item.getAmount() - 1);
     }
 
     /** Note-block portal prototype based on the reference mod's eight-note activation song. */
     @EventHandler
     public void onPortalSong(PlayerInteractEvent event) {
+        if (!plugin.getConfig().getBoolean("content.rift", true)
+                || !plugin.getConfig().getBoolean("rift.enabled", true)) return;
+        if (event.getHand() != EquipmentSlot.HAND) return;
         if (event.getClickedBlock() == null || event.getClickedBlock().getType() != Material.NOTE_BLOCK) return;
         Block block = event.getClickedBlock();
         if (!(block.getBlockData() instanceof NoteBlock noteBlock)) return;
@@ -243,22 +245,6 @@ public final class RiftManager implements Listener {
             center.getWorld().spawnParticle(Particle.PORTAL, center.clone().add(0, 1, 0), 50, 2, 2, 2, 0.1);
             notifyOpener("§5The rift begins to tear open...");
             
-            // Schedule opening progression
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    if (state != RiftState.OPENING) return;
-                    stateTimer++;
-                    if (stateTimer >= 100) { // 5 seconds
-                        becomeActive();
-                    } else if (stateTimer % 20 == 0) {
-                        // Growing particles
-                        center.getWorld().spawnParticle(Particle.REVERSE_PORTAL, center.clone().add(0, 1, 0), 
-                            20 + stateTimer / 5, 1, 1, 1, 0.05);
-                        center.getWorld().playSound(center, Sound.BLOCK_PORTAL_TRIGGER, 0.5f, 0.8f + stateTimer * 0.01f);
-                    }
-                }
-            }.runTaskTimer(plugin, 1L, 1L);
         }
 
         private void becomeActive() {
@@ -272,26 +258,8 @@ public final class RiftManager implements Listener {
 
             createExit();
 
-            // Spawn initial mobs
-            spawnRiftMobs(3);
-
-            // Active phase timer
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    if (state != RiftState.ACTIVE) return;
-                    stateTimer++;
-                    int activeSeconds = Math.max(30, plugin.getConfig().getInt("rift.active-duration-seconds", 300));
-                    if (stateTimer >= activeSeconds) {
-                        beginClosing();
-                    } else if (stateTimer % 60 == 0) {
-                        // Periodic mob spawns
-                        spawnRiftMobs(1);
-                        // Resonance pulse
-                        pulseResonance();
-                    }
-                }
-            }.runTaskTimer(plugin, 20L, 20L);
+            // Spawn initial mobs from the configured value.
+            spawnRiftMobs(Math.max(0, plugin.getConfig().getInt("rift.initial-mobs", 3)));
         }
 
         private void createExit() {
@@ -314,7 +282,8 @@ public final class RiftManager implements Listener {
             center.getWorld().playSound(center, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 0.6f);
             center.getWorld().spawnParticle(Particle.SONIC_BOOM, center.clone().add(0, 1, 0), 1);
             for (Player p : center.getWorld().getPlayers()) {
-                if (p.getLocation().distanceSquared(center) <= 400) { // 20 blocks
+                double range = plugin.getConfig().getDouble("rift.resonance-range", 20.0);
+                if (p.getLocation().distanceSquared(center) <= range * range) {
                     p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 100, 0));
                     p.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 60, 0));
                 }
@@ -328,7 +297,7 @@ public final class RiftManager implements Listener {
                     0,
                     ThreadLocalRandom.current().nextDouble(-5, 5)
                 );
-                spawnLoc.getWorld().getHighestBlockAt(spawnLoc).getLocation().add(0, 1, 0);
+            spawnLoc = spawnLoc.getWorld().getHighestBlockAt(spawnLoc).getLocation().add(0.5, 1, 0.5);
                 
                 // Spawn Enderman-like or custom mob
                 Entity entity = mobFactory.spawn("rift_walker", spawnLoc, EntityType.ENDERMAN);
@@ -345,20 +314,6 @@ public final class RiftManager implements Listener {
             center.getWorld().spawnParticle(Particle.REVERSE_PORTAL, center.clone().add(0, 1, 0), 100, 3, 3, 3, 0.2);
             notifyOpener("§5The rift begins to seal...");
 
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    if (state != RiftState.CLOSING) return;
-                    stateTimer++;
-                    if (stateTimer >= 100) { // 5 seconds
-                        close();
-                    } else if (stateTimer % 20 == 0) {
-                        center.getWorld().spawnParticle(Particle.PORTAL, center.clone().add(0, 1, 0), 
-                            20, 2, 2, 2, 0.05);
-                        center.getWorld().playSound(center, Sound.BLOCK_PORTAL_TRIGGER, 0.5f, 1.2f - stateTimer * 0.01f);
-                    }
-                }
-            }.runTaskTimer(plugin, 1L, 1L);
         }
 
         private void close() {
@@ -378,18 +333,20 @@ public final class RiftManager implements Listener {
 
         private void dropRewards() {
             // Drop Siftite, Charoite, etc.
-            for (int i = 0; i < 3; i++) {
+            int rewardCount = Math.max(0, plugin.getConfig().getInt("rift.reward-drops", 3));
+            SiftiteContent content = new SiftiteContent(plugin);
+            for (int i = 0; i < rewardCount; i++) {
                 Location dropLoc = center.clone().add(
                     ThreadLocalRandom.current().nextDouble(-2, 2),
                     1,
                     ThreadLocalRandom.current().nextDouble(-2, 2)
                 );
-                SiftiteContent content = new SiftiteContent(plugin);
                 dropLoc.getWorld().dropItemNaturally(dropLoc, 
                     content.item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot"));
             }
             // Rift Key fragment chance
-            if (ThreadLocalRandom.current().nextDouble() < 0.3) {
+            if (ThreadLocalRandom.current().nextDouble()
+                    < plugin.getConfig().getDouble("rift.rift-key-chance", 0.3)) {
                 center.getWorld().dropItemNaturally(center.clone().add(0, 1, 0), createRiftKey());
             }
         }
@@ -400,7 +357,36 @@ public final class RiftManager implements Listener {
             }
         }
 
+        private void discard() {
+            state = RiftState.DORMANT;
+        }
+
         public void tick() {
+            if (state == RiftState.OPENING) {
+                stateTimer++;
+                int seconds = Math.max(1, plugin.getConfig().getInt("rift.opening-duration-seconds", 5));
+                if (stateTimer >= seconds) becomeActive();
+                else center.getWorld().spawnParticle(Particle.REVERSE_PORTAL,
+                        center.clone().add(0, 1, 0), 20 + stateTimer * 4, 1, 1, 1, 0.05);
+            } else if (state == RiftState.ACTIVE) {
+                stateTimer++;
+                int duration = Math.max(1, plugin.getConfig().getInt("rift.active-duration-seconds", 300));
+                int interval = Math.max(1, plugin.getConfig().getInt("rift.mob-spawn-interval-seconds", 60));
+                int pulseInterval = Math.max(1,
+                        plugin.getConfig().getInt("rift.resonance-pulse-interval-seconds", 60));
+                if (stateTimer >= duration) beginClosing();
+                else {
+                    if (stateTimer % interval == 0) {
+                        spawnRiftMobs(Math.max(0, plugin.getConfig().getInt("rift.periodic-mobs", 1)));
+                    }
+                    if (stateTimer % pulseInterval == 0) pulseResonance();
+                }
+            } else if (state == RiftState.CLOSING) {
+                stateTimer++;
+                if (stateTimer >= Math.max(1, plugin.getConfig().getInt("rift.closing-duration-seconds", 5))) close();
+                else center.getWorld().spawnParticle(Particle.PORTAL,
+                        center.clone().add(0, 1, 0), 20, 2, 2, 2, 0.05);
+            }
             // Passive ambient effects during active phase
             if (state == RiftState.ACTIVE && ThreadLocalRandom.current().nextDouble() < 0.1) {
                 center.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, center.clone().add(0, 1, 0), 5, 1, 1, 1, 0.02);

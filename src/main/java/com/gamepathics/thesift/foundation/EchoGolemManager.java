@@ -20,6 +20,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -34,6 +35,9 @@ public final class EchoGolemManager implements Listener {
     private static final String ECHO_GOLEM_ID = "echo_golem";
     private final JavaPlugin plugin;
     private final NamespacedKey entityKey;
+    private final NamespacedKey ownerKey;
+    private final NamespacedKey contentKey;
+    private final NamespacedKey cargoKey;
     private final SiftMobFactory mobFactory;
     private final Map<UUID, BossBar> bars = new HashMap<>();
     private long tick;
@@ -41,6 +45,9 @@ public final class EchoGolemManager implements Listener {
     public EchoGolemManager(JavaPlugin plugin) {
         this.plugin = plugin;
         this.entityKey = new NamespacedKey(plugin, "echo_golem_entity");
+        this.ownerKey = new NamespacedKey(plugin, "echo_golem_owner");
+        this.contentKey = new NamespacedKey(plugin, "content");
+        this.cargoKey = new NamespacedKey(plugin, "echo_golem_soul_block");
         this.mobFactory = new SiftMobFactory(plugin);
     }
 
@@ -98,38 +105,24 @@ public final class EchoGolemManager implements Listener {
             updateBars();
             return;
         }
+        java.util.Set<UUID> seen = new java.util.HashSet<>();
+        double range = Math.max(1, plugin.getConfig().getDouble("echo-golem.resonance-range", 20.0));
         for (World world : Bukkit.getWorlds()) {
-            for (LivingEntity entity : world.getLivingEntities()) {
-                if (!isEchoGolem(entity)) {
-                    continue;
-                }
-                Location center = entity.getLocation();
-                double range = plugin.getConfig().getDouble("echo-golem.resonance-range", 20.0);
-                
-                // Resonance pulse effect
-                world.spawnParticle(Particle.END_ROD, center.clone().add(0, 1.5, 0), 1);
-                world.playSound(center, Sound.ENTITY_WARDEN_HEARTBEAT, 0.6f, 0.8f);
-                
-                // Damage and slow players without Charoite
-                for (Player player : world.getPlayers()) {
-                    if (player.getLocation().distanceSquared(center) > range * range
-                            || protectedByCharoite(player)) {
-                        continue;
-                    }
-                    player.damage(plugin.getConfig().getDouble("echo-golem.resonance-damage", 6.0), entity);
-                    player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS,
-                            plugin.getConfig().getInt("echo-golem.slowness-seconds", 4) * 20,
-                            plugin.getConfig().getInt("echo-golem.slowness-amplifier", 1)));
-                    player.addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE,
-                            plugin.getConfig().getInt("echo-golem.mining-fatigue-seconds", 6) * 20,
-                            plugin.getConfig().getInt("echo-golem.mining-fatigue-amplifier", 2)));
-                }
-                
-                // Heal nearby Echo Golems
-                for (Entity nearby : world.getNearbyEntities(center, range, range, range)) {
-                    if (nearby instanceof LivingEntity other && isEchoGolem(other) && other != entity) {
-                        other.heal(plugin.getConfig().getDouble("echo-golem.heal-amount", 4.0));
-                        other.getWorld().spawnParticle(Particle.HEART, other.getLocation().add(0, 1.5, 0), 3);
+            for (Player nearbyPlayer : world.getPlayers()) {
+                for (Entity entity : nearbyPlayer.getNearbyEntities(range, range, range)) {
+                    if (!(entity instanceof LivingEntity golem) || !isEchoGolem(entity)
+                            || !seen.add(entity.getUniqueId())) continue;
+                    Location center = entity.getLocation();
+                    world.spawnParticle(Particle.END_ROD, center.clone().add(0, 1.5, 0), 1);
+                    world.playSound(center, Sound.ENTITY_WARDEN_HEARTBEAT, 0.3f, 0.8f);
+                    Player owner = owner(entity);
+                    if (owner != null && owner.getWorld().equals(world)
+                            && owner.getLocation().distanceSquared(center) <= range * range) {
+                        double heal = plugin.getConfig().getDouble("echo-golem.heal-amount", 4.0);
+                        owner.setHealth(Math.min(owner.getHealth() + heal,
+                                owner.getAttribute(Attribute.MAX_HEALTH) == null ? 20.0
+                                        : owner.getAttribute(Attribute.MAX_HEALTH).getValue()));
+                        world.spawnParticle(Particle.HEART, owner.getLocation().add(0, 1.2, 0), 2);
                     }
                 }
             }
@@ -196,8 +189,60 @@ public final class EchoGolemManager implements Listener {
 
     @EventHandler
     public void onEchoGolemTarget(EntityTargetEvent event) {
-        if (isEchoGolem(event.getEntity()) && event.getTarget() != null && !(event.getTarget() instanceof Player)) {
+        if (isEchoGolem(event.getEntity()) && event.getTarget() instanceof Player) {
             event.setCancelled(true);
         }
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void onEchoGolemInteract(PlayerInteractEntityEvent event) {
+        if (event.getHand() != org.bukkit.inventory.EquipmentSlot.HAND
+                || !isEchoGolem(event.getRightClicked())) return;
+        Player player = event.getPlayer();
+        Entity golem = event.getRightClicked();
+        var pdc = golem.getPersistentDataContainer();
+        String owner = pdc.get(ownerKey, PersistentDataType.STRING);
+        ItemStack hand = player.getInventory().getItemInMainHand();
+        if (hand.getType() == Material.ECHO_SHARD && (owner == null || owner.equals(player.getUniqueId().toString()))) {
+            if (hand.getAmount() == 1) player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
+            else hand.setAmount(hand.getAmount() - 1);
+            pdc.set(ownerKey, PersistentDataType.STRING, player.getUniqueId().toString());
+            player.sendMessage("§bThe Echo Golem recognizes you as its companion.");
+            event.setCancelled(true);
+            return;
+        }
+        if (owner == null || !owner.equals(player.getUniqueId().toString())) return;
+        String heldId = hand.hasItemMeta() ? hand.getItemMeta().getPersistentDataContainer()
+                .get(contentKey, PersistentDataType.STRING) : null;
+        boolean carrying = pdc.has(cargoKey, PersistentDataType.BYTE);
+        if ("soul_block".equals(heldId) && !carrying) {
+            consumeOne(player);
+            pdc.set(cargoKey, PersistentDataType.BYTE, (byte) 1);
+            player.sendMessage("§bThe Echo Golem takes the Soul Block.");
+            event.setCancelled(true);
+        } else if (carrying && hand.getType().isAir()) {
+            pdc.remove(cargoKey);
+            ItemStack soul = new SiftiteContent(plugin).forId("soul_block");
+            player.getInventory().addItem(soul).values()
+                    .forEach(leftover -> player.getWorld().dropItemNaturally(player.getLocation(), leftover));
+            player.sendMessage("§bThe Echo Golem returns its Soul Block to you.");
+            event.setCancelled(true);
+        }
+    }
+
+    private Player owner(Entity golem) {
+        String value = golem.getPersistentDataContainer().get(ownerKey, PersistentDataType.STRING);
+        if (value == null) return null;
+        try {
+            return Bukkit.getPlayer(UUID.fromString(value));
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
+    }
+
+    private void consumeOne(Player player) {
+        ItemStack hand = player.getInventory().getItemInMainHand();
+        if (hand.getAmount() <= 1) player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
+        else hand.setAmount(hand.getAmount() - 1);
     }
 }

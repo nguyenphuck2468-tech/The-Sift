@@ -39,21 +39,26 @@ public final class IchorContent {
         Server server = plugin.getServer();
         server.removeRecipe(bottleRecipeKey);
         server.removeRecipe(paneRecipeKey);
+        if (!isIchorEnabled()) return;
 
         Material glass = configuredMaterial("ichor.glass-material", Material.GLASS);
         Material pane = configuredMaterial("ichor.glass-pane-material", Material.GLASS_PANE);
 
-        ShapedRecipe glassRecipe = new ShapedRecipe(bottleRecipeKey, create(glass, ICHOR_GLASS_ID, "Ichor Glass"));
-        glassRecipe.shape("IGI", "GIG", "IGI");
-        glassRecipe.setIngredient('I', Material.GLASS_BOTTLE);
-        glassRecipe.setIngredient('G', Material.GLASS);
-        server.addRecipe(glassRecipe);
+        if (isContentEnabled("ichor_glass")) {
+            ShapedRecipe glassRecipe = new ShapedRecipe(bottleRecipeKey, create(glass, ICHOR_GLASS_ID, "Ichor Glass"));
+            glassRecipe.shape("IGI", "GIG", "IGI");
+            glassRecipe.setIngredient('I', Material.GLASS_BOTTLE);
+            glassRecipe.setIngredient('G', Material.GLASS);
+            server.addRecipe(glassRecipe);
+        }
 
-        ShapedRecipe paneRecipe = new ShapedRecipe(paneRecipeKey,
-                create(pane, ICHOR_GLASS_PANE_ID, "Ichor Glass Pane"));
-        paneRecipe.shape("GGG", "GGG");
-        paneRecipe.setIngredient('G', new RecipeChoice.ExactChoice(ichorGlass()));
-        server.addRecipe(paneRecipe);
+        if (isContentEnabled("ichor_glass_pane") && isContentEnabled("ichor_glass")) {
+            ShapedRecipe paneRecipe = new ShapedRecipe(paneRecipeKey,
+                    create(pane, ICHOR_GLASS_PANE_ID, "Ichor Glass Pane"));
+            paneRecipe.shape("GGG", "GGG");
+            paneRecipe.setIngredient('G', new RecipeChoice.ExactChoice(ichorGlass()));
+            server.addRecipe(paneRecipe);
+        }
     }
 
     public ItemStack ichorBottle() {
@@ -97,7 +102,12 @@ public final class IchorContent {
     }
 
     public boolean isIchorEnabled() {
-        return plugin.getConfig().getBoolean("ichor.enabled", true);
+        return plugin.getConfig().getBoolean("ichor.enabled", true)
+                && plugin.getConfig().getBoolean("content.ichor", true);
+    }
+
+    public boolean isContentEnabled(String id) {
+        return isIchorEnabled() && plugin.getConfig().getBoolean("content." + id, true);
     }
 
     private Material configuredMaterial(String path, Material fallback) {

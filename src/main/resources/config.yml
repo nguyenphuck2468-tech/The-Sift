@@ -6,14 +6,33 @@ content:
   ichor_glass: true
   ichor_glass_pane: true
   siftslate: true
+  soul_block: true
   charoite: true
   charoite_item: true
+  charoite_ore: true
   siftite: true
   siftite_ingot: true
+  siftite_ore: true
+  siftite_nugget: true
+  siftite_upgrade_smithing_template: true
+  siftite_sword: true
+  siftite_axe: true
+  siftite_pickaxe: true
+  siftite_shovel: true
+  siftite_hoe: true
+  siftite_spear: true
+  siftite_helmet: true
+  siftite_chestplate: true
+  siftite_leggings: true
+  siftite_boots: true
+  healthy_sculk: true
+  overgrown_willow: true
   resonance: true
   rift-events: true
   singer: true
   echo_golem: true
+  blub: true
+  sifter: true
   rift: true
   sift_dimension: true
 
@@ -74,6 +93,7 @@ ichor:
 
 charoite:
   enabled: true
+  world: thesift:the_sift
   material: LAPIS_LAZULI
   ore-material: AMETHYST_BLOCK
   drop-min: 1
@@ -82,14 +102,16 @@ charoite:
 siftite:
   enabled: true
   ingot-material: NETHERITE_INGOT
+  ore-material: ANCIENT_DEBRIS
   nugget-material: IRON_NUGGET
   template-material: NETHERITE_UPGRADE_SMITHING_TEMPLATE
   smithing-only: true
   durability-multiplier: 1.2
-  armor-toughness: 3.0
   knockback-resistance: 0.1
+  weapon-damage-bonus: 1.0
   spear-damage: 9.0
   spear-reach: 4.5
+  mining-speed-bonus: 0.2
   mini-rift-recovery: true
 
 compatibility:

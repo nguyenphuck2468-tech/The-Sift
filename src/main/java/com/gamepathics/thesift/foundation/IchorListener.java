@@ -29,10 +29,10 @@ public final class IchorListener implements Listener {
         this.state = Objects.requireNonNull(state);
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true, priority = org.bukkit.event.EventPriority.HIGHEST)
     public void onCauldronInteract(PlayerInteractEvent event) {
         if (event.getHand() != EquipmentSlot.HAND || event.getAction() != Action.RIGHT_CLICK_BLOCK
-                || !content.isIchorEnabled()) {
+                || !content.isContentEnabled(IchorContent.ICHOR_BOTTLE_ID)) {
             return;
         }
         Block block = event.getClickedBlock();
@@ -40,18 +40,19 @@ public final class IchorListener implements Listener {
             return;
         }
         ItemStack held = event.getItem();
-        if (held == null || held.getType() != Material.GLASS_BOTTLE || state.level(block.getLocation()) <= 0) {
+        int cost = Math.max(1, plugin.getConfig().getInt("ichor.cauldron.bottle-cost", 1));
+        if (held == null || held.getType() != Material.GLASS_BOTTLE
+                || state.level(block.getLocation()) < cost) {
             return;
         }
 
         event.setCancelled(true);
         Player player = event.getPlayer();
         PlayerInventory inventory = player.getInventory();
-        int nextLevel = state.level(block.getLocation()) - plugin.getConfig()
-                .getInt("ichor.cauldron.bottle-cost", 1);
+        int nextLevel = state.level(block.getLocation()) - cost;
         state.setLevel(block.getLocation(), nextLevel);
         consumeOne(inventory);
-        inventory.addItem(content.ichorBottle());
+        giveOrDrop(player, content.ichorBottle());
         if (plugin.getConfig().getBoolean("ichor.cauldron.sounds", true)) {
             player.playSound(player.getLocation(), "block.brewing_stand.brew", 0.8f, 1.2f);
         }
@@ -63,55 +64,63 @@ public final class IchorListener implements Listener {
                 + nextLevel + "/" + plugin.getConfig().getInt("ichor.cauldron.max-level", 3) + ")");
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true, priority = org.bukkit.event.EventPriority.HIGHEST)
     public void onIchorBottleRefill(PlayerInteractEvent event) {
         if (event.getHand() != EquipmentSlot.HAND || event.getAction() != Action.RIGHT_CLICK_BLOCK
-                || !content.isIchorEnabled() || !plugin.getConfig().getBoolean("ichor.cauldron.refill-from-source", true)) {
+                || !content.isContentEnabled(IchorContent.ICHOR_BOTTLE_ID)
+                || !plugin.getConfig().getBoolean("ichor.cauldron.refill-from-source", true)) {
             return;
         }
         Block block = event.getClickedBlock();
         ItemStack held = event.getItem();
+        int maxLevel = Math.max(1, plugin.getConfig().getInt("ichor.cauldron.max-level", 3));
         if (block == null || held == null || !content.is(held, IchorContent.ICHOR_BOTTLE_ID)
-                || block.getType() != configuredCauldron() || state.level(block.getLocation()) > 0) {
+                || block.getType() != configuredCauldron() || state.level(block.getLocation()) >= maxLevel) {
             return;
         }
         event.setCancelled(true);
-        state.setLevel(block.getLocation(), plugin.getConfig().getInt("ichor.cauldron.max-level", 3));
+        // One bottle contributes one charge; a single bottle cannot refill a
+        // three-charge cauldron and then be withdrawn as three bottles.
+        state.setLevel(block.getLocation(), Math.min(
+                maxLevel,
+                state.level(block.getLocation()) + 1));
         consumeOne(event.getPlayer().getInventory());
         event.getPlayer().sendMessage("§dThe cauldron resonates with Ichor.");
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true, priority = org.bukkit.event.EventPriority.HIGHEST)
     public void onDrinkIchor(PlayerInteractEvent event) {
         if (event.getHand() != EquipmentSlot.HAND || !content.isIchorEnabled()
-                || (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK)
+                || event.getAction() != Action.RIGHT_CLICK_AIR
+                || !content.isContentEnabled(IchorContent.ICHOR_BOTTLE_ID)
                 || !content.is(event.getItem(), IchorContent.ICHOR_BOTTLE_ID)) return;
         event.setCancelled(true);
         Player player = event.getPlayer();
         consumeOne(player.getInventory());
-        player.getInventory().addItem(new org.bukkit.inventory.ItemStack(Material.GLASS_BOTTLE));
+        giveOrDrop(player, new ItemStack(Material.GLASS_BOTTLE));
         player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 60, 0, true, true, true));
         player.playSound(player.getLocation(), "minecraft:item.honey_bottle.drink", 0.8f, 1.25f);
         player.getWorld().spawnParticle(org.bukkit.Particle.DRIPPING_DRIPSTONE_WATER,
                 player.getLocation().add(0, 1, 0), 8, 0.25, 0.35, 0.25, 0.01);
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true, priority = org.bukkit.event.EventPriority.HIGHEST)
     public void onBlockPlace(BlockPlaceEvent event) {
         ItemStack item = event.getItemInHand();
-        String id = content.is(item, IchorContent.ICHOR_GLASS_ID) ? IchorContent.ICHOR_GLASS_ID
-                : content.is(item, IchorContent.ICHOR_GLASS_PANE_ID) ? IchorContent.ICHOR_GLASS_PANE_ID
+        String id = content.isContentEnabled("ichor_glass") && content.is(item, IchorContent.ICHOR_GLASS_ID) ? IchorContent.ICHOR_GLASS_ID
+                : content.isContentEnabled("ichor_glass_pane") && content.is(item, IchorContent.ICHOR_GLASS_PANE_ID) ? IchorContent.ICHOR_GLASS_PANE_ID
                 : content.is(item, IchorContent.ICHOR_SNOW_ID) ? IchorContent.ICHOR_SNOW_ID
                 : content.is(item, IchorContent.ICHOR_SNOW_BLOCK_ID) ? IchorContent.ICHOR_SNOW_BLOCK_ID : null;
-        if (id != null) {
+        if (id != null && (id.equals(IchorContent.ICHOR_GLASS_ID) || id.equals(IchorContent.ICHOR_GLASS_PANE_ID)
+                ? true : content.isContentEnabled(id))) {
             state.setBlock(event.getBlockPlaced().getLocation(), id);
         }
     }
 
-    @EventHandler
+    @EventHandler(ignoreCancelled = true, priority = org.bukkit.event.EventPriority.HIGHEST)
     public void onBlockBreak(BlockBreakEvent event) {
         String id = state.block(event.getBlock().getLocation());
-        if (id == null) {
+        if (id == null || !content.isContentEnabled(id)) {
             return;
         }
         event.setDropItems(false);
@@ -142,5 +151,10 @@ public final class IchorListener implements Listener {
         } else {
             held.setAmount(held.getAmount() - 1);
         }
+    }
+
+    private void giveOrDrop(Player player, ItemStack item) {
+        player.getInventory().addItem(item).values()
+                .forEach(leftover -> player.getWorld().dropItemNaturally(player.getLocation(), leftover));
     }
 }

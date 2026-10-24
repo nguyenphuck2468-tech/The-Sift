@@ -135,3 +135,40 @@ files in this plugin strip the reference mod's custom feature references and
 use vanilla-compatible decoration. Mojang's announcement of The Sift does not
 confirm these exact details; do not describe them as finalized 27.1 vanilla
 mechanics.
+
+## Foundation correctness and 27.1-style simulation pass (2026-10-24)
+
+“Vanilla-like” in this project means a cohesive survival experience for the
+planned custom dimension, with optional external content providers where Paper
+does not supply planned custom blocks, items, or entities. Minecraft 27.1 is
+still a future target; this pass only builds against Paper 26.3.
+
+- Ichor cauldrons add one charge per bottle, honor extraction cost, and return
+  overflow items as world drops. Bottle use no longer cancels unrelated block
+  interactions. Ichor state snapshots are synchronized for async saves.
+- Generated Charoite and Siftite ores carry chunk-PDC location markers; only
+  marked generated blocks yield custom drops. Survival ore placement and Soul
+  Block canyon clusters were added to the Sift dimension prototype.
+- Siftite recipes use Netherite equipment as their base and exact custom
+  template/ingot ingredients. Material-only vanilla recipes are filtered for
+  tagged Siftite ingredients. Mining speed and weapon/armor attributes are
+  applied by equipment type.
+- Rift timers/configuration share one scheduler; key use consumes one key;
+  shutdown discards transient Rifts instead of granting a reward. Singer no
+  longer damages players, while Echo Golem has a basic owner bond and Soul
+  Block transfer interaction.
+- Soul Block placement/break identity is tracked, the existing advancements
+  datapack is discovered, and a Bukkit advancement listener awards current
+  progression milestones.
+- Block detection checks optional Nexo, ItemsAdder, and Oraxen APIs and supports
+  third-party `SiftBlockProvider` adapters. These integrations still depend on
+  server-side ID mappings and have not been runtime-tested with each provider.
+  Provider recognition does not guarantee every feature, AI, or model works.
+- Item model definition JSONs were added for bundled item-model references.
+  This does not create missing textures, animated entity models, sounds, or a
+  custom client renderer.
+
+Build verification: `jar siftResourcePack` succeeds on Java 25 / Paper API
+26.3. Three `RecipeChoice.ExactChoice` deprecation-for-removal warnings remain.
+No live server test was performed. Previously observed Mockito test setup
+failures were not re-run in this pass.

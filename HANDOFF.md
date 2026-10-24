@@ -86,7 +86,7 @@ Hiện có:
 - Ichor Glass/Panes;
 - Ichor Snow/Snow Block identity;
 - cauldron level persistence;
-- refill và bottle cost;
+- mỗi Ichor Bottle chỉ nạp một charge; rút chai tuân theo bottle-cost;
 - particle/sound;
 - identity-preserving drops.
 
@@ -100,9 +100,17 @@ Hiện có:
 - Charoite item/ore prototype;
 - Siftite nugget/ingot;
 - Siftite armor/tools/spear identity;
-- smithing recipes;
+- nâng cấp từ Netherite với Siftite Upgrade Template và Siftite Ingot;
+- chặn nguyên liệu Siftite bị dùng trong crafting/smithing vanilla theo Material;
 - config balance;
 - `/sift give`.
+- Tốc độ đào cộng thêm cho công cụ và knockback resistance cho giáp; thuộc tính
+  chỉ áp dụng cho đúng nhóm trang bị, không áp lên nugget/ingot.
+
+Charoite Ore và Siftite Ore sinh ra được đánh dấu trong chunk PDC; block cùng
+Material do người chơi đặt không tự nhận drop ore đặc biệt. Ore chuẩn (sắt,
+than, đồng, redstone, lapis, kim cương, vàng) được thêm vào dimension để có
+thể chơi survival khi biome JSON không khai báo placed features.
 
 ### Singer và Resonance
 
@@ -111,10 +119,9 @@ Hiện có:
 Hiện có:
 
 - Singer prototype dùng Allay Bukkit entity;
+- Singer phát âm thanh/particle mà không gây sát thương;
 - persistent entity ID;
-- timed sonic pulse;
-- damage/slowness;
-- Charoite protection;
+- Echo Golem prototype có thể bond bằng Echo Shard và lưu Soul Block;
 - boss bar;
 - Charoite drop;
 - `/sift summon singer`.
@@ -171,14 +178,18 @@ Các lệnh yêu cầu permission `thesift.foundation.admin`, mặc định là 
 - Resource pack mới chưa có model/texture hoàn chỉnh cho toàn bộ Ichor,
   Charoite, Siftite và Singer.
 - Block custom hiện dùng vanilla material làm nền.
-- Ichor state đang lưu trong config; về lâu dài nên chuyển sang storage riêng
-  hoặc PersistentDataContainer phù hợp.
-- Charoite ore đang prototype bằng Amethyst Block.
+- Ichor state nằm trong `ichor-state.yml`; vị trí Soul/Charoite/Siftite block
+  được đánh dấu bằng chunk PersistentDataContainer.
+- Custom block vẫn dùng vanilla material khi không cấu hình provider.
 - Siftite spear hiện dùng Netherite Sword làm base material.
-- Smithing template hiện dùng vanilla Netherite Upgrade Template.
+- Singer và Echo Golem vẫn là vanilla entity proxy.
 - Singer đang dùng Allay prototype.
-- Chưa có Echo Golem.
-- Chưa có Rift event/persistence/reward.
+- Echo Golem mới có thao tác bond và cất/lấy Soul Block cơ bản; chưa có AI tự
+  tìm Soul Canyon/Soul Block như mô tả trong mod cộng đồng.
+- Cầu nối custom block nhận `SiftBlockProvider` qua Bukkit ServicesManager và
+  có adapter tùy chọn cho Nexo, ItemsAdder, Oraxen. Cầu nối item/mob cũng có
+  provider API; việc khai báo adapter không đồng nghĩa mọi ID/AI/model từ plugin
+  ngoài tự tương thích. Cần map ID và kiểm tra trên server cài plugin tương ứng.
 - Dimension The Sift hiện có năm custom biome (Pink Meadows, Bulb Forest,
   Carapace, Crystal Spires, Shattered Peaks), multi-noise biome selection,
   vanilla Overworld noise, biome color, procedural surface decoration, mob
@@ -192,8 +203,8 @@ Các lệnh yêu cầu permission `thesift.foundation.admin`, mặc định là 
   installed/served for custom item models to render.
 - Unit tests có trong source nhưng 25/31 hiện fail trong môi trường test do lỗi
   khởi tạo Mockito; build JAR và Paper server smoke test chạy được.
-- `reload` hiện reload config/flags nhưng không teardown và đăng ký lại toàn bộ
-  module. Nếu thay đổi module flag lúc runtime, nên restart server.
+- `/sift reload` reload config và công thức; cần restart để bật/tắt module vì
+  listener và scheduler được khởi tạo theo content flags lúc enable.
 - Config target `27.1 (planned)` là kế hoạch, không khẳng định tương thích
   trước khi Paper/Minecraft 27.1 được phát hành và kiểm tra.
 

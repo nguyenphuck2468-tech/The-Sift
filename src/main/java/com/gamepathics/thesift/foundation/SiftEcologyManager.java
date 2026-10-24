@@ -44,6 +44,7 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey creatureKey;
     private final SiftMobFactory mobFactory;
     private final ExternalBlockBridge blockBridge;
+    private final SiftiteContent content;
     private final BukkitTask tideTask;
     private long tideTick;
 
@@ -57,6 +58,7 @@ public final class SiftEcologyManager implements Listener {
         this.creatureKey = new NamespacedKey(plugin, "sift_creature");
         this.mobFactory = new SiftMobFactory(plugin);
         this.blockBridge = new ExternalBlockBridge(plugin);
+        this.content = new SiftiteContent(plugin);
         this.tideTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             tickTide();
             tickIchorWeather();
@@ -97,6 +99,8 @@ public final class SiftEcologyManager implements Listener {
         decorateSurface(chunk, key, random);
         growBiomeLandmarks(chunk, key, random);
         generateCharoiteOre(chunk, random);
+        generateSiftResources(chunk, random);
+        generateSiftiteOre(chunk, random);
         if ((key.contains("overgrown") || key.contains("sift_wastes") || key.contains("siftslate"))
                 && random.nextInt(18) == 0) generateAbandonedPortal(chunk, random);
         if ((key.contains("overgrown") || key.endsWith("carapace")) && random.nextInt(24) == 0) {
@@ -115,7 +119,8 @@ public final class SiftEcologyManager implements Listener {
         } else if (key.endsWith("crystal_spires") && random.nextInt(55) == 0) {
             summonEchoGolem(chunk, random);
         }
-        if (key.endsWith("shattered_peaks") && random.nextInt(120) == 0) {
+        if (key.endsWith("shattered_peaks") && plugin.getConfig().getBoolean("content.rift-events", true)
+                && random.nextInt(120) == 0) {
             openNaturalRift(chunk);
         }
         if (key.endsWith("bulb_forest") && random.nextInt(160) == 0) {
@@ -128,8 +133,8 @@ public final class SiftEcologyManager implements Listener {
     private void decorateSurface(Chunk chunk, String biome, Random random) {
         World world = chunk.getWorld();
         for (int i = 0; i < 28; i++) {
-            int x = chunk.getX() * 16 + random.nextInt(16);
-            int z = chunk.getZ() * 16 + random.nextInt(16);
+            int x = chunk.getX() * 16 + 1 + random.nextInt(14);
+            int z = chunk.getZ() * 16 + 1 + random.nextInt(14);
             int y = world.getHighestBlockYAt(x, z);
             if (y <= world.getMinHeight() || y >= world.getMaxHeight() - 4) continue;
             Block ground = world.getBlockAt(x, y, z);
@@ -276,12 +281,16 @@ public final class SiftEcologyManager implements Listener {
         world.getBlockAt(x + 5, y, z + 1).setType(Material.CHEST, false);
         Block chest = world.getBlockAt(x + 5, y, z + 1);
         if (chest.getState() instanceof Container container) {
-            container.getInventory().addItem(new org.bukkit.inventory.ItemStack(Material.AMETHYST_SHARD,
-                    2 + random.nextInt(5)));
+            container.getInventory().addItem(content.item(Material.LAPIS_LAZULI, "charoite", "Charoite"));
+            container.getInventory().addItem(content.forId("overgrown_willow"));
+            if (random.nextBoolean()) container.getInventory().addItem(content.forId("rift_disc"));
+            if (random.nextInt(100) < 40) container.getInventory().addItem(content.forId(
+                    "siftite_upgrade_smithing_template"));
+            if (random.nextInt(100) < 12) container.getInventory().addItem(content.forId("siftite_nugget"));
             if (random.nextBoolean()) container.getInventory().addItem(new org.bukkit.inventory.ItemStack(
-                    Material.MUSIC_DISC_5));
-            if (random.nextInt(100) < 40) container.getInventory().addItem(new org.bukkit.inventory.ItemStack(
-                    Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE));
+                    Material.EMERALD, 1 + random.nextInt(3)));
+            if (random.nextBoolean()) container.getInventory().addItem(new org.bukkit.inventory.ItemStack(
+                    Material.DIAMOND, 1 + random.nextInt(2)));
             container.update(true, false);
         }
     }
@@ -310,6 +319,10 @@ public final class SiftEcologyManager implements Listener {
     }
 
     private void generateCharoiteOre(Chunk chunk, Random random) {
+        if (!plugin.getConfig().getBoolean("content.charoite_ore",
+                plugin.getConfig().getBoolean("charoite.enabled", true))
+                || !plugin.getConfig().getBoolean("content.charoite", true)
+                || !plugin.getConfig().getBoolean("content.charoite_item", true)) return;
         if (random.nextInt(3) != 0) return;
         World world = chunk.getWorld();
         int x = chunk.getX() * 16 + 3 + random.nextInt(10);
@@ -323,10 +336,79 @@ public final class SiftEcologyManager implements Listener {
                     y + random.nextInt(3) - 1, z + random.nextInt(3) - 1);
             if (!hostRocks.contains(ore.getType())) continue;
             placeBlock(ore, "charoite_ore", Material.AMETHYST_BLOCK);
+            SiftiteListener.markGeneratedOre(plugin, ore);
+        }
+    }
+
+    /** Ore veins required for ordinary survival progression in a biome set with no data-driven features. */
+    private void generateSiftResources(Chunk chunk, Random random) {
+        generateOreVeins(chunk, random, Material.IRON_ORE, 2, -24, 56, 5);
+        generateOreVeins(chunk, random, Material.COAL_ORE, 2, 8, 112, 7);
+        generateOreVeins(chunk, random, Material.COPPER_ORE, 1, -16, 80, 5);
+        generateOreVeins(chunk, random, Material.REDSTONE_ORE, 1, -56, 16, 5);
+        generateOreVeins(chunk, random, Material.LAPIS_ORE, 1, -40, 48, 3);
+        if (random.nextInt(4) == 0) generateOreVeins(chunk, random, Material.DIAMOND_ORE, 1, -58, 8, 3);
+        if (random.nextInt(8) == 0) generateOreVeins(chunk, random, Material.GOLD_ORE, 1, -48, 24, 4);
+    }
+
+    private void generateOreVeins(Chunk chunk, Random random, Material oreType,
+                                  int veins, int minY, int maxY, int size) {
+        World world = chunk.getWorld();
+        int low = Math.max(world.getMinHeight() + 1, minY);
+        int high = Math.min(world.getMaxHeight() - 2, maxY);
+        if (high <= low) return;
+        for (int vein = 0; vein < veins; vein++) {
+            int x = chunk.getX() * 16 + random.nextInt(16);
+            int y = low + random.nextInt(high - low + 1);
+            int z = chunk.getZ() * 16 + random.nextInt(16);
+            for (int block = 0; block < size; block++) {
+                Block target = world.getBlockAt(x + random.nextInt(3) - 1,
+                        y + random.nextInt(3) - 1, z + random.nextInt(3) - 1);
+                if ((target.getX() >> 4) == chunk.getX() && (target.getZ() >> 4) == chunk.getZ()
+                        && (target.getType() == Material.STONE || target.getType() == Material.DEEPSLATE
+                        || target.getType() == Material.TUFF || target.getType() == Material.ANDESITE)) {
+                    target.setType(target.getY() < 0
+                            ? deepslateVariant(oreType) : oreType, false);
+                }
+            }
+        }
+    }
+
+    private Material deepslateVariant(Material ore) {
+        return switch (ore) {
+            case IRON_ORE -> Material.DEEPSLATE_IRON_ORE;
+            case COAL_ORE -> Material.DEEPSLATE_COAL_ORE;
+            case COPPER_ORE -> Material.DEEPSLATE_COPPER_ORE;
+            case REDSTONE_ORE -> Material.DEEPSLATE_REDSTONE_ORE;
+            case LAPIS_ORE -> Material.DEEPSLATE_LAPIS_ORE;
+            case DIAMOND_ORE -> Material.DEEPSLATE_DIAMOND_ORE;
+            case GOLD_ORE -> Material.DEEPSLATE_GOLD_ORE;
+            default -> ore;
+        };
+    }
+
+    private void generateSiftiteOre(Chunk chunk, Random random) {
+        if (!plugin.getConfig().getBoolean("content.siftite_ore",
+                plugin.getConfig().getBoolean("siftite.enabled", true))
+                || !plugin.getConfig().getBoolean("content.siftite", true)
+                || !plugin.getConfig().getBoolean("content.siftite_nugget", true)) return;
+        if (random.nextInt(24) != 0) return;
+        World world = chunk.getWorld();
+        int x = chunk.getX() * 16 + 1 + random.nextInt(14);
+        int y = Math.max(world.getMinHeight() + 8, -24 + random.nextInt(40));
+        int z = chunk.getZ() * 16 + 1 + random.nextInt(14);
+        for (int i = 0; i < 3 + random.nextInt(3); i++) {
+            Block ore = world.getBlockAt(x + random.nextInt(3) - 1,
+                    y + random.nextInt(3) - 1, z + random.nextInt(3) - 1);
+            if (ore.getType() != Material.STONE && ore.getType() != Material.DEEPSLATE
+                    && ore.getType() != Material.TUFF) continue;
+            placeBlock(ore, "siftite_ore", Material.ANCIENT_DEBRIS);
+            SiftiteListener.markGeneratedSiftiteOre(plugin, ore);
         }
     }
 
     private void generateSoulCanyon(Chunk chunk, Random random) {
+        boolean soulBlocksEnabled = plugin.getConfig().getBoolean("content.soul_block", true);
         World world = chunk.getWorld();
         int centerZ = chunk.getZ() * 16 + 8;
         for (int localX = 1; localX < 15; localX++) {
@@ -339,6 +421,18 @@ public final class SiftEcologyManager implements Listener {
                     Block block = world.getBlockAt(x, y, centerZ + dz);
                     if (block.getType() == Material.BEDROCK || block.getType() == Material.WATER) continue;
                     block.setType(dy == 6 ? Material.SOUL_SOIL : Material.AIR, false);
+                }
+            }
+        }
+        if (soulBlocksEnabled) {
+            int soulX = chunk.getX() * 16 + 7;
+            int soulY = world.getHighestBlockYAt(soulX, centerZ) - 6;
+            for (int dx = -1; dx <= 1; dx++) {
+                for (int dz = -1; dz <= 1; dz++) {
+                    if (random.nextInt(4) == 0) continue;
+                    Block soul = world.getBlockAt(soulX + dx, soulY, centerZ + dz);
+                    placeBlock(soul, "soul_block", Material.SOUL_SAND);
+                    SoulBlockListener.markGenerated(plugin, soul);
                 }
             }
         }
@@ -430,7 +524,7 @@ public final class SiftEcologyManager implements Listener {
                 type = EntityType.valueOf(mob[0]); name = mob[1];
             } else if (biome.endsWith("pink_meadows") || biome.contains("overgrown_clearing")) {
                 String[][] meadow = {{"RABBIT", "Loomer"}, {"BEE", "Glimmerwing"},
-                        {"ALLAY", "Wisp"}, {"MUSHROOM_COW", "Sunspore"}};
+                        {"ALLAY", "Wisp"}, {"MOOSHROOM", "Sunspore"}};
                 String[] mob = meadow[random.nextInt(meadow.length)];
                 type = EntityType.valueOf(mob[0]); name = mob[1];
             } else if (biome.endsWith("bulb_forest") || biome.contains("overgrown_forest")) {
@@ -639,7 +733,8 @@ public final class SiftEcologyManager implements Listener {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
         if (sift == null || sift.getPlayers().isEmpty()) return;
         for (Player player : sift.getPlayers()) {
-            if (player.getLocation().getBlock().isLiquid()) {
+            Material contact = player.getLocation().getBlock().getType();
+            if (contact == Material.WATER || contact == Material.BUBBLE_COLUMN) {
                 player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 120, 0, true, false, true));
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 120, 0, true, false, true));
             }
@@ -678,12 +773,11 @@ public final class SiftEcologyManager implements Listener {
     private void tickDarkSniffers() {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
         if (sift == null) return;
-        for (Entity entity : sift.getEntities()) {
-            if (!(entity instanceof LivingEntity living) || entity.getType() != EntityType.SNIFFER) continue;
-            String id = entity.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING);
-            if (!"dark_sniffer".equals(id)) continue;
-            for (Player target : living.getNearbyEntities(18, 10, 18).stream()
-                    .filter(Player.class::isInstance).map(Player.class::cast).toList()) {
+        for (Player target : sift.getPlayers()) {
+            for (Entity entity : target.getNearbyEntities(18, 10, 18)) {
+                if (!(entity instanceof LivingEntity living) || entity.getType() != EntityType.SNIFFER) continue;
+                String id = entity.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING);
+                if (!"dark_sniffer".equals(id)) continue;
                 Vector pull = living.getLocation().toVector().subtract(target.getLocation().toVector());
                 if (pull.lengthSquared() < 0.01) continue;
                 pull.normalize().multiply(0.28).setY(0.18);

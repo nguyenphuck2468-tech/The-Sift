@@ -271,16 +271,17 @@ claiming compatibility.
 ## Ichor v2 test flow
 
 1. Use `/sift give ichor_bottle <player>` to obtain a source bottle.
-2. Right-click a configured cauldron with the Ichor Bottle to create a full
-   persistent Ichor cauldron.
+2. Right-click a configured cauldron with an Ichor Bottle to add one charge.
+   Each bottle withdrawn consumes the configured number of charges, so this
+   exchange cannot multiply Ichor.
 3. Hold empty vanilla glass bottles and right-click the Ichor cauldron. Each
    bottle consumes the configured number of Ichor levels.
 4. Craft Ichor Glass and Ichor Glass Panes using the registered recipes.
 5. Place and break the tagged blocks to verify identity-preserving drops.
 
-The slice uses vanilla block materials as a safe Paper foundation. The state
-is persisted in the plugin config until a Paper 26.3-compatible custom block
-strategy is finalized. This avoids NMS and keeps the feature portable.
+The slice uses vanilla block materials as a Paper foundation. Cauldron and
+custom-block identity state is persisted in `ichor-state.yml` and chunk PDC.
+This avoids NMS and keeps the feature portable.
 
 ## Charoite and Siftite test flow
 
@@ -294,11 +295,11 @@ Use the following commands on a test server:
 /sift give siftite_upgrade_smithing_template <player>
 ```
 
-Charoite uses an Amethyst-based prototype ore/drop path. Siftite gear is
-represented by vanilla Netherite materials with persistent content IDs and
-custom names, so it remains usable before the custom model pack is completed.
-The smithing recipes intentionally use the vanilla Netherite upgrade template
-until a custom smithing-template item strategy is finalized.
+Charoite drops only from generated, marked ore in The Sift, not ordinary
+Amethyst Blocks. Siftite gear uses Netherite equipment as the smithing base,
+plus a tagged Siftite Ingot and custom Siftite Upgrade Template. The custom
+template is crafted from a vanilla Netherite Upgrade Template and a Siftite
+Ingot. Material-only vanilla recipes reject tagged Siftite ingredients.
 
 ## Singer and Resonance test flow
 
@@ -307,9 +308,8 @@ until a custom smithing-template item strategy is finalized.
 /sift give charoite <player>
 ```
 
-The Singer prototype is an Allay tagged with The Sift's persistent entity ID.
-Every configured number of seconds it emits a sonic pulse, damaging and
-slowing players within range. A player carrying a tagged Charoite item is
-protected from the pulse. The encounter uses a boss bar and drops Charoite
-when the Singer dies. The implementation uses Bukkit/Paper APIs rather than
-NMS; the custom Singer model can be connected through the resource pack later.
+The Singer prototype is a passive Allay tagged with The Sift's persistent
+entity ID. It emits a sonic cue and has a boss bar, without damaging nearby
+players. The Echo Golem prototype is a passive Iron Golem: an Echo Shard bonds
+it to a player, and that player can give or retrieve a Soul Block. Both are
+early Paper approximations, not claims about Mojang's final 27.1 behavior.

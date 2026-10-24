@@ -16,6 +16,8 @@ public final class TheSiftBootstrap implements PluginBootstrap {
             try {
                 event.registrar().discoverPack(
                         TheSiftBootstrap.class.getResource("/sift_dimension_datapack").toURI(), "dimension");
+                event.registrar().discoverPack(
+                        TheSiftBootstrap.class.getResource("/datapack").toURI(), "progression");
             } catch (IOException | URISyntaxException exception) {
                 throw new IllegalStateException("Could not register The Sift datapack", exception);
             }

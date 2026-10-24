@@ -2,6 +2,7 @@ package com.gamepathics.thesift.foundation;
 
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Keyed;
 import org.bukkit.Server;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
@@ -11,13 +12,20 @@ import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.PrepareItemCraftEvent;
+import org.bukkit.event.inventory.PrepareSmithingEvent;
+import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
-public final class SiftiteContent {
+public final class SiftiteContent implements Listener {
+    private static final java.util.Map<String, Boolean> ITEM_MODEL_CACHE = new ConcurrentHashMap<>();
     private final JavaPlugin plugin;
     private final NamespacedKey idKey;
     private final ExternalItemBridge externalItems;
@@ -30,30 +38,52 @@ public final class SiftiteContent {
 
     public void registerRecipes() {
         Server server = plugin.getServer();
-        addShaped("charoite", item(Material.LAPIS_LAZULI, "charoite", "Charoite"),
-                " C ", "CAC", " C ", 'C', Material.AMETHYST_SHARD, 'A', Material.AMETHYST_BLOCK);
-        addShapeless("siftite_nugget", item(Material.IRON_NUGGET, "siftite_nugget", "Siftite Nugget"),
-                Material.IRON_NUGGET, Material.AMETHYST_SHARD);
-        addShaped("siftite_ingot", item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot"),
-                "NNN", "NNN", "NNN", 'N', exact(item(Material.IRON_NUGGET, "siftite_nugget", "Siftite Nugget")));
-        registerSmithing(server, "sword", Material.DIAMOND_SWORD, Material.NETHERITE_SWORD,
-                "siftite_sword", "Siftite Sword");
-        registerSmithing(server, "axe", Material.DIAMOND_AXE, Material.NETHERITE_AXE,
-                "siftite_axe", "Siftite Axe");
-        registerSmithing(server, "pickaxe", Material.DIAMOND_PICKAXE, Material.NETHERITE_PICKAXE,
-                "siftite_pickaxe", "Siftite Pickaxe");
-        registerSmithing(server, "shovel", Material.DIAMOND_SHOVEL, Material.NETHERITE_SHOVEL,
-                "siftite_shovel", "Siftite Shovel");
-        registerSmithing(server, "hoe", Material.DIAMOND_HOE, Material.NETHERITE_HOE,
-                "siftite_hoe", "Siftite Hoe");
-        registerSmithing(server, "helmet", Material.DIAMOND_HELMET, Material.NETHERITE_HELMET,
-                "siftite_helmet", "Siftite Helmet");
-        registerSmithing(server, "chestplate", Material.DIAMOND_CHESTPLATE, Material.NETHERITE_CHESTPLATE,
-                "siftite_chestplate", "Siftite Chestplate");
-        registerSmithing(server, "leggings", Material.DIAMOND_LEGGINGS, Material.NETHERITE_LEGGINGS,
-                "siftite_leggings", "Siftite Leggings");
-        registerSmithing(server, "boots", Material.DIAMOND_BOOTS, Material.NETHERITE_BOOTS,
-                "siftite_boots", "Siftite Boots");
+        for (String key : java.util.List.of("charoite", "siftite_nugget", "siftite_ingot",
+                "siftite_upgrade_smithing_template")) server.removeRecipe(new NamespacedKey(plugin, key));
+        for (String key : java.util.List.of("siftite_sword", "siftite_axe", "siftite_pickaxe",
+                "siftite_shovel", "siftite_hoe", "siftite_helmet", "siftite_chestplate",
+                "siftite_leggings", "siftite_boots")) server.removeRecipe(new NamespacedKey(plugin, key));
+        if (enabled("charoite_item", "charoite.enabled")) {
+            addShaped("charoite", item(Material.LAPIS_LAZULI, "charoite", "Charoite"),
+                    " C ", "CAC", " C ", 'C', Material.AMETHYST_SHARD, 'A', Material.AMETHYST_BLOCK);
+        }
+        if (enabled("siftite_nugget", "siftite.enabled")) {
+            addShapeless("siftite_nugget", item(Material.IRON_NUGGET, "siftite_nugget", "Siftite Nugget"),
+                    Material.IRON_NUGGET, Material.AMETHYST_SHARD);
+        }
+        if (enabled("siftite_ingot", "siftite.enabled") && enabled("siftite_nugget", "siftite.enabled")) {
+            addShaped("siftite_ingot", item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot"),
+                    "NNN", "NNN", "NNN", 'N', exact(item(Material.IRON_NUGGET, "siftite_nugget", "Siftite Nugget")));
+        }
+        if (enabled("siftite_upgrade_smithing_template", "siftite.enabled")
+                && enabled("siftite_ingot", "siftite.enabled")) addTemplateRecipe();
+        if (!enabled("siftite_upgrade_smithing_template", "siftite.enabled")
+                || !enabled("siftite_ingot", "siftite.enabled")) return;
+        registerSmithingIfEnabled(server, "sword", Material.NETHERITE_SWORD, "siftite_sword", "Siftite Sword");
+        registerSmithingIfEnabled(server, "axe", Material.NETHERITE_AXE, "siftite_axe", "Siftite Axe");
+        registerSmithingIfEnabled(server, "pickaxe", Material.NETHERITE_PICKAXE, "siftite_pickaxe", "Siftite Pickaxe");
+        registerSmithingIfEnabled(server, "shovel", Material.NETHERITE_SHOVEL, "siftite_shovel", "Siftite Shovel");
+        registerSmithingIfEnabled(server, "hoe", Material.NETHERITE_HOE, "siftite_hoe", "Siftite Hoe");
+        registerSmithingIfEnabled(server, "helmet", Material.NETHERITE_HELMET, "siftite_helmet", "Siftite Helmet");
+        registerSmithingIfEnabled(server, "chestplate", Material.NETHERITE_CHESTPLATE, "siftite_chestplate", "Siftite Chestplate");
+        registerSmithingIfEnabled(server, "leggings", Material.NETHERITE_LEGGINGS, "siftite_leggings", "Siftite Leggings");
+        registerSmithingIfEnabled(server, "boots", Material.NETHERITE_BOOTS, "siftite_boots", "Siftite Boots");
+    }
+
+    private boolean enabled(String id, String parentPath) {
+        String family = id.startsWith("charoite") ? "charoite" : "siftite";
+        boolean sectionEnabled = plugin.getConfig().getBoolean(parentPath, true);
+        return sectionEnabled && plugin.getConfig().getBoolean("content." + family, true)
+                && plugin.getConfig().getBoolean("content." + id, true);
+    }
+
+    private void registerSmithingIfEnabled(Server server, String recipeId, Material base,
+                                           String contentId, String name) {
+        if (enabled(contentId, "siftite.enabled")) {
+            registerSmithing(server, recipeId, base, base, contentId, name);
+        } else {
+            server.removeRecipe(new NamespacedKey(plugin, "siftite_" + recipeId));
+        }
     }
 
     public ItemStack item(Material material, String id, String name) {
@@ -63,18 +93,21 @@ public final class SiftiteContent {
         ItemMeta meta = result.getItemMeta();
         if (!providerItem) meta.setDisplayName("§d" + name);
         meta.getPersistentDataContainer().set(idKey, PersistentDataType.STRING, id);
-        if (!providerItem) {
-            try (var modelFile = plugin.getResource("pack/assets/thesift/items/" + id + ".json")) {
-                if (modelFile != null) meta.setItemModel(NamespacedKey.fromString("thesift:" + id));
-            } catch (java.io.IOException exception) {
-                plugin.getLogger().fine("Could not inspect item model for " + id + ": " + exception.getMessage());
-            }
-        }
-        if (id.startsWith("siftite_") && !id.equals("siftite_upgrade_smithing_template")) {
-            addAttributes(meta, id);
-        }
+        if (!providerItem && hasItemModel(id)) meta.setItemModel(NamespacedKey.fromString("thesift:" + id));
+        if (id.startsWith("siftite_") && !id.equals("siftite_upgrade_smithing_template")) addAttributes(meta, id);
         result.setItemMeta(meta);
         return result;
+    }
+
+    private boolean hasItemModel(String id) {
+        return ITEM_MODEL_CACHE.computeIfAbsent(id, key -> {
+            try (var modelFile = plugin.getResource("pack/assets/thesift/items/" + key + ".json")) {
+                return modelFile != null;
+            } catch (java.io.IOException exception) {
+                plugin.getLogger().fine("Could not inspect item model for " + key + ": " + exception.getMessage());
+                return false;
+            }
+        });
     }
 
     public boolean is(ItemStack stack, String id) {
@@ -89,6 +122,7 @@ public final class SiftiteContent {
             case "charoite_ore" -> item(Material.AMETHYST_BLOCK, id, "Charoite Ore");
             case "siftite_nugget" -> item(Material.IRON_NUGGET, id, "Siftite Nugget");
             case "siftite_ingot" -> item(Material.NETHERITE_INGOT, id, "Siftite Ingot");
+            case "siftite_ore" -> item(Material.ANCIENT_DEBRIS, id, "Siftite Ore");
             case "siftite_upgrade_smithing_template" ->
                     item(Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE, id, "Siftite Upgrade Template");
             case "siftite_sword" -> item(Material.NETHERITE_SWORD, id, "Siftite Sword");
@@ -107,6 +141,7 @@ public final class SiftiteContent {
 
         Material material = switch (id) {
             case "siftslate" -> Material.DEEPSLATE;
+            case "soul_block" -> Material.SOUL_SAND;
             case "sift_soil" -> Material.ROOTED_DIRT;
             case "sift_grass", "healthy_sculk" -> id.equals("healthy_sculk") ? Material.SCULK : Material.MOSS_BLOCK;
             case "sift_log", "overgrown_willow" -> Material.CHERRY_LOG;
@@ -116,6 +151,7 @@ public final class SiftiteContent {
             case "siftstone_bricks" -> Material.TUFF_BRICKS;
             case "chiseled_siftstone", "sift_altar" -> Material.CHISELED_DEEPSLATE;
             case "shard_ore", "charoite_ore" -> Material.AMETHYST_BLOCK;
+            case "siftite_ore" -> Material.ANCIENT_DEBRIS;
             case "rift_gate" -> Material.CRYING_OBSIDIAN;
             case "sift_shard", "spire_fragment", "charoite" -> Material.AMETHYST_SHARD;
             case "sky_fragment" -> Material.PHANTOM_MEMBRANE;
@@ -135,6 +171,7 @@ public final class SiftiteContent {
             case "prism_boots" -> Material.NETHERITE_BOOTS;
             case "phase_boots" -> Material.DIAMOND_BOOTS;
             case "rift_key" -> Material.TRIAL_KEY;
+            case "rift_disc" -> Material.MUSIC_DISC_5;
             case "bulb" -> Material.SLIME_BALL;
             case "wisp", "violet_wisp" -> Material.ALLAY_SPAWN_EGG;
             case "koi" -> Material.TROPICAL_FISH_SPAWN_EGG;
@@ -182,10 +219,59 @@ public final class SiftiteContent {
         server.removeRecipe(recipeKey);
         org.bukkit.inventory.SmithingTransformRecipe recipe = new org.bukkit.inventory.SmithingTransformRecipe(
                 recipeKey, item(outputBase, id, name),
-                new org.bukkit.inventory.RecipeChoice.MaterialChoice(Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE),
+                exact(item(Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE,
+                        "siftite_upgrade_smithing_template", "Siftite Upgrade Template")),
                 new org.bukkit.inventory.RecipeChoice.MaterialChoice(base),
                 new org.bukkit.inventory.RecipeChoice.ExactChoice(item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot")));
         server.addRecipe(recipe);
+    }
+
+    private void addTemplateRecipe() {
+        NamespacedKey recipeKey = new NamespacedKey(plugin, "siftite_upgrade_smithing_template");
+        plugin.getServer().removeRecipe(recipeKey);
+        ShapelessRecipe recipe = new ShapelessRecipe(recipeKey,
+                item(Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE,
+                        "siftite_upgrade_smithing_template", "Siftite Upgrade Template"));
+        recipe.addIngredient(new org.bukkit.inventory.RecipeChoice.MaterialChoice(
+                Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE));
+        recipe.addIngredient(exact(item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot")));
+        plugin.getServer().addRecipe(recipe);
+    }
+
+    /** Tagged Siftite materials must not be accepted by vanilla material-only recipes. */
+    @EventHandler
+    public void onPrepareCraft(PrepareItemCraftEvent event) {
+        if (isPluginRecipe(event.getRecipe())) {
+            return;
+        }
+        for (ItemStack ingredient : event.getInventory().getMatrix()) {
+            if (isSiftiteItem(ingredient)) {
+                event.getInventory().setResult(null);
+                return;
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPrepareSmithing(PrepareSmithingEvent event) {
+        var inventory = event.getInventory();
+        var recipe = inventory.getRecipe();
+        if (isPluginRecipe(recipe)) return;
+        if (isSiftiteItem(inventory.getInputTemplate()) || isSiftiteItem(inventory.getInputEquipment())
+                || isSiftiteItem(inventory.getInputMineral())) {
+            event.setResult(null);
+        }
+    }
+
+    private boolean isSiftiteItem(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return false;
+        String id = item.getItemMeta().getPersistentDataContainer().get(idKey, PersistentDataType.STRING);
+        return id != null && id.startsWith("siftite_");
+    }
+
+    private boolean isPluginRecipe(org.bukkit.inventory.Recipe recipe) {
+        return recipe instanceof Keyed keyed
+                && keyed.getKey().getNamespace().equals(plugin.getName().toLowerCase(Locale.ROOT));
     }
 
     private void addShaped(String key, ItemStack result, String row1, String row2, String row3, Object... ingredients) {
@@ -215,15 +301,27 @@ public final class SiftiteContent {
     }
 
     private void addAttributes(ItemMeta meta, String id) {
-        Attribute attribute = id.contains("helmet") || id.contains("chestplate")
-                || id.contains("leggings") || id.contains("boots")
-                ? Attribute.ARMOR_TOUGHNESS : Attribute.ATTACK_DAMAGE;
-        double amount = attribute == Attribute.ARMOR_TOUGHNESS
-                ? plugin.getConfig().getDouble("siftite.armor-toughness", 3.0)
-                : plugin.getConfig().getDouble("siftite.spear-damage", 9.0);
-        meta.addAttributeModifier(attribute, new AttributeModifier(
-                new NamespacedKey(plugin, id + "_attribute"), amount,
-                AttributeModifier.Operation.ADD_NUMBER));
+        if (id.endsWith("_helmet") || id.endsWith("_chestplate")
+                || id.endsWith("_leggings") || id.endsWith("_boots")) {
+            meta.addAttributeModifier(Attribute.KNOCKBACK_RESISTANCE, new AttributeModifier(
+                    new NamespacedKey(plugin, id + "_knockback_resistance"),
+                    plugin.getConfig().getDouble("siftite.knockback-resistance", 0.1),
+                    AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.ARMOR));
+        } else if (id.endsWith("_sword") || id.endsWith("_axe") || id.endsWith("_spear")) {
+            double targetDamage = id.endsWith("_spear")
+                    ? plugin.getConfig().getDouble("siftite.spear-damage", 9.0)
+                    : 8.0 + plugin.getConfig().getDouble("siftite.weapon-damage-bonus", 1.0);
+            meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, new AttributeModifier(
+                    new NamespacedKey(plugin, id + "_damage"),
+                    Math.max(0.0, targetDamage - 8.0),
+                    AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.HAND));
+        }
+        if (id.endsWith("_pickaxe") || id.endsWith("_axe") || id.endsWith("_shovel") || id.endsWith("_hoe")) {
+            meta.addAttributeModifier(Attribute.BLOCK_BREAK_SPEED, new AttributeModifier(
+                    new NamespacedKey(plugin, id + "_mining_speed"),
+                    plugin.getConfig().getDouble("siftite.mining-speed-bonus", 0.2),
+                    AttributeModifier.Operation.MULTIPLY_SCALAR_1, EquipmentSlotGroup.HAND));
+        }
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
     }
 }

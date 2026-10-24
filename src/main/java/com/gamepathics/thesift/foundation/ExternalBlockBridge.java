@@ -49,6 +49,59 @@ final class ExternalBlockBridge {
         return false;
     }
 
+    boolean isBlock(String contentId, Block block) {
+        String provider = plugin.getConfig().getString("integrations.blocks.provider", "auto")
+                .toLowerCase(Locale.ROOT);
+        String externalId = plugin.getConfig().getString("integrations.blocks.definitions." + contentId, "")
+                .trim();
+        if (externalId.isEmpty() || provider.equals("vanilla")) return false;
+        for (RegisteredServiceProvider<SiftBlockProvider> registration : plugin.getServer()
+                .getServicesManager().getRegistrations(SiftBlockProvider.class)) {
+            SiftBlockProvider adapter = registration.getProvider();
+            if (adapter == null || (!provider.equals("auto")
+                    && !provider.equalsIgnoreCase(adapter.getProviderId()))) continue;
+            try {
+                if (adapter.isBlock(externalId, block)) return true;
+            } catch (RuntimeException exception) {
+                plugin.getLogger().warning("Custom block provider '" + adapter.getProviderId()
+                        + "' failed to identify " + contentId + ": " + exception.getMessage());
+            }
+        }
+        if (provider.equals("auto") || provider.equals("nexo")) {
+            if (reflectiveBlockCheck("Nexo", "com.nexomc.nexo.api.NexoBlocks", "isCustomBlock", block)) return true;
+        }
+        if (provider.equals("auto") || provider.equals("itemsadder")) {
+            if (itemsAdderBlockCheck(block)) return true;
+        }
+        if (provider.equals("auto") || provider.equals("oraxen")) {
+            if (reflectiveBlockCheck("Oraxen", "io.th0rgal.oraxen.api.OraxenBlocks", "isOraxenBlock", block)) return true;
+        }
+        return false;
+    }
+
+    private boolean reflectiveBlockCheck(String pluginName, String className, String methodName, Block block) {
+        if (!enabled(pluginName)) return false;
+        try {
+            Object result = Class.forName(className).getMethod(methodName, Block.class).invoke(null, block);
+            return Boolean.TRUE.equals(result);
+        } catch (ReflectiveOperationException | LinkageError exception) {
+            plugin.getLogger().fine(pluginName + " block detection unavailable: " + exception.getMessage());
+            return false;
+        }
+    }
+
+    private boolean itemsAdderBlockCheck(Block block) {
+        if (!enabled("ItemsAdder")) return false;
+        try {
+            Object result = Class.forName("dev.lone.itemsadder.api.CustomBlock")
+                    .getMethod("byAlreadyPlaced", Block.class).invoke(null, block);
+            return result != null;
+        } catch (ReflectiveOperationException | LinkageError exception) {
+            plugin.getLogger().fine("ItemsAdder block detection unavailable: " + exception.getMessage());
+            return false;
+        }
+    }
+
     private boolean placeItemsAdder(String id, Location location) {
         if (!enabled("ItemsAdder")) return false;
         try {

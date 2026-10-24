@@ -22,8 +22,6 @@ import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -91,24 +89,16 @@ public final class ResonanceManager implements Listener {
             updateBars();
             return;
         }
+        java.util.Set<UUID> seen = new java.util.HashSet<>();
+        double range = Math.max(1, plugin.getConfig().getDouble("resonance.singer.range", 16.0));
         for (World world : Bukkit.getWorlds()) {
-            for (LivingEntity entity : world.getLivingEntities()) {
-                if (!isSinger(entity)) {
-                    continue;
-                }
-                Location center = entity.getLocation();
-                double range = plugin.getConfig().getDouble("resonance.singer.range", 16.0);
-                world.spawnParticle(Particle.SONIC_BOOM, center.clone().add(0, 0.8, 0), 1);
-                world.playSound(center, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.45f, 1.6f);
-                for (Player player : world.getPlayers()) {
-                    if (player.getLocation().distanceSquared(center) > range * range
-                            || protectedByCharoite(player)) {
-                        continue;
-                    }
-                    player.damage(plugin.getConfig().getDouble("resonance.singer.damage", 4.0), entity);
-                    player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS,
-                            plugin.getConfig().getInt("resonance.singer.slowness-seconds", 3) * 20,
-                            plugin.getConfig().getInt("resonance.singer.slowness-amplifier", 0)));
+            for (Player player : world.getPlayers()) {
+                for (Entity entity : player.getNearbyEntities(range, range, range)) {
+                    if (!(entity instanceof LivingEntity singer) || !isSinger(entity) || !seen.add(entity.getUniqueId())) continue;
+                    ensureBar(singer);
+                    Location center = singer.getLocation();
+                    world.spawnParticle(Particle.SONIC_BOOM, center.clone().add(0, 0.8, 0), 1);
+                    world.playSound(center, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.45f, 1.6f);
                 }
             }
         }
@@ -124,17 +114,26 @@ public final class ResonanceManager implements Listener {
                 return true;
             }
             BossBar bar = entry.getValue();
-            bar.removeAll();
+            java.util.Set<Player> desired = new java.util.HashSet<>();
             for (Player player : entity.getWorld().getPlayers()) {
                 if (player.getLocation().distanceSquared(entity.getLocation()) <= 32 * 32) {
-                    bar.addPlayer(player);
+                    desired.add(player);
                 }
             }
+            for (Player player : new java.util.HashSet<>(bar.getPlayers())) {
+                if (!desired.contains(player)) bar.removePlayer(player);
+            }
+            for (Player player : desired) if (!bar.getPlayers().contains(player)) bar.addPlayer(player);
             var maxHealth = living.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
             double max = maxHealth == null ? living.getHealth() : maxHealth.getValue();
             bar.setProgress(Math.max(0, Math.min(1, living.getHealth() / max)));
             return false;
         });
+    }
+
+    private void ensureBar(LivingEntity singer) {
+        bars.computeIfAbsent(singer.getUniqueId(), ignored ->
+                Bukkit.createBossBar("§5Singer Resonance", BarColor.PURPLE, BarStyle.SEGMENTED_10));
     }
 
     private boolean protectedByCharoite(Player player) {
@@ -173,8 +172,6 @@ public final class ResonanceManager implements Listener {
 
     @EventHandler
     public void onSingerTarget(EntityTargetEvent event) {
-        if (isSinger(event.getEntity()) && !(event.getTarget() instanceof Player)) {
-            event.setCancelled(true);
-        }
+        if (isSinger(event.getEntity())) event.setCancelled(true);
     }
 }
