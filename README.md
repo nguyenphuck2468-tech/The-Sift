@@ -21,10 +21,12 @@ gradle build -PpaperApiVersion=<paper-api-version>
 
 The plugin registers its dimension datapack through Paper's datapack-discovery
 lifecycle. This requires Paper's plugin loader and Paper 26.3 or newer. The
-dimension now selects among Pink Meadows, Bulb Forest, Carapace, Crystal Spires,
-and Shattered Peaks, and has its own sky, fog, and ambient settings. The first
-prototype uses vanilla Overworld noise and vanilla block/entity substitutes;
-27.1 compatibility remains unverified until Mojang publishes that release.
+dimension selects among the original five prototype biomes and ten more biome
+names from the community mod reference: Overgrown Forest/Clearing/Slopes,
+Siftslate biomes, Ichor Snowy Peaks, Sift Wastes, and Sift Deep Dark. It has
+custom sky, fog, and ambient settings. The prototype still uses vanilla
+Overworld noise and vanilla block/entity substitutes; 27.1 compatibility
+remains unverified.
 
 ## Current foundation scope
 
@@ -55,6 +57,17 @@ prototype uses vanilla Overworld noise and vanilla block/entity substitutes;
   Blub, Bulb, Koi, Thornback, The Sifter, Prism Warden, and Lumen Tulip.
 - A cycling Sift Tide that changes movement/mining effects for players and
   nearby creatures.
+- A reference-mod portal melody prototype: right-click note blocks to cycle
+  eight notes, then left-click notes in order `1, 3, 7, 6, 5, 2, 4, 8` to open
+  a Rift. This experimental interaction intercepts normal note-block clicks.
+- Rifts link The Sift and the Overworld in both directions, transport nearby
+  entities, and default to a five-minute active window.
+- Ichor weather adds colored rain particles, regeneration/slowness on contact
+  with Sift water, and up to two snow layers in Ichor Snowy Peaks.
+- Chunk decoration can add Ichor springs and abandoned portal ruins with
+  prototype loot. Dark Sniffer proxies use a sonic-pull effect.
+- Tagged Siftite equipment dropped on death is returned after respawn through
+  a Mini Rift effect; this prototype keeps pending recovery in memory.
 - The bundled Java item/block model assets can be built into
   `build/distributions/TheSift-resource-pack.zip` with
   `gradle siftResourcePack`; players must install or be served the pack to see
@@ -73,6 +86,12 @@ The plugin supplies its own datapack; it does not load or require the Fabric
 mod. The announced Java/Bedrock release has not shipped its official worldgen,
 so current terrain and creatures are gameplay approximations built from
 vanilla blocks and entities.
+
+The extra biome names, portal melody, Ichor weather, structures, and creature
+behaviors are inspired by the MIT-licensed Mielon's The Sift reference project;
+they are not confirmed descriptions of Mojang's final 27.1 implementation.
+Feature comparisons and deferred problems are tracked in
+[IMPLEMENTATION_REPORT.md](./IMPLEMENTATION_REPORT.md).
 
 On Paper 26.3+, use `/sift dimension` to create/load and enter the dimension.
 The console command creates/loads it without a player; players can enter with

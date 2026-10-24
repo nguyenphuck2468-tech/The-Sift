@@ -2,14 +2,18 @@ package com.gamepathics.thesift.foundation;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.util.Vector;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.Biome;
+import org.bukkit.block.Container;
+import org.bukkit.block.data.type.Snow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -49,7 +53,11 @@ public final class SiftEcologyManager implements Listener {
         this.riftManager = riftManager;
         this.decoratedChunkKey = new NamespacedKey(plugin, "sift_ecology_generated");
         this.creatureKey = new NamespacedKey(plugin, "sift_creature");
-        this.tideTask = Bukkit.getScheduler().runTaskTimer(plugin, this::tickTide, 100L, 100L);
+        this.tideTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            tickTide();
+            tickIchorWeather();
+            tickDarkSniffers();
+        }, 100L, 100L);
     }
 
     public void shutdown() {
@@ -84,6 +92,11 @@ public final class SiftEcologyManager implements Listener {
 
         decorateSurface(chunk, key, random);
         growBiomeLandmarks(chunk, key, random);
+        if ((key.contains("overgrown") || key.contains("sift_wastes") || key.contains("siftslate"))
+                && random.nextInt(18) == 0) generateAbandonedPortal(chunk, random);
+        if ((key.contains("overgrown") || key.endsWith("carapace")) && random.nextInt(24) == 0) {
+            generateIchorSpring(chunk, random);
+        }
         spawnSiftWildlife(chunk, key, random);
         if (key.endsWith("pink_meadows") && random.nextInt(22) == 0) {
             summonSinger(chunk, random);
@@ -135,6 +148,15 @@ public final class SiftEcologyManager implements Listener {
                 if (surface == Material.GRASS_BLOCK || surface == Material.DIRT) {
                     ground.setType(random.nextBoolean() ? Material.PACKED_MUD : Material.CALCITE, false);
                 }
+            } else if (biome.contains("overgrown")) {
+                if (surface == Material.GRASS_BLOCK && random.nextBoolean()) ground.setType(Material.MOSS_BLOCK, false);
+                placePlant(world, x, y + 1, z,
+                        List.of(Material.FERN, Material.LARGE_FERN, Material.GLOW_LICHEN,
+                                Material.AZALEA, Material.MOSS_CARPET, Material.PINK_PETALS), random);
+            } else if (biome.contains("siftslate") || biome.contains("wastes") || biome.contains("deep_dark")) {
+                if (surface == Material.GRASS_BLOCK || surface == Material.STONE) {
+                    ground.setType(random.nextBoolean() ? Material.TUFF : Material.DEEPSLATE, false);
+                }
             }
         }
     }
@@ -164,7 +186,8 @@ public final class SiftEcologyManager implements Listener {
         int y = world.getHighestBlockYAt(x, z) + 1;
         if (y <= world.getMinHeight() || y >= world.getMaxHeight() - 12) return;
 
-        if (biome.endsWith("crystal_spires")) {
+        if (biome.endsWith("crystal_spires") || biome.contains("siftslate_peaks")
+                || biome.contains("overgrown_peaks") || biome.contains("ichor_snowy_peaks")) {
             int height = 4 + random.nextInt(9);
             for (int dy = 0; dy < height; dy++) {
                 world.getBlockAt(x, y + dy, z).setType(Material.AMETHYST_BLOCK, false);
@@ -175,7 +198,8 @@ public final class SiftEcologyManager implements Listener {
                 }
             }
             world.getBlockAt(x, y + height, z).setType(Material.AMETHYST_CLUSTER, false);
-        } else if (biome.endsWith("shattered_peaks")) {
+        } else if (biome.endsWith("shattered_peaks") || biome.contains("siftslate_slopes")
+                || biome.contains("overgrown_slopes")) {
             Material[] rocks = {Material.TUFF, Material.CALCITE, Material.ANDESITE, Material.COBBLED_DEEPSLATE};
             int radius = 2 + random.nextInt(3);
             for (int dx = -radius; dx <= radius; dx++) {
@@ -185,7 +209,7 @@ public final class SiftEcologyManager implements Listener {
                     world.getBlockAt(x + dx, y + dy, z + dz).setType(rocks[random.nextInt(rocks.length)], false);
                 }
             }
-        } else if (biome.endsWith("bulb_forest")) {
+        } else if (biome.endsWith("bulb_forest") || biome.contains("overgrown_forest")) {
             Material wood = random.nextBoolean() ? Material.MANGROVE_LOG : Material.DARK_OAK_LOG;
             Material leaves = random.nextBoolean() ? Material.MANGROVE_LEAVES : Material.AZALEA_LEAVES;
             int trunk = 4 + random.nextInt(4);
@@ -196,7 +220,7 @@ public final class SiftEcologyManager implements Listener {
                 }
             }
             world.getBlockAt(x, y + trunk, z).setType(Material.SHROOMLIGHT, false);
-        } else if (biome.endsWith("pink_meadows")) {
+        } else if (biome.endsWith("pink_meadows") || biome.contains("overgrown_clearing")) {
             Material wood = Material.CHERRY_LOG;
             for (int dy = 0; dy < 5; dy++) world.getBlockAt(x, y + dy, z).setType(wood, false);
             for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
@@ -204,7 +228,8 @@ public final class SiftEcologyManager implements Listener {
                     world.getBlockAt(x + dx, y + 4, z + dz).setType(Material.CHERRY_LEAVES, false);
                 }
             }
-        } else if (biome.endsWith("carapace")) {
+        } else if (biome.endsWith("carapace") || biome.contains("sift_wastes")
+                || biome.contains("sift_deep_dark")) {
             Material[] shell = {Material.TUFF_BRICKS, Material.PACKED_MUD, Material.PRISMARINE_BRICKS};
             int radius = 2 + random.nextInt(2);
             for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++) {
@@ -214,6 +239,50 @@ public final class SiftEcologyManager implements Listener {
             }
             world.getBlockAt(x, y + 1, z).setType(Material.COPPER_BULB, false);
         }
+    }
+
+    private void generateAbandonedPortal(Chunk chunk, Random random) {
+        World world = chunk.getWorld();
+        int x = chunk.getX() * 16 + 5 + random.nextInt(6);
+        int z = chunk.getZ() * 16 + 5 + random.nextInt(6);
+        int y = world.getHighestBlockYAt(x, z) + 1;
+        Material[] frame = {Material.CRYING_OBSIDIAN, Material.OBSIDIAN, Material.CRYING_OBSIDIAN};
+        for (int dy = 0; dy < 5; dy++) {
+            for (int dx = 0; dx < 4; dx++) {
+                if (dx != 0 && dx != 3 && dy != 0 && dy != 4) continue;
+                Material block = frame[random.nextInt(frame.length)];
+                if (random.nextInt(7) == 0) block = Material.AIR;
+                world.getBlockAt(x + dx, y + dy, z).setType(block, false);
+            }
+        }
+        world.getBlockAt(x + 5, y, z + 1).setType(Material.CHEST, false);
+        Block chest = world.getBlockAt(x + 5, y, z + 1);
+        if (chest.getState() instanceof Container container) {
+            container.getInventory().addItem(new org.bukkit.inventory.ItemStack(Material.AMETHYST_SHARD,
+                    2 + random.nextInt(5)));
+            if (random.nextBoolean()) container.getInventory().addItem(new org.bukkit.inventory.ItemStack(
+                    Material.MUSIC_DISC_5));
+            if (random.nextInt(100) < 40) container.getInventory().addItem(new org.bukkit.inventory.ItemStack(
+                    Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE));
+            container.update(true, false);
+        }
+    }
+
+    private void generateIchorSpring(Chunk chunk, Random random) {
+        World world = chunk.getWorld();
+        int x = chunk.getX() * 16 + 4 + random.nextInt(8);
+        int z = chunk.getZ() * 16 + 4 + random.nextInt(8);
+        int y = world.getHighestBlockYAt(x, z);
+        if (y <= world.getMinHeight() || y >= world.getMaxHeight() - 2) return;
+        Material[] rim = {Material.CALCITE, Material.MOSS_BLOCK, Material.TUFF};
+        for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
+            if (dx * dx + dz * dz > 5) continue;
+            world.getBlockAt(x + dx, y, z + dz).setType(rim[random.nextInt(rim.length)], false);
+            if (dx * dx + dz * dz <= 2) world.getBlockAt(x + dx, y + 1, z + dz).setType(Material.WATER, false);
+        }
+        world.getBlockAt(x, y + 1, z).setType(Material.WATER, false);
+        world.spawnParticle(Particle.DRIPPING_OBSIDIAN_TEAR, new Location(world, x + .5, y + 1, z + .5),
+                12, 1, .2, 1, .02);
     }
 
     private void spawnSiftWildlife(Chunk chunk, String biome, Random random) {
@@ -231,20 +300,36 @@ public final class SiftEcologyManager implements Listener {
                         {"SILVERFISH", "Prismite"}, {"ALLAY", "Wisp"}};
                 String[] mob = carapace[random.nextInt(carapace.length)];
                 type = EntityType.valueOf(mob[0]); name = mob[1];
-            } else if (biome.endsWith("pink_meadows")) {
+            } else if (biome.endsWith("pink_meadows") || biome.contains("overgrown_clearing")) {
                 String[][] meadow = {{"RABBIT", "Loomer"}, {"BEE", "Glimmerwing"},
                         {"ALLAY", "Wisp"}, {"MUSHROOM_COW", "Sunspore"}};
                 String[] mob = meadow[random.nextInt(meadow.length)];
                 type = EntityType.valueOf(mob[0]); name = mob[1];
-            } else if (biome.endsWith("bulb_forest")) {
+            } else if (biome.endsWith("bulb_forest") || biome.contains("overgrown_forest")) {
                 String[][] forest = {{"BAT", "Glowbell"}, {"ZOMBIE", "Hollow Bulb"},
                         {"VEX", "Violet Wisp"}, {"SILVERFISH", "Prismite"}};
                 String[] mob = forest[random.nextInt(forest.length)];
                 type = EntityType.valueOf(mob[0]); name = mob[1];
-            } else if (biome.endsWith("crystal_spires")) {
+            } else if (biome.endsWith("crystal_spires") || biome.contains("siftslate_peaks")) {
                 String[][] spires = {{"SILVERFISH", "Prismite"}, {"ENDERMITE", "Shardling"},
                         {"ALLAY", "Wisp"}};
                 String[] mob = spires[random.nextInt(spires.length)];
+                type = EntityType.valueOf(mob[0]); name = mob[1];
+            } else if (biome.contains("deep_dark")) {
+                String[][] deep = {{"SNIFFER", "Dark Sniffer"}, {"WARDEN", "Prism Warden"},
+                        {"ENDERMITE", "Shardling"}};
+                String[] mob = deep[random.nextInt(deep.length)];
+                type = EntityType.valueOf(mob[0]); name = mob[1];
+            } else if (biome.contains("ichor_snowy") || biome.contains("siftslate_slopes")
+                    || biome.contains("overgrown_slopes") || biome.contains("overgrown_peaks")) {
+                String[][] cold = {{"STRAY", "Frost Stalker"}, {"GOAT", "Thornback"},
+                        {"ENDERMAN", "Drifter"}};
+                String[] mob = cold[random.nextInt(cold.length)];
+                type = EntityType.valueOf(mob[0]); name = mob[1];
+            } else if (biome.contains("sift_wastes")) {
+                String[][] wastes = {{"HUSK", "Sift Wastes Stalker"}, {"ENDERMAN", "Drifter"},
+                        {"SILVERFISH", "Prismite"}};
+                String[] mob = wastes[random.nextInt(wastes.length)];
                 type = EntityType.valueOf(mob[0]); name = mob[1];
             } else {
                 String[][] peaks = {{"STRAY", "Frost Stalker"}, {"GOAT", "Thornback"},
@@ -344,7 +429,8 @@ public final class SiftEcologyManager implements Listener {
         EntityType type;
         String display;
         switch (id) {
-            case "blub" -> { type = EntityType.AXOLOTL; display = "Blub"; }
+            case "blub" -> { type = EntityType.RABBIT; display = "Blub"; }
+            case "dark_sniffer" -> { type = EntityType.SNIFFER; display = "Dark Sniffer"; }
             case "bulb" -> { type = EntityType.SLIME; display = "Bulb"; }
             case "loomer" -> { type = EntityType.RABBIT; display = "Loomer"; }
             case "wisp" -> { type = EntityType.ALLAY; display = "Wisp"; }
@@ -355,6 +441,7 @@ public final class SiftEcologyManager implements Listener {
             case "thornback" -> { type = EntityType.TURTLE; display = "Thornback"; }
             case "glimmerwing" -> { type = EntityType.BEE; display = "Glimmerwing"; }
             case "the_sifter" -> { type = EntityType.RAVAGER; display = "The Sifter"; }
+            case "sifter" -> { type = EntityType.RAVAGER; display = "Sifter"; }
             case "frost_stalker" -> { type = EntityType.STRAY; display = "Frost Stalker"; }
             case "sunspore" -> { type = EntityType.MOOSHROOM; display = "Sunspore"; }
             case "drifter" -> { type = EntityType.ENDERMAN; display = "Drifter"; }
@@ -414,6 +501,66 @@ public final class SiftEcologyManager implements Listener {
                     living.addPotionEffect(new PotionEffect(flow ? PotionEffectType.JUMP_BOOST
                             : PotionEffectType.SLOWNESS, 110, 0, true, false, false));
                 }
+            }
+        }
+    }
+
+    /** Ichor rain/snow visual and contact-effect approximation for the reference mod weather. */
+    private void tickIchorWeather() {
+        World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
+        if (sift == null || sift.getPlayers().isEmpty()) return;
+        for (Player player : sift.getPlayers()) {
+            if (player.getLocation().getBlock().isLiquid()) {
+                player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 120, 0, true, false, true));
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 120, 0, true, false, true));
+            }
+        }
+        int period = Math.max(180, plugin.getConfig().getInt("sift-world.ichor-weather-period-seconds", 900));
+        long phase = (sift.getFullTime() / 20L) % period;
+        boolean ichorStorm = phase > period * 2L / 3L && phase < period * 5L / 6L;
+        if (sift.hasStorm() != ichorStorm) sift.setStorm(ichorStorm);
+        sift.setThundering(false);
+        if (!ichorStorm) return;
+
+        org.bukkit.Particle.DustOptions ichor = new org.bukkit.Particle.DustOptions(Color.fromRGB(84, 226, 199), 1.2f);
+        for (Player player : sift.getPlayers()) {
+            Location at = player.getLocation();
+            sift.spawnParticle(Particle.DUST, at.clone().add(0, 2, 0), 18,
+                    2.5, 1.5, 2.5, ichor);
+            if (player.getLocation().getBlock().getLightFromSky() > 0) {
+                player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 120, 0, true, false, true));
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 120, 0, true, false, true));
+            }
+            if (player.getLocation().getBlock().getBiome().getKey().toString().endsWith("ichor_snowy_peaks")) {
+                int x = at.getBlockX(), z = at.getBlockZ();
+                int y = sift.getHighestBlockYAt(x, z);
+                Block top = sift.getBlockAt(x, y + 1, z);
+                if (top.getType().isAir() || top.getType() == Material.SNOW) {
+                    top.setType(Material.SNOW, false);
+                    if (top.getBlockData() instanceof Snow snow && snow.getLayers() < 2) {
+                        snow.setLayers(Math.min(2, snow.getLayers() + 1));
+                        top.setBlockData(snow, false);
+                    }
+                }
+            }
+        }
+    }
+
+    private void tickDarkSniffers() {
+        World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
+        if (sift == null) return;
+        for (Entity entity : sift.getEntities()) {
+            if (!(entity instanceof LivingEntity living) || entity.getType() != EntityType.SNIFFER) continue;
+            String id = entity.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING);
+            if (!"dark_sniffer".equals(id)) continue;
+            for (Player target : living.getNearbyEntities(18, 10, 18).stream()
+                    .filter(Player.class::isInstance).map(Player.class::cast).toList()) {
+                Vector pull = living.getLocation().toVector().subtract(target.getLocation().toVector());
+                if (pull.lengthSquared() < 0.01) continue;
+                pull.normalize().multiply(0.28).setY(0.18);
+                target.setVelocity(target.getVelocity().multiply(0.45).add(pull));
+                target.playSound(target.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 0.25f, 1.6f);
+                sift.spawnParticle(Particle.SONIC_BOOM, target.getLocation().add(0, 1, 0), 1);
             }
         }
     }

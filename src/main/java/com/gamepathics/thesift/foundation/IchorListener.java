@@ -9,6 +9,8 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
@@ -77,6 +79,21 @@ public final class IchorListener implements Listener {
         state.setLevel(block.getLocation(), plugin.getConfig().getInt("ichor.cauldron.max-level", 3));
         consumeOne(event.getPlayer().getInventory());
         event.getPlayer().sendMessage("§dThe cauldron resonates with Ichor.");
+    }
+
+    @EventHandler
+    public void onDrinkIchor(PlayerInteractEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND || !content.isIchorEnabled()
+                || (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK)
+                || !content.is(event.getItem(), IchorContent.ICHOR_BOTTLE_ID)) return;
+        event.setCancelled(true);
+        Player player = event.getPlayer();
+        consumeOne(player.getInventory());
+        player.getInventory().addItem(new org.bukkit.inventory.ItemStack(Material.GLASS_BOTTLE));
+        player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 60, 0, true, true, true));
+        player.playSound(player.getLocation(), "minecraft:item.honey_bottle.drink", 0.8f, 1.25f);
+        player.getWorld().spawnParticle(org.bukkit.Particle.DRIPPING_DRIPSTONE_WATER,
+                player.getLocation().add(0, 1, 0), 8, 0.25, 0.35, 0.25, 0.01);
     }
 
     @EventHandler

@@ -8,6 +8,8 @@ import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.type.NoteBlock;
+import org.bukkit.Note;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -17,6 +19,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -28,6 +31,10 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class RiftManager implements Listener {
@@ -45,6 +52,9 @@ public final class RiftManager implements Listener {
     private final NamespacedKey riftKey;
     private final NamespacedKey blockKey;
     private final Map<UUID, RiftInstance> rifts = new HashMap<>();
+    private final Set<UUID> travelling = new HashSet<>();
+    private final Map<UUID, List<Integer>> portalSongProgress = new HashMap<>();
+    private static final List<Integer> PORTAL_SONG = List.of(1, 3, 7, 6, 5, 2, 4, 8);
 
     public RiftManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -103,10 +113,51 @@ public final class RiftManager implements Listener {
         rifts.entrySet().removeIf(entry -> {
             RiftInstance rift = entry.getValue();
             rift.tick();
+            rift.transportNearbyEntities();
             if (rift.state == RiftState.DORMANT) {
                 return true; // Remove dormant rifts
             }
             return false;
+        });
+    }
+
+    /** Active rifts are two-way passages between the Overworld and The Sift. */
+    @EventHandler
+    public void onPlayerCrossRift(PlayerMoveEvent event) {
+        if (event.getTo() == null || event.getFrom().getBlockX() == event.getTo().getBlockX()
+                && event.getFrom().getBlockY() == event.getTo().getBlockY()
+                && event.getFrom().getBlockZ() == event.getTo().getBlockZ()) return;
+        Player player = event.getPlayer();
+        if (travelling.contains(player.getUniqueId())) return;
+        for (RiftInstance rift : rifts.values()) {
+            if (rift.state != RiftState.ACTIVE || rift.exitCenter == null) continue;
+            if (nearPortal(event.getTo(), rift.center)) {
+                travel(player, rift.exitCenter);
+                return;
+            }
+            if (nearPortal(event.getTo(), rift.exitCenter)) {
+                travel(player, rift.center);
+                return;
+            }
+        }
+    }
+
+    private boolean nearPortal(Location player, Location portal) {
+        return player.getWorld().equals(portal.getWorld())
+                && player.distanceSquared(portal) <= 2.25;
+    }
+
+    private void travel(Entity entity, Location target) {
+        travelling.add(entity.getUniqueId());
+        // Place travelers outside the destination trigger radius so the paired
+        // rifts do not immediately bounce them back and forth.
+        Location destination = target.clone().add(3.5, 1, 0.5);
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            if (!entity.isValid() || entity.isDead()) { travelling.remove(entity.getUniqueId()); return; }
+            entity.teleport(destination);
+            if (entity instanceof Player player) player.sendMessage("§5The Rift carries you between worlds.");
+            plugin.getServer().getScheduler().runTaskLater(plugin,
+                    () -> travelling.remove(entity.getUniqueId()), 20L);
         });
     }
 
@@ -124,6 +175,44 @@ public final class RiftManager implements Listener {
         openRift(block.getLocation().add(0, 1, 0), event.getPlayer());
     }
 
+    /** Note-block portal prototype based on the reference mod's eight-note activation song. */
+    @EventHandler
+    public void onPortalSong(PlayerInteractEvent event) {
+        if (event.getClickedBlock() == null || event.getClickedBlock().getType() != Material.NOTE_BLOCK) return;
+        Block block = event.getClickedBlock();
+        if (!(block.getBlockData() instanceof NoteBlock noteBlock)) return;
+        if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            event.setCancelled(true);
+            int next = (noteBlock.getNote().getId() + 1) % 8;
+            noteBlock.setNote(new Note(next));
+            block.setBlockData(noteBlock, false);
+            event.getPlayer().sendActionBar("§bSift note: " + (next + 1));
+            return;
+        }
+        if (event.getAction() != Action.LEFT_CLICK_BLOCK) return;
+        event.setCancelled(true);
+        int played = noteBlock.getNote().getId() + 1;
+        List<Integer> progress = portalSongProgress.computeIfAbsent(event.getPlayer().getUniqueId(),
+                ignored -> new ArrayList<>());
+        int expectedIndex = progress.size();
+        if (played == PORTAL_SONG.get(expectedIndex)) {
+            progress.add(played);
+            event.getPlayer().playSound(block.getLocation(), "minecraft:block.note_block.harp", 0.8f,
+                    (float) Math.pow(2.0, (played - 1) / 12.0));
+            event.getPlayer().sendActionBar("§bSift portal song: " + progress.size() + "/8");
+            if (progress.size() == PORTAL_SONG.size()) {
+                portalSongProgress.remove(event.getPlayer().getUniqueId());
+                event.getPlayer().sendMessage("§5The Sonorous song awakens a Rift!");
+                openRift(block.getLocation().add(0.5, 1, 0.5), event.getPlayer());
+            }
+        } else {
+            progress.clear();
+            if (played == PORTAL_SONG.getFirst()) progress.add(played);
+            event.getPlayer().playSound(block.getLocation(), "minecraft:block.note_block.bass", 0.8f, 0.6f);
+            event.getPlayer().sendActionBar("§cWrong note; the Sift song resets.");
+        }
+    }
+
     @EventHandler
     public void onRiftBlockBreak(BlockBreakEvent event) {
         Block block = event.getBlock();
@@ -136,6 +225,7 @@ public final class RiftManager implements Listener {
         private final UUID id;
         private final Location center;
         private final Player opener;
+        private Location exitCenter;
         private RiftState state = RiftState.DORMANT;
         private int stateTimer = 0;
         private int phase = 0;
@@ -181,6 +271,8 @@ public final class RiftManager implements Listener {
             center.getWorld().spawnParticle(Particle.DRAGON_BREATH, center.clone().add(0, 1, 0), 100, 3, 3, 3, 0.2);
             notifyOpener("§5§lTHE RIFT HAS OPENED! §r§5Something stirs within...");
 
+            createExit();
+
             // Spawn initial mobs
             spawnRiftMobs(3);
 
@@ -190,7 +282,8 @@ public final class RiftManager implements Listener {
                 public void run() {
                     if (state != RiftState.ACTIVE) return;
                     stateTimer++;
-                    if (stateTimer >= 600) { // 30 seconds active
+                    int activeSeconds = Math.max(30, plugin.getConfig().getInt("rift.active-duration-seconds", 300));
+                    if (stateTimer >= activeSeconds) {
                         beginClosing();
                     } else if (stateTimer % 60 == 0) {
                         // Periodic mob spawns
@@ -200,6 +293,22 @@ public final class RiftManager implements Listener {
                     }
                 }
             }.runTaskTimer(plugin, 20L, 20L);
+        }
+
+        private void createExit() {
+            World sourceWorld = center.getWorld();
+            World targetWorld = sourceWorld.getKey().toString().equals("thesift:the_sift")
+                    ? Bukkit.getWorlds().stream().filter(w -> w.getEnvironment() == World.Environment.NORMAL)
+                        .findFirst().orElse(null)
+                    : Bukkit.getWorld(NamespacedKey.fromString("thesift:the_sift"));
+            if (targetWorld == null) return;
+            int x = center.getBlockX();
+            int z = center.getBlockZ();
+            int y = Math.max(targetWorld.getMinHeight() + 2,
+                    Math.min(targetWorld.getHighestBlockYAt(x, z) + 1, targetWorld.getMaxHeight() - 3));
+            exitCenter = new Location(targetWorld, x, y, z);
+            targetWorld.spawnParticle(Particle.REVERSE_PORTAL, exitCenter, 45, 1.2, 1.5, 1.2, 0.05);
+            targetWorld.playSound(exitCenter, Sound.BLOCK_PORTAL_TRIGGER, 1.0f, 0.8f);
         }
 
         private void pulseResonance() {
@@ -262,6 +371,10 @@ public final class RiftManager implements Listener {
 
             // Drop rewards
             dropRewards();
+            if (exitCenter != null) {
+                exitCenter.getWorld().spawnParticle(Particle.SMOKE, exitCenter, 30, 1, 1, 1, 0.03);
+                exitCenter.getWorld().playSound(exitCenter, Sound.BLOCK_PORTAL_AMBIENT, 0.5f, 0.5f);
+            }
         }
 
         private void dropRewards() {
@@ -292,6 +405,19 @@ public final class RiftManager implements Listener {
             // Passive ambient effects during active phase
             if (state == RiftState.ACTIVE && ThreadLocalRandom.current().nextDouble() < 0.1) {
                 center.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, center.clone().add(0, 1, 0), 5, 1, 1, 1, 0.02);
+            }
+        }
+
+        private void transportNearbyEntities() {
+            if (state != RiftState.ACTIVE || exitCenter == null) return;
+            transportFrom(center, exitCenter);
+            transportFrom(exitCenter, center);
+        }
+
+        private void transportFrom(Location from, Location to) {
+            for (Entity entity : from.getWorld().getNearbyEntities(from, 1.4, 1.8, 1.4)) {
+                if (entity.isDead() || travelling.contains(entity.getUniqueId())) continue;
+                travel(entity, to);
             }
         }
 

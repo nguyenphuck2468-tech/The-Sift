@@ -47,7 +47,7 @@ echo-golem:
 rift:
   enabled: true
   opening-duration-seconds: 5
-  active-duration-seconds: 30
+  active-duration-seconds: 300
   closing-duration-seconds: 5
   mob-spawn-interval-seconds: 60
   initial-mobs: 3
@@ -90,9 +90,11 @@ siftite:
   knockback-resistance: 0.1
   spear-damage: 9.0
   spear-reach: 4.5
+  mini-rift-recovery: true
 
 compatibility:
   minecraft-target: "27.1 (planned)"
 
 sift-world:
   tide-period-seconds: 120
+  ichor-weather-period-seconds: 900
