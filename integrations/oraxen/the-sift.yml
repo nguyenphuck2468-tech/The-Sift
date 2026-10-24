@@ -101,3 +101,263 @@ shard_axe:
   itemname: "<light_purple>Shard Axe"
   pack:
     model: thesift/item/shard_axe
+bulb:
+  material: SLIME_BALL
+  itemname: "<light_purple>Bulb"
+  pack:
+    model: thesift:item/bulb
+chiseled_siftstone:
+  material: CHISELED_DEEPSLATE
+  itemname: "<light_purple>Chiseled Siftstone"
+  pack:
+    model: thesift:item/chiseled_siftstone
+drifter:
+  material: ENDERMAN_SPAWN_EGG
+  itemname: "<light_purple>Drifter"
+  pack:
+    model: thesift:item/drifter
+frost_stalker:
+  material: STRAY_SPAWN_EGG
+  itemname: "<light_purple>Frost Stalker"
+  pack:
+    model: thesift:item/frost_stalker
+glimmerwing:
+  material: BEE_SPAWN_EGG
+  itemname: "<light_purple>Glimmerwing"
+  pack:
+    model: thesift:item/glimmerwing
+glowbell:
+  material: BAT_SPAWN_EGG
+  itemname: "<light_purple>Glowbell"
+  pack:
+    model: thesift:item/glowbell
+heart_of_the_sift:
+  material: ECHO_SHARD
+  itemname: "<light_purple>Heart Of The Sift"
+  pack:
+    model: thesift:item/heart_of_the_sift
+hollow_bulb:
+  material: ZOMBIE_SPAWN_EGG
+  itemname: "<light_purple>Hollow Bulb"
+  pack:
+    model: thesift:item/hollow_bulb
+koi:
+  material: TROPICAL_FISH_SPAWN_EGG
+  itemname: "<light_purple>Koi"
+  pack:
+    model: thesift:item/koi
+loomer:
+  material: RABBIT_SPAWN_EGG
+  itemname: "<light_purple>Loomer"
+  pack:
+    model: thesift:item/loomer
+lumen_tulip:
+  material: TORCHFLOWER_SEEDS
+  itemname: "<light_purple>Lumen Tulip"
+  pack:
+    model: thesift:item/lumen_tulip
+prism_warden:
+  material: WARDEN_SPAWN_EGG
+  itemname: "<light_purple>Prism Warden"
+  pack:
+    model: thesift:item/prism_warden
+prismite:
+  material: SILVERFISH_SPAWN_EGG
+  itemname: "<light_purple>Prismite"
+  pack:
+    model: thesift:item/prismite
+rift_gate:
+  material: CRYING_OBSIDIAN
+  itemname: "<light_purple>Rift Gate"
+  pack:
+    model: thesift:item/rift_gate
+shard_ore:
+  material: AMETHYST_BLOCK
+  itemname: "<light_purple>Shard Ore"
+  pack:
+    model: thesift:item/shard_ore
+shardling:
+  material: ENDERMITE_SPAWN_EGG
+  itemname: "<light_purple>Shardling"
+  pack:
+    model: thesift:item/shardling
+sift_altar:
+  material: CHISELED_DEEPSLATE
+  itemname: "<light_purple>Sift Altar"
+  pack:
+    model: thesift:item/sift_altar
+sift_grass:
+  material: MOSS_BLOCK
+  itemname: "<light_purple>Sift Grass"
+  pack:
+    model: thesift:item/sift_grass
+sift_leaves:
+  material: CHERRY_LEAVES
+  itemname: "<light_purple>Sift Leaves"
+  pack:
+    model: thesift:item/sift_leaves
+sift_log:
+  material: CHERRY_LOG
+  itemname: "<light_purple>Sift Log"
+  pack:
+    model: thesift:item/sift_log
+sift_planks:
+  material: CHERRY_PLANKS
+  itemname: "<light_purple>Sift Planks"
+  pack:
+    model: thesift:item/sift_planks
+sift_soil:
+  material: ROOTED_DIRT
+  itemname: "<light_purple>Sift Soil"
+  pack:
+    model: thesift:item/sift_soil
+siftstone:
+  material: TUFF
+  itemname: "<light_purple>Siftstone"
+  pack:
+    model: thesift:item/siftstone
+siftstone_bricks:
+  material: TUFF_BRICKS
+  itemname: "<light_purple>Siftstone Bricks"
+  pack:
+    model: thesift:item/siftstone_bricks
+sunspore:
+  material: MOOSHROOM_SPAWN_EGG
+  itemname: "<light_purple>Sunspore"
+  pack:
+    model: thesift:item/sunspore
+the_sifter:
+  material: RAVAGER_SPAWN_EGG
+  itemname: "<light_purple>The Sifter"
+  pack:
+    model: thesift:item/the_sifter
+thornback:
+  material: TURTLE_SPAWN_EGG
+  itemname: "<light_purple>Thornback"
+  pack:
+    model: thesift:item/thornback
+violet_wisp:
+  material: VEX_SPAWN_EGG
+  itemname: "<light_purple>Violet Wisp"
+  pack:
+    model: thesift:item/violet_wisp
+wisp:
+  material: ALLAY_SPAWN_EGG
+  itemname: "<light_purple>Wisp"
+  pack:
+    model: thesift:item/wisp
+charoite:
+  material: LAPIS_LAZULI
+  itemname: "<light_purple>Charoite"
+  pack:
+    model: thesift:item/charoite
+siftite_ingot:
+  material: NETHERITE_INGOT
+  itemname: "<light_purple>Siftite Ingot"
+  pack:
+    model: thesift:item/siftite_ingot
+siftite_nugget:
+  material: IRON_NUGGET
+  itemname: "<light_purple>Siftite Nugget"
+  pack:
+    model: thesift:item/siftite_nugget
+siftite_sword:
+  material: NETHERITE_SWORD
+  itemname: "<light_purple>Siftite Sword"
+  pack:
+    model: thesift:item/siftite_sword
+siftite_axe:
+  material: NETHERITE_AXE
+  itemname: "<light_purple>Siftite Axe"
+  pack:
+    model: thesift:item/siftite_axe
+siftite_pickaxe:
+  material: NETHERITE_PICKAXE
+  itemname: "<light_purple>Siftite Pickaxe"
+  pack:
+    model: thesift:item/siftite_pickaxe
+siftite_shovel:
+  material: NETHERITE_SHOVEL
+  itemname: "<light_purple>Siftite Shovel"
+  pack:
+    model: thesift:item/siftite_shovel
+siftite_hoe:
+  material: NETHERITE_HOE
+  itemname: "<light_purple>Siftite Hoe"
+  pack:
+    model: thesift:item/siftite_hoe
+siftite_helmet:
+  material: NETHERITE_HELMET
+  itemname: "<light_purple>Siftite Helmet"
+  pack:
+    model: thesift:item/siftite_helmet
+siftite_chestplate:
+  material: NETHERITE_CHESTPLATE
+  itemname: "<light_purple>Siftite Chestplate"
+  pack:
+    model: thesift:item/siftite_chestplate
+siftite_leggings:
+  material: NETHERITE_LEGGINGS
+  itemname: "<light_purple>Siftite Leggings"
+  pack:
+    model: thesift:item/siftite_leggings
+siftite_boots:
+  material: NETHERITE_BOOTS
+  itemname: "<light_purple>Siftite Boots"
+  pack:
+    model: thesift:item/siftite_boots
+ichor_bottle:
+  material: GLASS_BOTTLE
+  itemname: "<light_purple>Ichor Bottle"
+  pack:
+    model: thesift:item/ichor_bottle
+ichor_glass:
+  material: GLASS
+  itemname: "<light_purple>Ichor Glass"
+  pack:
+    model: thesift:item/ichor_glass
+ichor_glass_pane:
+  material: GLASS_PANE
+  itemname: "<light_purple>Ichor Glass Pane"
+  pack:
+    model: thesift:item/ichor_glass_pane
+ichor_snow:
+  material: SNOW
+  itemname: "<light_purple>Ichor Snow"
+  pack:
+    model: thesift:item/ichor_snow
+ichor_snow_block:
+  material: SNOW_BLOCK
+  itemname: "<light_purple>Ichor Snow Block"
+  pack:
+    model: thesift:item/ichor_snow_block
+charoite_ore:
+  material: AMETHYST_BLOCK
+  itemname: "<light_purple>Charoite Ore"
+  pack:
+    model: thesift:item/charoite_ore
+siftite_upgrade_smithing_template:
+  material: NETHERITE_UPGRADE_SMITHING_TEMPLATE
+  itemname: "<light_purple>Siftite Upgrade Smithing Template"
+  pack:
+    model: thesift:item/siftite_upgrade_smithing_template
+siftite_spear:
+  material: NETHERITE_SWORD
+  itemname: "<light_purple>Siftite Spear"
+  pack:
+    model: thesift:item/siftite_spear
+healthy_sculk:
+  material: SCULK
+  itemname: "<light_purple>Healthy Sculk"
+  pack:
+    model: thesift:item/healthy_sculk
+overgrown_willow:
+  material: CHERRY_LOG
+  itemname: "<light_purple>Overgrown Willow"
+  pack:
+    model: thesift:item/overgrown_willow
+siftslate:
+  material: DEEPSLATE
+  itemname: "<light_purple>Siftslate"
+  pack:
+    model: thesift:item/siftslate

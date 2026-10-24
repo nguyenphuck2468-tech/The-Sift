@@ -372,7 +372,8 @@ public final class SiftEcologyManager implements Listener {
             }
         }
         if (world.getBlockAt(x, surface - 4, z).getType().isAir()) {
-            Entity sniffer = world.spawnEntity(new Location(world, x + .5, surface - 4, z + .5), EntityType.SNIFFER);
+            Entity sniffer = mobFactory.spawn("dark_sniffer",
+                    new Location(world, x + .5, surface - 4, z + .5), EntityType.SNIFFER);
             sniffer.setCustomName("§5Dark Sniffer");
             sniffer.setCustomNameVisible(false);
             sniffer.setPersistent(true);

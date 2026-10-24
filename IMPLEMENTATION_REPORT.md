@@ -14,7 +14,7 @@ Target: Minecraft 27.1 is planned, not released or verified.
 - Added provider selection (`auto`, `nexo`, `itemsadder`, `oraxen`, `vanilla`,
   or a registered service ID), optional
   load ordering, and a delayed recipe refresh for Nexo's asynchronous registry.
-- Added starter Nexo and ItemsAdder item definitions and import instructions.
+- Added Nexo, ItemsAdder, and Oraxen item definitions and import instructions.
 - Added a reflection-based MythicMobs spawn bridge. Configured IDs are used for
   natural Sift wildlife and summon commands; missing IDs retain the Bukkit
   entity fallback. Added starter definitions for the named creatures.
@@ -25,10 +25,23 @@ Target: Minecraft 27.1 is planned, not released or verified.
 - Added `SiftMobProvider` so other mob plugins can provide entities without a
   direct dependency. The current entity JSON assets are not ModelEngine or
   Blockbench model files and are not claimed to render as animated mobs.
-- Deferred: provider item configs cover the bundled custom item models and key
-  progression/Ichor items; provider-specific custom block mechanics are not
-  wired into the current Bukkit block-placement handlers. Provider runtime
-  behavior still needs validation on a server with these plugins installed.
+- Routed the Dark Sniffer cave spawn through the same mob integration factory
+  as natural spawns, commands, Singer, Echo Golem, and Rift Walker.
+- Expanded all three item-provider starter configs to cover the plugin's Sift
+  item IDs, and added wrapper models so assets with no unique art retain their
+  configured vanilla appearance.
+- Added direct ItemsAdder custom-entity spawning before MythicMobs, with
+  per-creature ID overrides and Bukkit-entity fallback behavior.
+- Added reload hooks for Nexo, ItemsAdder, and Oraxen item registries, while
+  retaining a delayed startup refresh for providers without a load event.
+- Remaining integration gap: provider-specific Nexo/ItemsAdder/Oraxen custom
+  block placement is not wired into the Bukkit world-generation routines.
+  Provider runtime behavior still needs validation on servers with each
+  external plugin installed.
+- `jar` and `siftResourcePack` both pass after this integration update. The
+  provider YAML files parse, and all Nexo/Oraxen/ItemsAdder item model paths
+  resolve to bundled wrapper model files. A live server with these optional
+  plugins installed was not available for runtime verification.
 
 ## Added in this pass
 

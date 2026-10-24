@@ -5,6 +5,9 @@ import io.papermc.paper.command.brigadier.CommandSourceStack;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -75,13 +78,38 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             getServer().getPluginManager().registerEvents(siftEcologyManager, this);
             siftEcologyManager.populateLoadedSpawnChunks();
         }
-        // Nexo finishes loading its item registry asynchronously; refresh outputs after startup.
+        registerContentPluginReloadHooks();
+        // Keep a delayed initial refresh as a fallback for providers without a load event.
         getServer().getScheduler().runTaskLater(this, () -> {
-            if (ichorContent != null) ichorContent.registerRecipes();
-            if (siftiteContent != null) siftiteContent.registerRecipes();
+            refreshContentRecipes();
         }, 200L);
         getLogger().info("The Sift foundation enabled for Minecraft "
                 + getConfig().getString("compatibility.minecraft-target", "unknown") + ".");
+    }
+
+    private void registerContentPluginReloadHooks() {
+        registerContentReloadHook("Nexo", "com.nexomc.nexo.api.events.NexoItemsLoadedEvent");
+        registerContentReloadHook("ItemsAdder", "dev.lone.itemsadder.api.Events.ItemsAdderLoadDataEvent");
+        registerContentReloadHook("Oraxen", "io.th0rgal.oraxen.api.events.OraxenItemsLoadedEvent");
+    }
+
+    private void registerContentReloadHook(String pluginName, String eventClassName) {
+        if (!getServer().getPluginManager().isPluginEnabled(pluginName)) return;
+        try {
+            Class<? extends Event> eventType = Class.forName(eventClassName).asSubclass(Event.class);
+            Listener listener = new Listener() {};
+            getServer().getPluginManager().registerEvent(eventType, listener, EventPriority.MONITOR,
+                    (ignored, event) -> getServer().getScheduler().runTask(this, this::refreshContentRecipes),
+                    this, true);
+        } catch (ClassNotFoundException | LinkageError exception) {
+            getLogger().fine("Could not register " + pluginName + " content reload hook: "
+                    + exception.getMessage());
+        }
+    }
+
+    private void refreshContentRecipes() {
+        if (ichorContent != null) ichorContent.registerRecipes();
+        if (siftiteContent != null) siftiteContent.registerRecipes();
     }
 
     @Override

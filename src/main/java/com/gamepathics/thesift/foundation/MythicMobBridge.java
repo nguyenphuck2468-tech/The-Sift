@@ -38,6 +38,10 @@ final class MythicMobBridge {
                 }
             }
         }
+        if (configured.equals("auto") || configured.equals("itemsadder")) {
+            LivingEntity itemsAdder = spawnItemsAdder(id, location);
+            if (itemsAdder != null) return itemsAdder;
+        }
         if (configured.equals("auto") || configured.equals("mythicmobs")) {
             LivingEntity mythic = spawnMythic(id, location);
             if (mythic != null) return mythic;
@@ -46,6 +50,24 @@ final class MythicMobBridge {
             return spawnEliteBoss(id, location);
         }
         return null;
+    }
+
+    private LivingEntity spawnItemsAdder(String id, Location location) {
+        if (!plugin.getServer().getPluginManager().isPluginEnabled("ItemsAdder")) return null;
+        String entityId = plugin.getConfig().getString(
+                "integrations.mobs.itemsadder.entities." + id, "thesift:" + id).trim();
+        try {
+            Class<?> customEntity = Class.forName("dev.lone.itemsadder.api.CustomEntity");
+            Object wrapper = customEntity.getMethod("spawn", String.class, Location.class)
+                    .invoke(null, entityId, location);
+            if (wrapper == null) return null;
+            Object entity = customEntity.getMethod("getEntity").invoke(wrapper);
+            return entity instanceof LivingEntity living ? living : null;
+        } catch (ReflectiveOperationException | LinkageError exception) {
+            plugin.getLogger().fine("ItemsAdder custom entity unavailable for " + entityId + ": "
+                    + exception.getMessage());
+            return null;
+        }
     }
 
     private LivingEntity spawnMythic(String id, Location location) {

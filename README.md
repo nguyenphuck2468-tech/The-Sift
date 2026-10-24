@@ -105,8 +105,9 @@ then run `/nexo reload`. For ItemsAdder, copy
 `integrations/itemsadder/sift-items.yml` into
 `plugins/ItemsAdder/contents/thesift/`, copy the resource pack's
 `assets/thesift/models` and `assets/thesift/textures` folders into that
-namespace, then run `/iazip` and `/iareload`. Provider items without a matching
-custom model still use their configured vanilla material appearance.
+namespace, then run `/iazip` and `/iareload`. Starter definitions cover the
+configured Sift item IDs; wrapper models use bundled custom models where
+available and otherwise retain the item's vanilla material appearance.
 
 For Oraxen, copy `integrations/oraxen/the-sift.yml` into
 `plugins/Oraxen/items/`, copy the resource pack's `assets/thesift/models` into
@@ -143,6 +144,22 @@ run `/mm reload`. The bridge spawns a configured Mythic mob by its lowercase
 Sift ID; missing definitions automatically fall back to the Bukkit entity
 prototype.
 
+**ItemsAdder custom entities** are also supported. When ItemsAdder is enabled,
+The Sift checks for a custom entity ID `thesift:<sift-id>` before MythicMobs.
+Override individual mappings in `integrations.mobs.itemsadder.entities` if
+your ItemsAdder entity namespace or IDs differ. The bridge returns its backing
+Bukkit entity so The Sift can still apply its encounter tags and behavior.
+For example, an ItemsAdder entity named `adventure:rift_beast` can replace
+The Sift's Sifter by setting:
+
+```yaml
+integrations:
+  mobs:
+    itemsadder:
+      entities:
+        the_sifter: adventure:rift_beast
+```
+
 **EliteMobs** is also supported for bosses. Put a custom boss file in
 `plugins/EliteMobs/custombosses/`, then map its filename in The Sift config.
 For example:
@@ -156,8 +173,8 @@ integrations:
         prism_warden: sift_prism_warden.yml
 ```
 
-With `auto`, registered `SiftMobProvider`s get first chance, then MythicMobs;
-EliteMobs is tried for IDs explicitly mapped in `definitions`.
+With `auto`, registered `SiftMobProvider`s get first chance, then ItemsAdder,
+MythicMobs, and EliteMobs for IDs explicitly mapped in `definitions`.
 
 **ModelEngine** can attach models to spawned Sift entities. Install/import your
 ModelEngine model pack, then map IDs such as
@@ -167,13 +184,18 @@ ModelEngine only supplies rendering; MythicMobs, EliteMobs, or a registered
 entity JSON files are not ModelEngine model assets, so they need conversion or
 replacement before ModelEngine can display them.
 
-Nexo/ItemsAdder/Oraxen handle items and resource packs. MythicMobs provides
-editable mob definitions; EliteMobs can replace configured boss spawns;
+Nexo/ItemsAdder/Oraxen handle custom item definitions and resource packs.
+ItemsAdder custom entities and MythicMobs provide custom mob spawns; EliteMobs
+can replace configured boss spawns;
 ModelEngine supplies rendering only. LevelledMobs, InfernalMobs, and similar
 spawn-modifier plugins can act on Bukkit entities spawned by The Sift, subject
 to their own world and spawn-reason settings. Other custom-mob systems can be
 connected through `SiftMobProvider`; they are not automatically detected just
 because they are installed.
+
+The item bridges do not place Nexo, ItemsAdder, or Oraxen custom blocks into
+terrain; world generation and Ichor use Bukkit vanilla block stand-ins. A
+custom-block placement bridge remains unsupported.
 
 ## The Sift dimension prototype
 

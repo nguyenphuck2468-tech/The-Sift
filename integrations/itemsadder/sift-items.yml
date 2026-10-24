@@ -124,3 +124,315 @@ items:
       material: NETHERITE_AXE
       generate: false
       model_path: item/shard_axe
+  bulb:
+    display_name: "Bulb"
+    resource:
+      material: SLIME_BALL
+      generate: false
+      model_path: item/bulb
+  chiseled_siftstone:
+    display_name: "Chiseled Siftstone"
+    resource:
+      material: CHISELED_DEEPSLATE
+      generate: false
+      model_path: item/chiseled_siftstone
+  drifter:
+    display_name: "Drifter"
+    resource:
+      material: ENDERMAN_SPAWN_EGG
+      generate: false
+      model_path: item/drifter
+  frost_stalker:
+    display_name: "Frost Stalker"
+    resource:
+      material: STRAY_SPAWN_EGG
+      generate: false
+      model_path: item/frost_stalker
+  glimmerwing:
+    display_name: "Glimmerwing"
+    resource:
+      material: BEE_SPAWN_EGG
+      generate: false
+      model_path: item/glimmerwing
+  glowbell:
+    display_name: "Glowbell"
+    resource:
+      material: BAT_SPAWN_EGG
+      generate: false
+      model_path: item/glowbell
+  heart_of_the_sift:
+    display_name: "Heart Of The Sift"
+    resource:
+      material: ECHO_SHARD
+      generate: false
+      model_path: item/heart_of_the_sift
+  hollow_bulb:
+    display_name: "Hollow Bulb"
+    resource:
+      material: ZOMBIE_SPAWN_EGG
+      generate: false
+      model_path: item/hollow_bulb
+  koi:
+    display_name: "Koi"
+    resource:
+      material: TROPICAL_FISH_SPAWN_EGG
+      generate: false
+      model_path: item/koi
+  loomer:
+    display_name: "Loomer"
+    resource:
+      material: RABBIT_SPAWN_EGG
+      generate: false
+      model_path: item/loomer
+  lumen_tulip:
+    display_name: "Lumen Tulip"
+    resource:
+      material: TORCHFLOWER_SEEDS
+      generate: false
+      model_path: item/lumen_tulip
+  prism_warden:
+    display_name: "Prism Warden"
+    resource:
+      material: WARDEN_SPAWN_EGG
+      generate: false
+      model_path: item/prism_warden
+  prismite:
+    display_name: "Prismite"
+    resource:
+      material: SILVERFISH_SPAWN_EGG
+      generate: false
+      model_path: item/prismite
+  rift_gate:
+    display_name: "Rift Gate"
+    resource:
+      material: CRYING_OBSIDIAN
+      generate: false
+      model_path: item/rift_gate
+  shard_ore:
+    display_name: "Shard Ore"
+    resource:
+      material: AMETHYST_BLOCK
+      generate: false
+      model_path: item/shard_ore
+  shardling:
+    display_name: "Shardling"
+    resource:
+      material: ENDERMITE_SPAWN_EGG
+      generate: false
+      model_path: item/shardling
+  sift_altar:
+    display_name: "Sift Altar"
+    resource:
+      material: CHISELED_DEEPSLATE
+      generate: false
+      model_path: item/sift_altar
+  sift_grass:
+    display_name: "Sift Grass"
+    resource:
+      material: MOSS_BLOCK
+      generate: false
+      model_path: item/sift_grass
+  sift_leaves:
+    display_name: "Sift Leaves"
+    resource:
+      material: CHERRY_LEAVES
+      generate: false
+      model_path: item/sift_leaves
+  sift_log:
+    display_name: "Sift Log"
+    resource:
+      material: CHERRY_LOG
+      generate: false
+      model_path: item/sift_log
+  sift_planks:
+    display_name: "Sift Planks"
+    resource:
+      material: CHERRY_PLANKS
+      generate: false
+      model_path: item/sift_planks
+  sift_soil:
+    display_name: "Sift Soil"
+    resource:
+      material: ROOTED_DIRT
+      generate: false
+      model_path: item/sift_soil
+  siftstone:
+    display_name: "Siftstone"
+    resource:
+      material: TUFF
+      generate: false
+      model_path: item/siftstone
+  siftstone_bricks:
+    display_name: "Siftstone Bricks"
+    resource:
+      material: TUFF_BRICKS
+      generate: false
+      model_path: item/siftstone_bricks
+  sunspore:
+    display_name: "Sunspore"
+    resource:
+      material: MOOSHROOM_SPAWN_EGG
+      generate: false
+      model_path: item/sunspore
+  the_sifter:
+    display_name: "The Sifter"
+    resource:
+      material: RAVAGER_SPAWN_EGG
+      generate: false
+      model_path: item/the_sifter
+  thornback:
+    display_name: "Thornback"
+    resource:
+      material: TURTLE_SPAWN_EGG
+      generate: false
+      model_path: item/thornback
+  violet_wisp:
+    display_name: "Violet Wisp"
+    resource:
+      material: VEX_SPAWN_EGG
+      generate: false
+      model_path: item/violet_wisp
+  wisp:
+    display_name: "Wisp"
+    resource:
+      material: ALLAY_SPAWN_EGG
+      generate: false
+      model_path: item/wisp
+  charoite:
+    display_name: "Charoite"
+    resource:
+      material: LAPIS_LAZULI
+      generate: false
+      model_path: item/charoite
+  siftite_ingot:
+    display_name: "Siftite Ingot"
+    resource:
+      material: NETHERITE_INGOT
+      generate: false
+      model_path: item/siftite_ingot
+  siftite_nugget:
+    display_name: "Siftite Nugget"
+    resource:
+      material: IRON_NUGGET
+      generate: false
+      model_path: item/siftite_nugget
+  siftite_sword:
+    display_name: "Siftite Sword"
+    resource:
+      material: NETHERITE_SWORD
+      generate: false
+      model_path: item/siftite_sword
+  siftite_axe:
+    display_name: "Siftite Axe"
+    resource:
+      material: NETHERITE_AXE
+      generate: false
+      model_path: item/siftite_axe
+  siftite_pickaxe:
+    display_name: "Siftite Pickaxe"
+    resource:
+      material: NETHERITE_PICKAXE
+      generate: false
+      model_path: item/siftite_pickaxe
+  siftite_shovel:
+    display_name: "Siftite Shovel"
+    resource:
+      material: NETHERITE_SHOVEL
+      generate: false
+      model_path: item/siftite_shovel
+  siftite_hoe:
+    display_name: "Siftite Hoe"
+    resource:
+      material: NETHERITE_HOE
+      generate: false
+      model_path: item/siftite_hoe
+  siftite_helmet:
+    display_name: "Siftite Helmet"
+    resource:
+      material: NETHERITE_HELMET
+      generate: false
+      model_path: item/siftite_helmet
+  siftite_chestplate:
+    display_name: "Siftite Chestplate"
+    resource:
+      material: NETHERITE_CHESTPLATE
+      generate: false
+      model_path: item/siftite_chestplate
+  siftite_leggings:
+    display_name: "Siftite Leggings"
+    resource:
+      material: NETHERITE_LEGGINGS
+      generate: false
+      model_path: item/siftite_leggings
+  siftite_boots:
+    display_name: "Siftite Boots"
+    resource:
+      material: NETHERITE_BOOTS
+      generate: false
+      model_path: item/siftite_boots
+  ichor_bottle:
+    display_name: "Ichor Bottle"
+    resource:
+      material: GLASS_BOTTLE
+      generate: false
+      model_path: item/ichor_bottle
+  ichor_glass:
+    display_name: "Ichor Glass"
+    resource:
+      material: GLASS
+      generate: false
+      model_path: item/ichor_glass
+  ichor_glass_pane:
+    display_name: "Ichor Glass Pane"
+    resource:
+      material: GLASS_PANE
+      generate: false
+      model_path: item/ichor_glass_pane
+  ichor_snow:
+    display_name: "Ichor Snow"
+    resource:
+      material: SNOW
+      generate: false
+      model_path: item/ichor_snow
+  ichor_snow_block:
+    display_name: "Ichor Snow Block"
+    resource:
+      material: SNOW_BLOCK
+      generate: false
+      model_path: item/ichor_snow_block
+  charoite_ore:
+    display_name: "Charoite Ore"
+    resource:
+      material: AMETHYST_BLOCK
+      generate: false
+      model_path: item/charoite_ore
+  siftite_upgrade_smithing_template:
+    display_name: "Siftite Upgrade Smithing Template"
+    resource:
+      material: NETHERITE_UPGRADE_SMITHING_TEMPLATE
+      generate: false
+      model_path: item/siftite_upgrade_smithing_template
+  siftite_spear:
+    display_name: "Siftite Spear"
+    resource:
+      material: NETHERITE_SWORD
+      generate: false
+      model_path: item/siftite_spear
+  healthy_sculk:
+    display_name: "Healthy Sculk"
+    resource:
+      material: SCULK
+      generate: false
+      model_path: item/healthy_sculk
+  overgrown_willow:
+    display_name: "Overgrown Willow"
+    resource:
+      material: CHERRY_LOG
+      generate: false
+      model_path: item/overgrown_willow
+  siftslate:
+    display_name: "Siftslate"
+    resource:
+      material: DEEPSLATE
+      generate: false
+      model_path: item/siftslate
