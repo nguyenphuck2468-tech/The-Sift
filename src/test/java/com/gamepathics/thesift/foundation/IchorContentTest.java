@@ -7,13 +7,12 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
+import org.mockbukkit.mockbukkit.MockBukkit;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 class IchorContentTest {
 
@@ -23,12 +22,15 @@ class IchorContentTest {
 
     @BeforeEach
     void setUp() {
-        mockPlugin = mock(JavaPlugin.class);
+        MockBukkit.mock();
+        mockPlugin = MockBukkit.createMockPlugin("TheSift");
         contentKey = new NamespacedKey("thesift", "content");
-        when(mockPlugin.getConfig()).thenReturn(new org.bukkit.configuration.file.YamlConfiguration());
-        when(mockPlugin.getServer()).thenReturn(mock(org.bukkit.Server.class));
-        
         ichorContent = new IchorContent(mockPlugin);
+    }
+
+    @AfterEach
+    void tearDown() {
+        MockBukkit.unmock();
     }
 
     @Test

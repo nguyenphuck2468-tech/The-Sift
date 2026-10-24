@@ -172,3 +172,68 @@ Build verification: `jar siftResourcePack` succeeds on Java 25 / Paper API
 26.3. Three `RecipeChoice.ExactChoice` deprecation-for-removal warnings remain.
 No live server test was performed. Previously observed Mockito test setup
 failures were not re-run in this pass.
+
+## Gradle/Mockito root-cause capture (2026-10-24, before remediation)
+
+Reproduced locally before changing Mockito, Byte Buddy, or mock-maker settings:
+
+- Command: `./gradlew --no-daemon clean test --stacktrace --info`
+- Runtime: Temurin Java 25.0.4.1, Gradle 9.7.1, Paper API
+  `26.3.build.218-stable`, Mockito 5.12.0.
+- Result: 25 of 31 tests fail while Mockito initializes mocks of
+  `org.bukkit.plugin.java.JavaPlugin`; the six tests not requiring that mock
+  path pass.
+- Root exception, copied verbatim from the Gradle test output:
+
+  ```text
+  java.lang.IllegalArgumentException: Java 25 (69) is not supported by the current version of Byte Buddy which officially supports Java 22 (66) - update Byte Buddy or set net.bytebuddy.experimental as a VM property
+  ```
+
+No remediation was applied before recording this exception. Candidate fixes
+were upgrading Mockito (and its managed Byte Buddy version), declaring a
+compatible Byte Buddy version explicitly, or switching affected fixtures to a
+subclass mock maker / non-mock fixture. The experimental JVM property is a
+diagnostic workaround, not the preferred long-term fix.
+
+Decision: upgrade both Mockito artifacts to 5.24.0. Mockito's own v5.24.0
+dependency catalog uses Byte Buddy 1.17.7, and Byte Buddy documents Java 25
+support beginning in 1.17.0. This keeps the existing inline mock behavior and
+avoids depending on an experimental JVM property. Pinning only Byte Buddy while
+retaining old Mockito, or switching the suite to the subclass mock maker, is
+less direct.
+
+After upgrading Mockito, the original Byte Buddy exception no longer occurs.
+The next full run reached test setup and exposed a separate fixture issue in
+`IchorContentTest`, `EchoGolemManagerTest`, and `RiftManagerTest`: the mocked
+`JavaPlugin#getName()` returns `null`, so Paper's `NamespacedKey(JavaPlugin,
+String)` constructor fails. Exact exception:
+
+```text
+java.lang.NullPointerException: Cannot invoke "String.length()" because "this.namespace" is null
+```
+
+The trace enters `org.bukkit.NamespacedKey.validate` and then the relevant
+content/manager constructor. Paper 26.3's `NamespacedKey(Plugin, String)`
+constructor calls `Plugin.namespace()`, not `getName()`. A first attempt to
+stub only `getName()` did not change the failure. I replaced incomplete
+`JavaPlugin` mocks with a real Paper 26.3 MockBukkit test server and named mock
+plugin. This initializes registries, plugin services, and the scheduler; no
+assertions were removed or weakened.
+
+MockBukkit version `4.118.0` targets Paper 26.3. Mockito 5.24.0 resolves with
+Byte Buddy 1.17.7 by itself; once MockBukkit is present, Gradle selects Byte
+Buddy and byte-buddy-agent 1.18.11 for the test runtime. Both dependencies now
+run without the original Java 25 instrumentation exception. The previous 19
+post-upgrade failures were environment/fixture problems (uninitialized
+registries, null service manager, and missing scheduler), not failing
+production behavior assertions.
+
+The existing Rift Key display assertion also caught a real formatting
+regression: the key was pink (`§d`) rather than purple bold (`§5§l`). Restored
+the purple bold label without changing the assertion.
+
+With the Paper 26.3 MockBukkit harness initialized, the original 35-test suite
+passed 35/35. This verifies the Mockito fix and test server setup, but is not a
+live Paper server smoke test. Gradle still reports deprecations for Gradle 10,
+and Byte Buddy emits a JDK Unsafe terminal deprecation warning; these do not
+fail the build.

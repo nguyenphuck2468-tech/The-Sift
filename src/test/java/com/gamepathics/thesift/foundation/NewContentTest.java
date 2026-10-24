@@ -4,9 +4,10 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.mockbukkit.mockbukkit.MockBukkit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -17,11 +18,14 @@ class EchoGolemManagerTest {
 
     @BeforeEach
     void setUp() {
-        mockPlugin = Mockito.mock(JavaPlugin.class);
-        Mockito.when(mockPlugin.getConfig()).thenReturn(new org.bukkit.configuration.file.YamlConfiguration());
-        Mockito.when(mockPlugin.getServer()).thenReturn(Mockito.mock(org.bukkit.Server.class));
-        
+        MockBukkit.mock();
+        mockPlugin = MockBukkit.createMockPlugin("TheSift");
         echoGolemManager = new EchoGolemManager(mockPlugin);
+    }
+
+    @AfterEach
+    void tearDown() {
+        MockBukkit.unmock();
     }
 
     @Test
@@ -42,11 +46,14 @@ class RiftManagerTest {
 
     @BeforeEach
     void setUp() {
-        mockPlugin = Mockito.mock(JavaPlugin.class);
-        Mockito.when(mockPlugin.getConfig()).thenReturn(new org.bukkit.configuration.file.YamlConfiguration());
-        Mockito.when(mockPlugin.getServer()).thenReturn(Mockito.mock(org.bukkit.Server.class));
-        
+        MockBukkit.mock();
+        mockPlugin = MockBukkit.createMockPlugin("TheSift");
         riftManager = new RiftManager(mockPlugin);
+    }
+
+    @AfterEach
+    void tearDown() {
+        MockBukkit.unmock();
     }
 
     @Test
