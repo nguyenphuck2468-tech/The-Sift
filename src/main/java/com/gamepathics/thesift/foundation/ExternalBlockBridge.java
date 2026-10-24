@@ -119,7 +119,7 @@ final class ExternalBlockBridge {
 
     boolean isProviderOwned(Block block) {
         if (block == null) return false;
-        if (reflectiveBlockCheck("Nexo", "com.nexomc.nexo.api.NexoBlocks", "isNexoBlock", block)
+        if (reflectiveBlockCheck("Nexo", "com.nexomc.nexo.api.NexoBlocks", "isCustomBlock", block)
                 || reflectiveBlockCheck("Oraxen", "io.th0rgal.oraxen.api.OraxenBlocks", "isOraxenBlock", block)
                 || isAnyItemsAdderBlock(block)) return true;
         for (String contentId : ProviderContentIds.BLOCK_IDS) if (isBlock(contentId, block)) return true;
@@ -231,7 +231,7 @@ final class ExternalBlockBridge {
             if (result instanceof Boolean success) return success;
             if (result != null) return true;
             Block block = location.getBlock();
-            return block.getType() != before;
+            return isBlock(id, block) || block.getType() != before;
         } catch (ReflectiveOperationException | LinkageError exception) {
             plugin.getLogger().fine(pluginName + " block unavailable for " + id + ": " + exception.getMessage());
             return false;
