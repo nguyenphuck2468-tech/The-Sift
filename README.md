@@ -34,7 +34,7 @@ provider is configured; 27.1 compatibility remains unverified.
 ## Current foundation scope
 
 - Gradle/Java 25 build.
-- Versioned plugin configuration (`config-version: 2`).
+- Versioned plugin configuration (`config-version: 3`).
 - Refusal to rewrite configs newer than this build.
 - Registry for Siftslate, Ichor, Charoite, Siftite, Resonance, Rift content,
   and the planned mobs.
@@ -78,7 +78,7 @@ provider is configured; 27.1 compatibility remains unverified.
   can still be renamed but cannot be combined on anvils.
 - The bundled Java item/block model assets can be built into
   `build/distributions/TheSift-resource-pack.zip` with
-  `gradle siftResourcePack`; players must install or be served the pack to see
+  `./gradlew siftResourcePack`; players must install or be served the pack to see
   those custom models.
 - Optional Nexo, ItemsAdder, and Oraxen item bridges: The Sift resolves
   provider items when available and keeps its own persistent content IDs for
@@ -280,9 +280,11 @@ claiming compatibility.
 4. Craft Ichor Glass and Ichor Glass Panes using the registered recipes.
 5. Place and break the tagged blocks to verify identity-preserving drops.
 
-The slice uses vanilla block materials as a Paper foundation. Cauldron and
-custom-block identity state is persisted in `ichor-state.yml` and chunk PDC.
-This avoids NMS and keeps the feature portable.
+The slice uses vanilla block materials as a Paper foundation. Ichor cauldron
+levels and placed Ichor block identities are persisted in the plugin data
+folder's `ichor-state.yml`; generated ore/resource markers use chunk PDC.
+Neither Ichor state is stored in `config.yml`. This avoids NMS and keeps the
+feature portable.
 
 ## Charoite and Siftite test flow
 
