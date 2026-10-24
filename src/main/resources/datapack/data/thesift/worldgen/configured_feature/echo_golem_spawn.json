@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:entity",
+  "config": {
+    "entity_type": "minecraft:iron_golem",
+    "count": 1
+  }
+}

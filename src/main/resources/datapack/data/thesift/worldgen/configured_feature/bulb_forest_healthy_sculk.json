@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:random_selector",
+  "config": [
+    {
+      "entry": {
+        "type": "minecraft:weighted_entry",
+        "data": {
+          "weight": 1,
+          "element": "minecraft:patch_grass_overworld"
+        }
+      }
+    },
+    {
+      "entry": {
+        "type": "minecraft:weighted_entry",
+        "data": {
+          "weight": 1,
+          "element": "minecraft:patch_large_fern"
+        }
+      }
+    }
+  ]
+}

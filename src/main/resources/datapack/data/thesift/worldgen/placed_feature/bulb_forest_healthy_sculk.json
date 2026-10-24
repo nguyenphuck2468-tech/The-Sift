@@ -1,0 +1,25 @@
+{
+  "feature": "thesift:bulb_forest_healthy_sculk",
+  "placement": [
+    {
+      "type": "minecraft:count",
+      "count": 20
+    },
+    {
+      "type": "minecraft:in_square",
+      "spread": 1
+    },
+    {
+      "type": "minecraft:biome",
+      "biomes": "thesift:bulb_forest"
+    },
+    {
+      "type": "minecraft:height_range",
+      "height": {
+        "type": "minecraft:uniform",
+        "min_inclusive": { "absolute": -64 },
+        "max_inclusive": { "absolute": 256 }
+      }
+    }
+  ]
+}

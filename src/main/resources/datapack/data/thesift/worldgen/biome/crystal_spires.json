@@ -20,15 +20,36 @@
     ]
   },
   "spawn_costs": {},
-  "spawners": {},
+  "spawners": {
+    "monster": [
+      { "type": "minecraft:enderman", "weight": 10, "min_count": 1, "max_count": 3 },
+      { "type": "minecraft:witch", "weight": 5, "min_count": 1, "max_count": 1 }
+    ],
+    "creature": [
+      { "type": "minecraft:allay", "weight": 3, "min_count": 1, "max_count": 2 }
+    ]
+  },
   "carvers": [],
   "downfall": 0.4,
   "effects": {
     "water_color": "#46c6d4",
     "grass_color": "#ffa8a8",
-    "foliage_color": "#e6fbff"
+    "foliage_color": "#e6fbff",
+    "particle": {
+      "probability": 0.02,
+      "options": { "type": "minecraft:end_rod" }
+    }
   },
-  "features": [],
+  "features": [
+    "minecraft:glow_lichen",
+    "minecraft:patch_grass_badlands",
+    "minecraft:disk_sand_overworld",
+    "minecraft:disk_gravel_overworld",
+    "minecraft:amethyst_geode",
+    "thesift:crystal_spires_geode",
+    "thesift:crystal_spires_resonance_crystal",
+    "thesift:crystal_spires_echo_golem_spawn"
+  ],
   "has_precipitation": false,
   "temperature": 0.7
 }

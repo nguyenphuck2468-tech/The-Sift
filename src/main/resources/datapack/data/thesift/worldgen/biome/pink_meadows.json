@@ -20,15 +20,40 @@
     ]
   },
   "spawn_costs": {},
-  "spawners": {},
+  "spawners": {
+    "monster": [
+      { "type": "minecraft:enderman", "weight": 6, "min_count": 1, "max_count": 2 },
+      { "type": "minecraft:witch", "weight": 3, "min_count": 1, "max_count": 1 }
+    ],
+    "creature": [
+      { "type": "minecraft:allay", "weight": 4, "min_count": 1, "max_count": 3 },
+      { "type": "minecraft:bee", "weight": 5, "min_count": 2, "max_count": 4 }
+    ]
+  },
   "carvers": [],
   "downfall": 0.4,
   "effects": {
     "water_color": "#46c6d4",
     "grass_color": "#ffa8a8",
-    "foliage_color": "#e6fbff"
+    "foliage_color": "#e6fbff",
+    "particle": {
+      "probability": 0.01,
+      "options": { "type": "minecraft:cherry_leaves" }
+    }
   },
-  "features": [],
+  "features": [
+    "minecraft:glow_lichen",
+    "minecraft:flower_cherry",
+    "minecraft:patch_grass_overworld",
+    "minecraft:patch_large_fern",
+    "minecraft:disk_sand_overworld",
+    "minecraft:amethyst_geode",
+    "thesift:pink_meadows_geode",
+    "thesift:pink_meadows_sculk_patch",
+    "thesift:pink_meadows_healthy_sculk",
+    "thesift:pink_meadows_resonance_crystal",
+    "thesift:pink_meadows_singer_spawn"
+  ],
   "has_precipitation": false,
   "temperature": 0.7
 }
