@@ -15,7 +15,7 @@ src/main/resources/plugin.yml     Plugin metadata
 src/main/resources/config.yml     Runtime configuration
 src/main/resources/datapack/      Datapack và worldgen data
 src/main/resources/pack/          Java resource pack
-src/main/resources/bedrock/       Geyser support artifact
+src/main/resources/bedrock/       Unverified embedded Geyser extension (excluded from Paper JAR)
 build.gradle                      Gradle build
 README.md                         Tổng quan và test flow
 ```
@@ -120,7 +120,10 @@ thể chơi survival khi biome JSON không khai báo placed features.
 Hiện có:
 
 - Singer prototype dùng Allay Bukkit entity;
-- Singer phát âm thanh/particle mà không gây sát thương;
+- Pulse gây 1 damage (nửa tim) mặc định và Slowness I trong 3 giây;
+- `resonance.singer.attack-enabled` tắt damage/debuff; Charoite được tính khi
+  mang trong inventory/hotbar, offhand hoặc armor, không tính ender chest;
+- Creative/Spectator không bị ảnh hưởng;
 - persistent entity ID;
 - Echo Golem prototype có thể bond bằng Echo Shard và lưu Soul Block;
 - boss bar;
@@ -184,8 +187,8 @@ Các lệnh yêu cầu permission `thesift.foundation.admin`, mặc định là 
 - Custom block vẫn dùng vanilla material khi không cấu hình provider.
 - Siftite spear hiện dùng Netherite Sword làm base material.
 - Singer và Echo Golem vẫn là vanilla entity proxy.
-- Singer đang dùng Allay prototype. Pulse hiện chỉ phát particle/âm thanh;
-  `resonance.singer.charoite-protection` chưa được gọi và chưa có hiệu lực.
+- Singer đang dùng Allay prototype. Pulse damage/debuff/config và kiểm tra
+  Charoite đã nối vào gameplay; Charoite cần có persistent content tag.
 - Echo Golem mới có thao tác bond và cất/lấy Soul Block cơ bản; chưa có AI tự
   tìm Soul Canyon/Soul Block như mô tả trong mod cộng đồng.
 - Cầu nối custom block nhận `SiftBlockProvider` qua Bukkit ServicesManager và
@@ -289,13 +292,12 @@ git diff --check
   lifecycle `build`.
 - Regression hiện xác nhận: Rift Key advancement được gọi; template không bị
   tính là gear; The Sifter chỉ cấp advancement của chính nó; uống Ichor qua
-  custom interaction cấp advancement `storm`. Full local build: 43/43.
-- `rift_block`: hiện chỉ có metadata/PDC marker trên Rift Walker entity, không
-  có producer nào gắn Bukkit block metadata. Handler hiện tại không che chắn
-  block Rift thực tế; chưa tồn tại block Rift đặt được để kiểm thử phá/hủy.
-- Singer/Charoite: Singer pulse không gây damage/debuff; helper Charoite
-  protection không được gọi. Đây là config/helper chưa nối vào gameplay, không
-  phải lỗi bảo vệ của một đòn đánh đang hoạt động.
+  custom interaction cấp advancement `storm`. Full local build hiện tại: 52 tests.
+- `rift_block`: không có block producer; handler vô hiệu và marker trên Rift
+  Walker entity đã được gỡ. Test đảm bảo không còn handler phá block.
+- Singer/Charoite: pulse giờ gây damage/debuff có thể tắt qua config; Charoite
+  có tag trong inventory/hotbar, offhand hoặc armor chặn cả hai hiệu ứng. Unit
+  tests chạy; chưa xác minh trên server Paper thật.
 - Chunk benchmark tạm có thể bật bằng
   `debug.chunk-generation-metrics.enabled: true`; log đo thời gian tạo chunk và
   số operation attempts. Mặc định tắt. Đây là phép đo thô ở cấp generation
@@ -314,6 +316,30 @@ Kiểm tra trạng thái:
 
 ```bash
 git status
+
+## 10. Step 1 follow-up (2026-10-24)
+
+- Singer pulse: default 1.0 damage every 5 seconds and Slowness I for 3 seconds;
+  configurable and disableable. Tagged Charoite in inventory/hotbar, offhand,
+  or armor grants immunity; ender chest does not count. Creative/Spectator are
+  ignored. Tests pass; no live server check yet.
+- `rift_block`: no placed-block producer exists, so the ineffective block
+  handler and entity marker were removed. A regression test checks this state.
+- ItemsAdder block recognition now requires the configured namespaced ID. A
+  fixture verifies both ID match and mismatch; no live ItemsAdder test.
+- Ecology chunk markers record in-progress and complete states. Runtime
+  failures clear the marker and remove entities spawned during the attempt;
+  the chunk may retry. Partial block changes are not transactionally rolled
+  back.
+- `TheSiftGeyser.jar.embedded` has unknown source/terms and no code references.
+  It remains in the source tree pending owner direction, but the build excludes
+  it from the Paper plugin JAR. See `IMPLEMENTATION_REPORT.md` and
+  `docs/step1-paper-jar-inventory.txt`.
+- Config audit is in `IMPLEMENTATION_REPORT.md`. No keys were deleted; any
+  cleanup requires owner approval and a versioned migration plan.
+- `NOTICE.draft.md` records only the current source investigation. No LICENSE
+  was created. Live server, external-provider validation, and Bước 2 tasks are
+  still pending; do not start Bước 2 before owner confirmation.
 git log --oneline -5
 ```
 

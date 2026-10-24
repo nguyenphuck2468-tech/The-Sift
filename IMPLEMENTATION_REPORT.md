@@ -142,9 +142,11 @@ is not a provenance certification.
 | Sounds | `src/main/resources/pack/` | No OGG, WAV, MP3, or MIDI files were found. Runtime sounds currently use Bukkit/Minecraft sound identifiers rather than bundled recordings. | High for absence of bundled audio in this tree |
 | Names / ideas | README, config, biome IDs, mob/item IDs, and worldgen descriptions across `src/main/resources/` and `src/main/java/` | The Mielon project and the Mojang 27.1 announcement informed research. The reference does not prove that the features are official 27.1 mechanics, nor does it grant ownership of names. | Medium for reference source; low for official 27.1 parity |
 
-No repo-wide LICENSE or NOTICE was added. Recommendation: add a license only
-for original code the owner confirms they control, and create a NOTICE after
-asset and code provenance is verified. The embedded
+At the time of the original Phase 1 inventory, no repo-wide LICENSE or NOTICE
+had been added. A provenance-only `NOTICE.draft.md` is now present; no LICENSE
+has been created. Add a project license only for original code the owner
+confirms they control, and finalize any NOTICE after asset and code provenance
+is verified. The embedded
 `src/main/resources/bedrock/TheSiftGeyser.jar.embedded` also has unresolved
 origin and terms. Do not add the Rift music or Dark Sniffer texture without
 permission evidence.
@@ -197,7 +199,7 @@ failures were not re-run in this pass.
 | Mockito / Java 25 | Recorded pre-fix root exception above; upgraded Mockito and replaced incomplete plugin mocks with MockBukkit fixture. | Full local build: 43 tests, 0 failures/errors/skips. No live server test. |
 | RecipeChoice | Replaced deprecated `ExactChoice(ItemStack)` construction while keeping exact tagged-item matching. | Unit tests verify tagged Ichor glass/Siftite ingot accepted and plain materials rejected. |
 | Advancement regressions | Fixed template being treated as gear, The Sifter granting Tyrant/Matriarch advancements, and Ichor custom drink not granting `storm`. Rift Key pickup test passes without a production fix: the generated key already has the expected content tag. | Tests were run red before relevant fixes (two advancement tests failed; then Ichor test failed because advancement lookup was never called), then focused suite passed 4/4. Full suite passed 43/43. |
-| `rift_block` / Singer–Charoite review | No block producer exists: `rift_block` PDC is attached to Rift Walker entities, while break protection checks Bukkit block metadata. Singer pulse only emits effects visually/audibly; `protectedByCharoite` is not called. | `RiftBlockMetadataTest` verifies a normal block is not cancelled. `ResonanceManagerTest` drives a tagged Singer pulse and verifies player health is unchanged. Source inspection confirms no block marker producer and no active damage/debuff call. The suspected protection bugs are not present in current behavior; no gameplay behavior was added. |
+| `rift_block` / Singer–Charoite review (pre-follow-up snapshot) | At this point no block producer existed and Singer only emitted effects. | The follow-up below supersedes this snapshot: ineffective Rift handler removed and Singer damage/debuff implemented. |
 | Provenance | Inventory and uncertainty table above. No global license added. | Repository resource inventory and reference comparison recorded; individual authorship is not proven. |
 | Chunk benchmark | Added opt-in `debug.chunk-generation-metrics.enabled` timer and stage/surface-attempt count in `SiftEcologyManager.populate`. | Compiles in full build. Disabled by default. No server timing calibration. |
 
@@ -206,12 +208,11 @@ failures were not re-run in this pass.
 - The Rift Key advancement suspicion was false: `createRiftKey()` creates the
   tagged Siftite item with ID `rift_key`; the pickup hook requests that
   advancement. Test: `src/test/java/com/gamepathics/thesift/foundation/SiftAdvancementManagerTest.java`.
-- `rift_block` currently has no producing Bukkit block. The Rift Walker's PDC
-  marker cannot satisfy `Block.hasMetadata("rift_block")`; the break handler
-  is not active for the current particle-only portal implementation.
-- The Singer's `damage`, slowness, and Charoite-protection config values are
-  not implemented in the active pulse. The unused helper should be wired only
-  alongside a defined damage/debuff behavior.
+- In the pre-follow-up snapshot, `rift_block` had no producing Bukkit block.
+  The Rift Walker's PDC marker could not satisfy `Block.hasMetadata("rift_block")`;
+  the follow-up removed that ineffective handler and marker.
+- Singer damage, slowness and Charoite protection were not active in the
+  snapshot above; the follow-up below implements and tests these settings.
 - Benchmark `operation-attempts` is an approximate generation-stage count plus
   28 surface sample attempts, not a count of individual placed blocks/entities.
   It exists for comparative future profiling and should be refined in Phase 2.
@@ -234,7 +235,79 @@ This report and HANDOFF update are a separate documentation-only commit.
 
 BlockPopulator migration, Rift persistence, note-block behavior, live server
 smoke testing, provider-by-provider server validation, asset provenance proof,
-LICENSE/NOTICE creation, and 27.1 compatibility remain open.
+owner's project-license decision, final asset provenance clearance, and 27.1
+compatibility remain open. `NOTICE.draft.md` is a research note, not a final
+license/attribution statement.
+
+## Step 1 follow-up (2026-10-24)
+
+### Changes and verification
+
+| Item | Result | Verification |
+|---|---|---|
+| Singer damage / slowness / Charoite | Singer pulse now deals 1.0 health point by default (half a heart) and applies Slowness I for 3 seconds. `resonance.singer.attack-enabled` disables both effects; damage, duration, amplifier and pulse period are configurable. Tagged Charoite in the player's storage inventory/hotbar, offhand, or armor blocks both effects. Ender chest does not count. Creative/Spectator are ignored. README and handoff now describe this behavior. | Unit tests: damage, slow, tagged Charoite immunity, no tagged Charoite, creative, spectator, and global switch. Full local build passed. No live Paper server test. |
+| `rift_block` | No block producer exists; the old handler tested Bukkit block metadata while the marker was attached to an entity. Removed the ineffective handler and entity marker. | Unit test asserts no block-break handler remains without a block producer. Full local build passed. |
+| Embedded Geyser binary | `src/main/resources/bedrock/TheSiftGeyser.jar.embedded` was added in initial commit `7b1e0f0ee93dec57cef775f1e4668e9eb0f4bd44` by `nguyenphuck2468-tech` on 2026-10-22. It is 6,928 bytes, SHA-256 `3093ba847f63022869dc17b353f1cc0dc6af208087d6dbaef778becd1bf89319`. Read-only ZIP inspection found `META-INF/MANIFEST.MF`, `extension.yml`, and `com/gamepathics/thesift/geyser/TheSiftGeyser.class`; extension metadata says Geyser API 2.11.0 and version 1.6.2, author `Gamepathics`. No code references this resource; no embedded license/source identity is present. It was never executed. Recommend removing it from the repository after confirming it is not needed for a separate Bedrock extension distribution. | Git history and static archive metadata inspected. Gradle `processResources` excludes it from the Paper JAR. Full local build and JAR inventory verified exclusion. No provenance/license verification. |
+| ItemsAdder block ID | Detection now compares `CustomBlock.byAlreadyPlaced(block).getNamespacedID()` to `integrations.blocks.definitions.<contentId>`; unrelated ItemsAdder blocks no longer match. | Fixture tests exact match and mismatch. Full local build passed. No ItemsAdder server installed/tested. |
+| Chunk decoration marker | PDC state is now `in progress` while decorating and `complete` only after success. Runtime failure removes marker, removes entities created during the attempt, logs, and allows retry. Singer/Echo Golem/Rift spawns now execute in the synchronous chunk-load path, so a failed attempt cannot leave those spawns queued for a later tick. An abrupt process stop with in-progress state retries on next chunk load. Partial block placements from an exception are not transactionally rolled back; deterministic placement makes retry possible but is not a full rollback guarantee. | Unit test injects failure, checks marker cleared, retries, then checks completion and idempotent skip. Full local build passed. No server crash/restart simulation. |
+| Config audit | Completed; see table below. No config keys were deleted. | Source/config inspection. No dedicated config-audit unit test. |
+| CI / artifact | Runner pinned to `ubuntu-24.04`; actions updated to checkout v7, setup-java v5, setup-gradle v6, upload-artifact v7. Wrapper performs one `clean build`. Paper JAR contains 558 entries: 33 classes, 401 JSON, 63 PNG, and 61 other files. Complete entry list: [`docs/step1-paper-jar-inventory.txt`](docs/step1-paper-jar-inventory.txt). Neither `TheSiftGeyser.jar.embedded` nor any `.jar`/`.embedded` entry is present. JAR SHA-256: `4eb863bae881b9ba4aa15578df072a9ce49263f735ae572bd7e3e9e3fb9ec476`. | Full local `clean build` passed (52/52 tests); JAR entry listing inspected. GitHub CI is pending for the follow-up commits. No server test. |
+| NOTICE / license | Added [`NOTICE.draft.md`](NOTICE.draft.md) as a provenance note only; it makes no project-wide license claim. No `LICENSE` was created. | Manual review against available repo history and source notes. |
+
+### Config key audit
+
+“Read” means code retrieves the key. “Effective” means the value reaches a
+runtime gate or setting. No key was removed; any future removal needs an
+explicit decision and a versioned migration plan.
+
+| Keys | Status | Recommendation |
+|---|---|---|
+| `config-version` | Used by `ConfigMigration`; resource default now matches current version 3. | Keep. |
+| `content.*` for all declared `ContentId` values | All 34 flags are read dynamically by `loadContentFlags()` and shown by `/sift doctor`. Most are also used by module startup, recipe registration, or item checks, but `content.siftslate`, `content.healthy_sculk`, `content.overgrown_willow`, `content.blub`, and `content.sifter` currently only affect the status snapshot (the associated behaviors do not consult them). Several item flags gate recipe registration but not `/sift give` or all generated item paths. | Keep for compatibility; fix incomplete enforcement in a later targeted change or mark experimental in docs. Do not delete yet. |
+| `resonance.*`, `resonance.singer.*` | Used. Singer attack values were added/activated in this pass. | Keep. |
+| `echo-golem.enabled`, `max-health`, `attack-damage`, `resonance-period`, `resonance-range`, `heal-amount`, `drop-siftite` | Used. | Keep. |
+| `echo-golem.resonance-damage`, `slowness-seconds`, `slowness-amplifier`, `mining-fatigue-seconds`, `mining-fatigue-amplifier` | Not read by Java. | Recommend removal only with approval and config migration; alternatively implement the documented effects separately. |
+| `echo-golem.charoite-protection` | Read only by a private helper that has no call sites; currently no gameplay effect. | Recommend wiring into a defined Echo Golem attack or removing with migration after approval. |
+| `rift.*` | Used by Rift lifecycle and rewards. | Keep. |
+| `ichor.*` | Used for module enablement, material choice, cauldron costs/effects and Ichor items/state. | Keep. |
+| `charoite.enabled`, `world`, `ore-material`, `drop-min`, `drop-max` | Used. | Keep. |
+| `charoite.material` | Not read; current item creation hardcodes its vanilla fallback material. | Recommend wiring or removing with migration after approval. |
+| `siftite.enabled`, `ore-material`, `knockback-resistance`, `weapon-damage-bonus`, `spear-damage`, `mining-speed-bonus`, `mini-rift-recovery` | Used. | Keep. |
+| `siftite.ingot-material`, `nugget-material`, `template-material`, `smithing-only`, `durability-multiplier`, `spear-reach` | Not read by Java. Recipes currently always use smithing and hard-coded vanilla materials; durability and reach are not applied. | Recommend either implement with tests or remove only after approval and config migration. |
+| `compatibility.minecraft-target` | Used in startup and `/sift doctor` output. | Keep. |
+| `integrations.blocks.provider`, `integrations.blocks.definitions.*` | Used by external block bridge; definitions are exact IDs. | Keep. |
+| `integrations.items.provider` | Used by external item bridge. | Keep. |
+| `integrations.mobs.provider`, `integrations.mobs.itemsadder.entities.*`, `integrations.mobs.elitemobs.level`, `integrations.mobs.elitemobs.definitions.*`, `integrations.mobs.modelengine.models.*` | Used by reflection/service-provider adapters. | Keep. |
+| `sift-world.tide-period-seconds`, `sift-world.ichor-weather-period-seconds` | Used by ecology scheduler. | Keep. |
+| `debug.chunk-generation-metrics.enabled` | Used to enable/disable timing and operation-count logging. | Keep. |
+
+### Rebuttal and remaining risk
+
+Repeated Singer pulses can drain health and refresh Slowness while a player
+stays in range. The default is deliberately low: 1 damage every 5 seconds;
+servers can disable attacks or tune the values. Charoite protection uses
+personal carried equipment/inventory because it is accessible during play and
+does not let remote ender-chest storage grant immunity. Enchanted/cursed item
+interactions and damage attribution still need a live gameplay check.
+
+The requested order is workable. The one recommendation is to make the
+config-key ownership decision before any cleanup: deleting compatibility keys
+without an agreed migration would surprise existing servers. The embedded
+Geyser binary is excluded from the Paper artifact, but repository deletion is
+still a maintainer decision because it may have an undocumented separate use.
+
+CI version note: `actions/setup-java@v5` follows the explicitly requested
+version. At report time upstream already lists v6 as the latest stable major;
+checkout v7, setup-gradle v6, and upload-artifact v7 are on their latest stable
+major lines. If “latest stable” was intended to override the requested setup-
+java v5, change that step to v6 in a separate CI-only commit.
+
+### Commits and verification state
+
+Commit hashes and GitHub workflow URL are recorded in the final phase response
+after pushing. Current local verification: `clean build` passed, including all
+unit tests; GitHub CI and server-real verification are not yet established for
+these changes.
 
 ## Gradle/Mockito root-cause capture (2026-10-24, before remediation)
 
