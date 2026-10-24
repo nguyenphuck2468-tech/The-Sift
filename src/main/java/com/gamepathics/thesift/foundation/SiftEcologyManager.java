@@ -43,6 +43,7 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey decoratedChunkKey;
     private final NamespacedKey creatureKey;
     private final SiftMobFactory mobFactory;
+    private final ExternalBlockBridge blockBridge;
     private final BukkitTask tideTask;
     private long tideTick;
 
@@ -55,6 +56,7 @@ public final class SiftEcologyManager implements Listener {
         this.decoratedChunkKey = new NamespacedKey(plugin, "sift_ecology_generated");
         this.creatureKey = new NamespacedKey(plugin, "sift_creature");
         this.mobFactory = new SiftMobFactory(plugin);
+        this.blockBridge = new ExternalBlockBridge(plugin);
         this.tideTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             tickTide();
             tickIchorWeather();
@@ -94,6 +96,7 @@ public final class SiftEcologyManager implements Listener {
 
         decorateSurface(chunk, key, random);
         growBiomeLandmarks(chunk, key, random);
+        generateCharoiteOre(chunk, random);
         if ((key.contains("overgrown") || key.contains("sift_wastes") || key.contains("siftslate"))
                 && random.nextInt(18) == 0) generateAbandonedPortal(chunk, random);
         if ((key.contains("overgrown") || key.endsWith("carapace")) && random.nextInt(24) == 0) {
@@ -135,14 +138,14 @@ public final class SiftEcologyManager implements Listener {
 
             if (biome.endsWith("pink_meadows")) {
                 if (surface == Material.GRASS_BLOCK && random.nextInt(4) == 0) {
-                    ground.setType(random.nextBoolean() ? Material.MOSS_BLOCK : Material.DIRT, false);
+                    placeBlock(ground, "sift_grass", random.nextBoolean() ? Material.MOSS_BLOCK : Material.DIRT);
                 }
                 placePlant(world, x, y + 1, z,
                         List.of(Material.PINK_PETALS, Material.PINK_TULIP, Material.AZURE_BLUET,
                                 Material.LILAC, Material.CHERRY_SAPLING), random);
             } else if (biome.endsWith("bulb_forest")) {
                 if (surface == Material.GRASS_BLOCK && random.nextInt(3) == 0) {
-                    ground.setType(Material.MOSS_BLOCK, false);
+                    placeBlock(ground, "sift_grass", Material.MOSS_BLOCK);
                 }
                 placePlant(world, x, y + 1, z,
                         List.of(Material.FERN, Material.LARGE_FERN, Material.GLOW_LICHEN,
@@ -158,7 +161,9 @@ public final class SiftEcologyManager implements Listener {
                     ground.setType(random.nextBoolean() ? Material.PACKED_MUD : Material.CALCITE, false);
                 }
             } else if (biome.contains("overgrown")) {
-                if (surface == Material.GRASS_BLOCK && random.nextBoolean()) ground.setType(Material.MOSS_BLOCK, false);
+                if (surface == Material.GRASS_BLOCK && random.nextBoolean()) {
+                    placeBlock(ground, "sift_grass", Material.MOSS_BLOCK);
+                }
                 placePlant(world, x, y + 1, z,
                         List.of(Material.FERN, Material.LARGE_FERN, Material.GLOW_LICHEN,
                                 Material.AZALEA, Material.MOSS_CARPET, Material.PINK_PETALS), random);
@@ -215,26 +220,29 @@ public final class SiftEcologyManager implements Listener {
                 for (int dz = -radius; dz <= radius; dz++) {
                     if (random.nextInt(3) != 0) continue;
                     int dy = random.nextInt(3);
-                    world.getBlockAt(x + dx, y + dy, z + dz).setType(rocks[random.nextInt(rocks.length)], false);
+                    placeBlock(world.getBlockAt(x + dx, y + dy, z + dz), "siftstone",
+                            rocks[random.nextInt(rocks.length)]);
                 }
             }
         } else if (biome.endsWith("bulb_forest") || biome.contains("overgrown_forest")) {
             Material wood = random.nextBoolean() ? Material.MANGROVE_LOG : Material.DARK_OAK_LOG;
             Material leaves = random.nextBoolean() ? Material.MANGROVE_LEAVES : Material.AZALEA_LEAVES;
             int trunk = 4 + random.nextInt(4);
-            for (int dy = 0; dy < trunk; dy++) world.getBlockAt(x, y + dy, z).setType(wood, false);
+            for (int dy = 0; dy < trunk; dy++) {
+                placeBlock(world.getBlockAt(x, y + dy, z), "sift_log", wood);
+            }
             for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
                 if (Math.abs(dx) + Math.abs(dz) < 4) {
-                    world.getBlockAt(x + dx, y + trunk - 1, z + dz).setType(leaves, false);
+                    placeBlock(world.getBlockAt(x + dx, y + trunk - 1, z + dz), "sift_leaves", leaves);
                 }
             }
             world.getBlockAt(x, y + trunk, z).setType(Material.SHROOMLIGHT, false);
         } else if (biome.endsWith("pink_meadows") || biome.contains("overgrown_clearing")) {
             Material wood = Material.CHERRY_LOG;
-            for (int dy = 0; dy < 5; dy++) world.getBlockAt(x, y + dy, z).setType(wood, false);
+            for (int dy = 0; dy < 5; dy++) placeBlock(world.getBlockAt(x, y + dy, z), "sift_log", wood);
             for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
                 if (Math.abs(dx) + Math.abs(dz) < 4) {
-                    world.getBlockAt(x + dx, y + 4, z + dz).setType(Material.CHERRY_LEAVES, false);
+                    placeBlock(world.getBlockAt(x + dx, y + 4, z + dz), "sift_leaves", Material.CHERRY_LEAVES);
                 }
             }
         } else if (biome.endsWith("carapace") || biome.contains("sift_wastes")
@@ -243,7 +251,8 @@ public final class SiftEcologyManager implements Listener {
             int radius = 2 + random.nextInt(2);
             for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++) {
                 if (dx * dx + dz * dz <= radius * radius + 1) {
-                    world.getBlockAt(x + dx, y, z + dz).setType(shell[random.nextInt(shell.length)], false);
+                    placeBlock(world.getBlockAt(x + dx, y, z + dz), "siftstone_bricks",
+                            shell[random.nextInt(shell.length)]);
                 }
             }
             world.getBlockAt(x, y + 1, z).setType(Material.COPPER_BULB, false);
@@ -287,11 +296,34 @@ public final class SiftEcologyManager implements Listener {
         for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
             if (dx * dx + dz * dz > 5) continue;
             world.getBlockAt(x + dx, y, z + dz).setType(rim[random.nextInt(rim.length)], false);
-            if (dx * dx + dz * dz <= 2) world.getBlockAt(x + dx, y + 1, z + dz).setType(Material.WATER, false);
+            if (dx * dx + dz * dz <= 2) {
+                placeBlock(world.getBlockAt(x + dx, y + 1, z + dz), "ichor_water", Material.WATER);
+            }
         }
-        world.getBlockAt(x, y + 1, z).setType(Material.WATER, false);
+        placeBlock(world.getBlockAt(x, y + 1, z), "ichor_water", Material.WATER);
         world.spawnParticle(Particle.DRIPPING_OBSIDIAN_TEAR, new Location(world, x + .5, y + 1, z + .5),
                 12, 1, .2, 1, .02);
+    }
+
+    private void placeBlock(Block block, String contentId, Material fallback) {
+        if (!blockBridge.place(contentId, block.getLocation())) block.setType(fallback, false);
+    }
+
+    private void generateCharoiteOre(Chunk chunk, Random random) {
+        if (random.nextInt(3) != 0) return;
+        World world = chunk.getWorld();
+        int x = chunk.getX() * 16 + 3 + random.nextInt(10);
+        int z = chunk.getZ() * 16 + 3 + random.nextInt(10);
+        int y = Math.max(world.getMinHeight() + 8, 18 + random.nextInt(32));
+        int size = 3 + random.nextInt(4);
+        List<Material> hostRocks = List.of(Material.STONE, Material.DEEPSLATE, Material.TUFF,
+                Material.ANDESITE, Material.CALCITE);
+        for (int i = 0; i < size; i++) {
+            Block ore = world.getBlockAt(x + random.nextInt(3) - 1,
+                    y + random.nextInt(3) - 1, z + random.nextInt(3) - 1);
+            if (!hostRocks.contains(ore.getType())) continue;
+            placeBlock(ore, "charoite_ore", Material.AMETHYST_BLOCK);
+        }
     }
 
     private void generateSoulCanyon(Chunk chunk, Random random) {

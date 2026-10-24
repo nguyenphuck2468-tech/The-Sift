@@ -4,7 +4,7 @@ Updated: 2026-10-24
 Build baseline: Java 25, Paper API `26.3.build.218-stable`  
 Target: Minecraft 27.1 is planned, not released or verified.
 
-## Optional content-plugin integration (2026-10-24)
+## Custom content provider integration (2026-10-24)
 
 - Added reflection-based Nexo/ItemsAdder/Oraxen item bridges, preserving The
   Sift's persistent content tags and keeping provider APIs optional at compile time.
@@ -34,13 +34,21 @@ Target: Minecraft 27.1 is planned, not released or verified.
   per-creature ID overrides and Bukkit-entity fallback behavior.
 - Added reload hooks for Nexo, ItemsAdder, and Oraxen item registries, while
   retaining a delayed startup refresh for providers without a load event.
-- Remaining integration gap: provider-specific Nexo/ItemsAdder/Oraxen custom
-  block placement is not wired into the Bukkit world-generation routines.
+- Added `SiftBlockProvider` plus reflection bridges for custom blocks from
+  Nexo, ItemsAdder, and Oraxen. Generated Charoite ore, Sift tree logs/leaves,
+  and Ichor spring water can use configured provider block IDs, with material
+  fallback if a provider is absent or placement fails.
+- Mini Rift recovery now serializes pending tagged equipment to the plugin's
+  `mini-rift-recovery.yml`, so a restart between death and respawn does not
+  discard the recovery.
+- Remaining integration gaps: more generated block types need provider
+  mappings and gameplay interactions; server-specific block definitions need
+  validation with each provider.
   Provider runtime behavior still needs validation on servers with each
   external plugin installed.
 - `jar` and `siftResourcePack` both pass after this integration update. The
   provider YAML files parse, and all Nexo/Oraxen/ItemsAdder item model paths
-  resolve to bundled wrapper model files. A live server with these optional
+  resolve to bundled wrapper model files. A live server with the external
   plugins installed was not available for runtime verification.
 
 ## Added in this pass
@@ -74,23 +82,26 @@ Target: Minecraft 27.1 is planned, not released or verified.
 
 ## Reference coverage and remaining work
 
-The reference is a community Fabric mod, not Mojang's planned vanilla release.
+The reference is a community Fabric mod, not Mojang's planned 27.1 release.
 Its README describes ten reference biomes, Soul Canyons, Sniffer Caves, Ichor
 Lakes/springs, monoliths, cliff arches, sculk formations, abandoned portals,
 custom mobs, Charoite enchanting, Siftite recovery, new wood/plants/ores, music,
 and 20 advancements. Mojang has not confirmed this feature list for Minecraft
-27.1.
+27.1. Here, “vanilla-like” describes the player experience of custom Sift
+content feeling integrated into the game; it does not restrict implementation
+to built-in Minecraft blocks or entities. Paper content plugins are valid
+providers for custom assets and behaviors.
 
 | Area | Current Paper approximation | Still missing or not equivalent |
 |---|---|---|
-| Worldgen | 15 biome registry entries; Overworld noise; chunk decoration | Custom terrain/noise, caves, lakes, full biome-specific feature/structure placement |
+| Worldgen | 15 biome entries; chunk decoration; configurable provider blocks for Charoite ore, Sift tree parts, and Ichor spring water | Custom terrain/noise, caves, lakes, complete provider-block mapping, full biome-specific feature/structure placement |
 | Structures | Ruined portal frame, Ichor spring, rough canyon/cave/arch/monolith landmarks, existing tree/shell/crystal landmarks | Deep independently generated caves/canyons, full structure variants, protected generation boundaries and real loot tables |
-| Blocks/plants/ores | Existing tagged Ichor/Charoite/Siftite content plus vanilla material stand-ins | Real registered block/fluid types, complete willow family, plants/sculk variants, Siftslate ores and native loot behavior |
+| Blocks/plants/ores | Provider-backed blocks for selected generated features; tagged item content and built-in material fallbacks | Full provider-backed block set, complete willow family, plants/sculk variants, Siftslate ores, native loot and block interactions |
 | Portal/Rifts | Note-block melody opens a temporary two-way portal; nearby entities teleport | Ancient City integration, persistent paired portal positions/state, passenger/projectile/item edge cases, exact mod exit recovery |
 | Mobs | Named vanilla entity proxies, Singer/Echo Golem/Rift systems, Dark Sniffer sonic pull | Custom entity models/AI/animations, Blub tame/follow/sit/defend, Sifter pack behavior, Dark Sniffer infection/digging, complete drops |
 | Ichor | Bottle regeneration, cauldron state, colored rain, snow and water-contact effects | Registered non-infinite fluid, bottle/bucket source placement, dripstone refill, accurate snowball/block fluid interactions |
-| Progression | Charoite enchanting approximation, Siftite recipes/gear and in-memory Mini Rift recovery | Exact XP/level roll behavior, restart-safe recovery, all reference recipes/loot and 20-advancement story tree |
-| Visual/audio | Existing item/block/entity model assets packaged as a resource pack | Client entity renderer integration, animated sky/shader, complete textures, music/disc and eight unique note sounds |
+| Progression | Charoite enchanting approximation, Siftite recipes/gear and restart-persistent Mini Rift recovery | Exact XP/level roll behavior, all reference recipes/loot and 20-advancement story tree |
+| Visual/audio | Item/block/entity model assets packaged as a resource pack; ModelEngine bridge | Client entity renderer integration, animated sky/shader, complete textures, music/disc and eight unique note sounds; provider assets need live validation |
 
 ## Build and deferred diagnostics
 
@@ -112,9 +123,8 @@ and 20 advancements. Mojang has not confirmed this feature list for Minecraft
 - No Minecraft 27.1 Paper API, datapack schema, or official vanilla content
   definitions are available in this project. This build therefore only claims
   a Paper 26.3 prototype.
-- Mini Rift recovery is in-memory and will not survive a server restart between
-  death and respawn. Its overflow fallback drops items beside the player rather
-  than orbiting them until inventory space opens.
+- Mini Rift recovery persists across restarts. Its overflow fallback drops
+  items beside the player rather than orbiting them until inventory space opens.
 
 ## Licensing and provenance
 

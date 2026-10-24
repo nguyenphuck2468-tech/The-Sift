@@ -2,9 +2,12 @@
 
 This project is the single source/build project for the next The Sift plugin
 update. It targets Java 25 and Paper 26.3 for its current build, while preparing
-the Sift dimension integration for the planned Minecraft 27.1 release. The
-27.1 data format and runtime API are not available yet, so this is a working
-26.3 prototype rather than a claim of 27.1 compatibility.
+the Sift dimension integration for the planned Minecraft 27.1 release. Here,
+“vanilla-like 27.1 experience” means custom Sift content should feel built into
+the game; the Paper implementation may use content plugins to supply custom
+blocks, items, mobs, models, and packs. The 27.1 data format and runtime API
+are not available yet, so this is a working 26.3 prototype rather than a
+claim of 27.1 compatibility.
 
 ## Build
 
@@ -24,9 +27,9 @@ lifecycle. This requires Paper's plugin loader and Paper 26.3 or newer. The
 dimension selects among the original five prototype biomes and ten more biome
 names from the community mod reference: Overgrown Forest/Clearing/Slopes,
 Siftslate biomes, Ichor Snowy Peaks, Sift Wastes, and Sift Deep Dark. It has
-custom sky, fog, and ambient settings. The prototype still uses vanilla
-Overworld noise and vanilla block/entity substitutes; 27.1 compatibility
-remains unverified.
+custom sky, fog, and ambient settings. The prototype still uses Overworld
+noise and built-in block/entity fallbacks where no external custom-content
+provider is configured; 27.1 compatibility remains unverified.
 
 ## Current foundation scope
 
@@ -68,7 +71,7 @@ remains unverified.
   prototype loot, plus Soul Canyon cuts, Sniffer Cave entrances, cliff arches,
   and monoliths. Dark Sniffer proxies use a sonic-pull effect.
 - Tagged Siftite equipment dropped on death is returned after respawn through
-  a Mini Rift effect; this prototype keeps pending recovery in memory.
+  a Mini Rift effect; pending recovery is saved across server restarts.
 - Charoite uses a Lapis Lazuli stand-in in enchanting tables: offers add 20
   levels and raise rolled enchantments above level I. Charoite-enchanted items
   can still be renamed but cannot be combined on anvils.
@@ -89,11 +92,12 @@ Portal, mob, Ichor, and Rift behavior are being migrated into the source
 registry in vertical slices. Do not install an older TheSift jar alongside
 this build because both use the `TheSift` plugin identity.
 
-## Optional server plugin integrations
+## Custom content providers
 
-The Sift remains loadable without any of these plugins. For the best content
-pack experience, install **Nexo**, **ItemsAdder**, or **Oraxen** (choose one) and serve the
-The Sift resource pack through that plugin. The item bridge calls the provider
+For the intended custom-content presentation, install **Nexo**, **ItemsAdder**,
+or **Oraxen** (choose one) and serve The Sift resource pack through it. Without
+a custom-content provider, the plugin uses built-in material/entity fallbacks.
+The item bridge calls the provider
 API and adds The Sift's persistent item ID afterward, so the existing recipes,
 commands, drops, and listeners continue to recognize the item. With `auto`,
 Nexo is preferred when multiple built-in providers are installed. Recipes are
@@ -115,9 +119,36 @@ For Oraxen, copy `integrations/oraxen/the-sift.yml` into
 `plugins/Oraxen/pack/textures/thesift/`, then reload Oraxen and regenerate or
 reupload its pack.
 
+### Custom blocks in generated terrain
+
+The ecology generator can place provider-owned custom blocks for Charoite ore,
+Sift logs/leaves, and Ichor spring water. Map those Sift IDs to custom blocks
+that you define in the selected provider:
+
+```yaml
+integrations:
+  blocks:
+    provider: auto # or nexo, itemsadder, oraxen
+    definitions:
+      charoite_ore: thesift:charoite_ore
+      sift_log: thesift:sift_log
+      sift_leaves: thesift:sift_leaves
+      sift_grass: thesift:sift_grass
+      siftstone: thesift:siftstone
+      siftstone_bricks: thesift:siftstone_bricks
+      ichor_water: thesift:ichor_water
+```
+
+`auto` tries registered `SiftBlockProvider` adapters, then Nexo, ItemsAdder,
+and Oraxen. ItemsAdder IDs without a namespace are treated as `thesift:<id>`.
+Failed placements use the built-in material fallback. Starter item definitions
+alone do not create placeable blocks; each mapped ID must be configured as a
+custom block in the selected provider.
+
 Other plugins can integrate without a The Sift code change by registering
-Bukkit services implementing `com.gamepathics.thesift.foundation.api.SiftItemProvider`
-and/or `SiftMobProvider`. The item provider gets a
+Bukkit services implementing `com.gamepathics.thesift.foundation.api.SiftItemProvider`,
+`SiftMobProvider`, and/or `SiftBlockProvider`. A block provider receives a
+configured block ID and location and reports whether placement succeeded. The item provider gets a
 content ID (for example, `rift_key`) and returns an `ItemStack` or `null` if it
 does not own that item. Give the add-on a `depend: [TheSift]` entry, register
 the service during its enable, and set `integrations.items.provider` to the
@@ -125,9 +156,9 @@ provider ID, or leave it `auto` for service discovery. The Sift adds its own
 persistent ID after receiving the item, preserving recipe and gameplay checks.
 The mob provider receives an ID and location and returns a spawned Bukkit
 `LivingEntity` or `null`. Select it with `integrations.mobs.provider`, or leave
-it `auto` to discover services before trying built-in integrations. This SPI
-is the extension point for other mob plugins that do not have a built-in
-bridge; an add-on can register one adapter for any supported backend. Service
+it `auto` to discover services before trying built-in integrations. These
+SPIs are extension points for content plugins that do not have a built-in
+bridge; an add-on can register adapters for supported backends. Service
 registration:
 
 ```java
@@ -135,6 +166,8 @@ getServer().getServicesManager().register(
     SiftItemProvider.class, myProvider, this, ServicePriority.Normal);
 getServer().getServicesManager().register(
     SiftMobProvider.class, myMobProvider, this, ServicePriority.Normal);
+getServer().getServicesManager().register(
+    SiftBlockProvider.class, myBlockProvider, this, ServicePriority.Normal);
 ```
 
 Install **MythicMobs** if you want editable definitions and stats for the
@@ -193,9 +226,10 @@ to their own world and spawn-reason settings. Other custom-mob systems can be
 connected through `SiftMobProvider`; they are not automatically detected just
 because they are installed.
 
-The item bridges do not place Nexo, ItemsAdder, or Oraxen custom blocks into
-terrain; world generation and Ichor use Bukkit vanilla block stand-ins. A
-custom-block placement bridge remains unsupported.
+Custom block placement is wired into selected generated features, but provider
+block definitions are server-configured and still need runtime checks with
+each provider installed. Other generated blocks continue to use built-in
+fallbacks until their mappings and gameplay interactions are connected.
 
 ## The Sift dimension prototype
 
@@ -204,8 +238,9 @@ The Java datapack model was cross-checked against the Fabric reference mod
 files, the Paper datapack-discovery documentation, and Mojang's announcement.
 The plugin supplies its own datapack; it does not load or require the Fabric
 mod. The announced Java/Bedrock release has not shipped its official worldgen,
-so current terrain and creatures are gameplay approximations built from
-vanilla blocks and entities.
+so the current dimension is a Paper simulation of the planned custom-content
+experience. External providers can supply richer content than built-in
+fallbacks, and the plugin connects them where APIs are available.
 
 The extra biome names, portal melody, Ichor weather, structures, and creature
 behaviors are inspired by the MIT-licensed Mielon's The Sift reference project;
@@ -217,8 +252,8 @@ On Paper 26.3+, use `/sift dimension` to create/load and enter the dimension.
 The console command creates/loads it without a player; players can enter with
 the same command. Use `/sift return` to return to the Overworld spawn.
 `/datapack list enabled` should show `TheSift/dimension`. The prototype uses
-the vanilla Meadow biome and Overworld terrain settings, so custom Sift blocks
-and the Fabric mod's bespoke terrain noise are not required.
+the Meadow biome and Overworld terrain settings. This is the current worldgen
+implementation, not the intended final 27.1-like custom terrain.
 
 The dimension is stored in the same world save as the Overworld, Nether, and
 End. Paper's dimension-aware world storage places it under

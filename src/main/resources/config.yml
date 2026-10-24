@@ -96,6 +96,11 @@ compatibility:
   minecraft-target: "27.1 (planned)"
 
 integrations:
+  blocks:
+    # Choose one block backend, or auto to discover SiftBlockProvider services then Nexo, ItemsAdder, and Oraxen.
+    provider: auto
+    # Map generated Sift block IDs to the external custom-block IDs. Unmapped IDs use the built-in fallback.
+    definitions: {}
   items:
     # auto discovers API services, then tries Nexo, ItemsAdder, and Oraxen.
     provider: auto
