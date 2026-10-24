@@ -43,8 +43,8 @@ provider is configured; 27.1 compatibility remains unverified.
 - Charoite and Siftite progression: tagged ore drops, ingot/nugget recipes,
   smithing upgrades for armor/tools, and Siftite item diagnostics.
 - Singer resonance slice: persistent Singer-tagged Allay prototype, timed
-  cosmetic sonic pulses, boss bars, drops, and summon diagnostics. Charoite
-  protection is not active while the pulse has no damage/debuff effect.
+  sonic pulses with configurable damage/slowness, carried Charoite immunity,
+  boss bars, drops, and summon diagnostics.
 - `/sift doctor` to inspect enabled content flags.
 - `/sift reload` with migration validation.
 - The Sift dimension with five custom biomes, entered with `/sift dimension`
@@ -311,8 +311,14 @@ Ingot. Material-only vanilla recipes reject tagged Siftite ingredients.
 /sift give charoite <player>
 ```
 
-The Singer prototype is a passive Allay tagged with The Sift's persistent
-entity ID. It emits a sonic cue and has a boss bar, without damaging nearby
-players. The Echo Golem prototype is a passive Iron Golem: an Echo Shard bonds
-it to a player, and that player can give or retrieve a Soul Block. Both are
-early Paper approximations, not claims about Mojang's final 27.1 behavior.
+The Singer prototype is an Allay tagged with The Sift's persistent entity ID.
+Its pulse emits a sonic cue, deals 1 health point (half a heart) by default,
+and applies Slowness I for 3 seconds. Set `resonance.singer.attack-enabled: false`
+to disable both damage and slowness; tune `damage`, `slowness-seconds`,
+`slowness-amplifier`, and `pulse-seconds` under `resonance.singer`. Charoite
+protection applies while a player carries a tagged Charoite in their personal
+inventory/hotbar, offhand, or armor slots; ender-chest contents do not count.
+Creative and spectator players are unaffected. The Echo Golem prototype is a
+passive Iron Golem: an Echo Shard bonds it to a player, and that player can
+give or retrieve a Soul Block. These are early Paper approximations, not
+claims about Mojang's final 27.1 behavior.

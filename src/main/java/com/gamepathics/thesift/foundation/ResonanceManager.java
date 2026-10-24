@@ -2,6 +2,7 @@ package com.gamepathics.thesift.foundation;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.GameMode;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
@@ -11,7 +12,6 @@ import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.LivingEntity;
@@ -22,6 +22,8 @@ import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -99,6 +101,9 @@ public final class ResonanceManager implements Listener {
                     Location center = singer.getLocation();
                     world.spawnParticle(Particle.SONIC_BOOM, center.clone().add(0, 0.8, 0), 1);
                     world.playSound(center, Sound.ENTITY_WARDEN_SONIC_BOOM, 0.45f, 1.6f);
+                    for (Entity nearby : singer.getNearbyEntities(range, range, range)) {
+                        if (nearby instanceof Player target) applySingerPulse(singer, target);
+                    }
                 }
             }
         }
@@ -140,14 +145,38 @@ public final class ResonanceManager implements Listener {
         if (!plugin.getConfig().getBoolean("resonance.singer.charoite-protection", true)) {
             return false;
         }
-        for (ItemStack stack : player.getInventory().getContents()) {
+        var inventory = player.getInventory();
+        return hasTaggedCharoite(inventory.getStorageContents())
+                || hasTaggedCharoite(inventory.getArmorContents())
+                || hasTaggedCharoite(new ItemStack[]{inventory.getItemInOffHand()});
+    }
+
+    private boolean hasTaggedCharoite(ItemStack[] items) {
+        for (ItemStack stack : items) {
             if (stack != null && stack.hasItemMeta()
                     && "charoite".equals(stack.getItemMeta().getPersistentDataContainer()
-                    .get(itemKey, PersistentDataType.STRING))) {
-                return true;
-            }
+                    .get(itemKey, PersistentDataType.STRING))) return true;
         }
         return false;
+    }
+
+    private void applySingerPulse(LivingEntity singer, Player player) {
+        if (!plugin.getConfig().getBoolean("resonance.singer.attack-enabled", true)
+                || player.getGameMode() == GameMode.CREATIVE
+                || player.getGameMode() == GameMode.SPECTATOR
+                || protectedByCharoite(player)) return;
+
+        double damage = Math.max(0.0, plugin.getConfig().getDouble("resonance.singer.damage", 1.0));
+        if (damage > 0.0) player.damage(damage, singer);
+
+        int durationSeconds = Math.max(0,
+                plugin.getConfig().getInt("resonance.singer.slowness-seconds", 3));
+        if (durationSeconds > 0) {
+            int amplifier = Math.max(0,
+                    plugin.getConfig().getInt("resonance.singer.slowness-amplifier", 0));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS,
+                    durationSeconds * 20, amplifier, true, true, true));
+        }
     }
 
     private boolean isSinger(Entity entity) {

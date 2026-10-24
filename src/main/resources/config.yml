@@ -1,4 +1,4 @@
-config-version: 2
+config-version: 3
 
 content:
   ichor: true
@@ -42,7 +42,8 @@ resonance:
     max-health: 40.0
     range: 16.0
     pulse-seconds: 5
-    damage: 4.0
+    attack-enabled: true
+    damage: 1.0
     slowness-seconds: 3
     slowness-amplifier: 0
     charoite-protection: true
