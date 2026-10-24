@@ -28,13 +28,18 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 
 /** Early vanilla-backed approximation of The Sift's world generation and living content. */
 public final class SiftEcologyManager implements Listener {
     private static final String DIMENSION = "thesift:the_sift";
+    private static final byte CHUNK_DECORATION_IN_PROGRESS = 1;
+    private static final byte CHUNK_DECORATION_COMPLETE = 2;
 
     private final JavaPlugin plugin;
     private final ResonanceManager resonanceManager;
@@ -83,17 +88,54 @@ public final class SiftEcologyManager implements Listener {
     }
 
     private void populate(Chunk chunk) {
-        if (!isSift(chunk.getWorld())
-                || chunk.getPersistentDataContainer().has(decoratedChunkKey, PersistentDataType.BYTE)) {
-            return;
-        }
+        if (!isSift(chunk.getWorld())) return;
 
         boolean measure = plugin.getConfig().getBoolean("debug.chunk-generation-metrics.enabled", false);
         long started = measure ? System.nanoTime() : 0L;
-        int generationOperations = 0;
+        Set<UUID> existingEntities = new HashSet<>();
+        for (Entity entity : chunk.getEntities()) existingEntities.add(entity.getUniqueId());
+        int[] generationOperations = {0};
+        try {
+            boolean completed = decorateChunkOnce(chunk, decoratedChunkKey,
+                    () -> generationOperations[0] = decorateChunkContent(chunk));
+            if (!completed) return;
+        } catch (RuntimeException exception) {
+            for (Entity entity : chunk.getEntities()) {
+                if (!(entity instanceof Player) && !existingEntities.contains(entity.getUniqueId())) {
+                    entity.remove();
+                }
+            }
+            plugin.getLogger().log(java.util.logging.Level.WARNING,
+                    "Sift chunk decoration failed for " + chunk.getWorld().getName() + ":"
+                            + chunk.getX() + ":" + chunk.getZ()
+                            + "; the completion marker was cleared so the chunk can retry.", exception);
+            return;
+        }
 
-        // Mark first so a failed decoration never duplicates mobs/structures on reload.
-        chunk.getPersistentDataContainer().set(decoratedChunkKey, PersistentDataType.BYTE, (byte) 1);
+        if (measure) {
+            double elapsedMillis = (System.nanoTime() - started) / 1_000_000.0;
+            plugin.getLogger().info("Sift chunk " + chunk.getWorld().getName() + ":" + chunk.getX() + ":"
+                    + chunk.getZ() + " generation=" + String.format(Locale.ROOT, "%.3f", elapsedMillis)
+                    + "ms operation-attempts=" + generationOperations[0]);
+        }
+    }
+
+    static boolean decorateChunkOnce(Chunk chunk, NamespacedKey markerKey, Runnable decoration) {
+        Byte state = chunk.getPersistentDataContainer().get(markerKey, PersistentDataType.BYTE);
+        if (state != null && state == CHUNK_DECORATION_COMPLETE) return false;
+        chunk.getPersistentDataContainer().set(markerKey, PersistentDataType.BYTE, CHUNK_DECORATION_IN_PROGRESS);
+        try {
+            decoration.run();
+            chunk.getPersistentDataContainer().set(markerKey, PersistentDataType.BYTE, CHUNK_DECORATION_COMPLETE);
+            return true;
+        } catch (RuntimeException exception) {
+            chunk.getPersistentDataContainer().remove(markerKey);
+            throw exception;
+        }
+    }
+
+    private int decorateChunkContent(Chunk chunk) {
+        int generationOperations = 0;
         long seed = chunk.getWorld().getSeed() ^ ((long) chunk.getX() * 341873128712L)
                 ^ ((long) chunk.getZ() * 132897987541L);
         Random random = new Random(seed);
@@ -147,12 +189,7 @@ public final class SiftEcologyManager implements Listener {
             spawnBoss(chunk, EntityType.RAVAGER, "The Sifter", "the_sifter", 220.0, 24.0);
             generationOperations++;
         }
-        if (measure) {
-            double elapsedMillis = (System.nanoTime() - started) / 1_000_000.0;
-            plugin.getLogger().info("Sift chunk " + chunk.getWorld().getName() + ":" + chunk.getX() + ":"
-                    + chunk.getZ() + " generation=" + String.format(Locale.ROOT, "%.3f", elapsedMillis)
-                    + "ms operation-attempts=" + generationOperations);
-        }
+        return generationOperations;
     }
 
     private void decorateSurface(Chunk chunk, String biome, Random random) {
@@ -602,22 +639,18 @@ public final class SiftEcologyManager implements Listener {
         if (!plugin.getConfig().getBoolean("content.singer", true)) return;
         int x = chunk.getX() * 16 + 8, z = chunk.getZ() * 16 + 8;
         int y = chunk.getWorld().getHighestBlockYAt(x, z) + 1;
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
-            if (plugin.isEnabled() && resonanceManager != null && chunk.isLoaded()) {
-                resonanceManager.summonSinger(new Location(chunk.getWorld(), x + .5, y, z + .5));
-            }
-        });
+        if (plugin.isEnabled() && resonanceManager != null && chunk.isLoaded()) {
+            resonanceManager.summonSinger(new Location(chunk.getWorld(), x + .5, y, z + .5));
+        }
     }
 
     private void summonEchoGolem(Chunk chunk, Random random) {
         if (!plugin.getConfig().getBoolean("content.echo_golem", true)) return;
         int x = chunk.getX() * 16 + 8, z = chunk.getZ() * 16 + 8;
         int y = chunk.getWorld().getHighestBlockYAt(x, z) + 1;
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
-            if (plugin.isEnabled() && echoGolemManager != null && chunk.isLoaded()) {
-                echoGolemManager.summonEchoGolem(new Location(chunk.getWorld(), x + .5, y, z + .5));
-            }
-        });
+        if (plugin.isEnabled() && echoGolemManager != null && chunk.isLoaded()) {
+            echoGolemManager.summonEchoGolem(new Location(chunk.getWorld(), x + .5, y, z + .5));
+        }
     }
 
     private void openNaturalRift(Chunk chunk) {
@@ -625,11 +658,9 @@ public final class SiftEcologyManager implements Listener {
         int x = chunk.getX() * 16 + 8, z = chunk.getZ() * 16 + 8;
         int y = chunk.getWorld().getHighestBlockYAt(x, z) + 1;
         Location location = new Location(chunk.getWorld(), x + .5, y, z + .5);
-        plugin.getServer().getScheduler().runTask(plugin, () -> {
-            if (plugin.isEnabled() && riftManager != null && chunk.isLoaded()) {
-                riftManager.openRift(location, null);
-            }
-        });
+        if (plugin.isEnabled() && riftManager != null && chunk.isLoaded()) {
+            riftManager.openRift(location, null);
+        }
     }
 
     private void spawnBoss(Chunk chunk, EntityType type, String name, String id,
