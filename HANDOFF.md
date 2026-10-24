@@ -401,3 +401,14 @@ Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
   safely reversible from this plugin.
 - See the follow-up evidence table in `IMPLEMENTATION_REPORT.md` and smoke
   steps in `docs/TESTING.md`.
+# Handoff follow-up after strict-provider review
+
+The working tree continues from `16eca50`. Strict-mode worldgen now skips the legacy vanilla-backed decorative feature path; only provider-backed block IDs and mob providers are used for The Sift content in the strict branch. If a required block provider placement fails, no vanilla substitute is placed, the attempt is counted for `/sift doctor`, and the chunk completion marker is cleared for retry. A failed pass can still leave earlier successful block placements behind; it is retryable but not transactional.
+
+`SiftiteContent` and `IchorContent` also refuse vanilla tagged-item fallback in strict mode. Commands explain unresolved IDs. Main outstanding design choice: generated MythicMobs definitions still use a vanilla base entity and do not attach a model. Choose either ModelEngine attachment or ItemsAdder custom entities before I generate model-dependent definitions; see [`IMPLEMENTATION_REPORT.md`](IMPLEMENTATION_REPORT.md) and [`docs/provider-sources.md`](docs/provider-sources.md).
+
+The strict teleport gate permits same-dimension travel and rejects cross-world arrivals when provider readiness fails. Player join into a locked Sift dimension and non-player entity teleports are covered by handlers, but not by live Paper tests yet. Piston marker transfer now follows moved Soul Blocks and Sonorous Deepslate; the extend/retract vector inference needs a real server smoke test. Provider API reflection probes show up in `/sift doctor`; presence/signature checks are not the same as parsing provider YAML or successful placement.
+
+Sonorous legacy migration uses a persisted world-completion marker. Servers with old vanilla-fallback Sonorous stations should re-place them with provider-defined items: ambiguous old vanilla positions are dropped. Disabling the plugin attempts to evacuate players to a loaded non-Sift world and does not unload the dimension; live disable/re-enable remains unverified because the Paper EULA was not accepted.
+
+Validation snapshot: the pre-change checkpoint had 63 tests; the current suite has 72 (nine added, no removals). Final local `clean build siftResourcePack` passed: 72 tests, 0 failures. Commit/push and check CI. No real provider, permission-as-non-OP, Bedrock or live Paper lifecycle claim is made.

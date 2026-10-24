@@ -50,4 +50,8 @@ provider has parsed its generated YAML or works on a live server.
 
 On the test server, run `/sift give soul_block <player>`, `/sift summon singer <player>`, `/sift summon echo_golem <player>`, and `/sift give sonorous_deepslate <player>`. Place Sonorous Deepslate and a normal vanilla note block on top. Right-click to tune; left-click the sequence `1, 3, 7, 6, 5, 2, 4, 8` to open a Rift. Provider-owned note blocks are left to their provider. Then run `/sift doctor`, verify provider logs and each mandatory content ID, check `/plugins` for duplicate TheSift installations, and inspect `logs/latest.log` for API errors. No real-provider server test is claimed until recorded in `docs/parity-matrix.md`.
 
+When upgrading from a release that used vanilla fallback for Sonorous Deepslate, existing vanilla blocks that were only indexed by the legacy world-level scan are intentionally not migrated: their identity is ambiguous. Re-place them using the provider-defined Sonorous Deepslate item to create new persistent station markers. Provider-defined blocks found in the legacy index are migrated when their chunks are loaded; the migration-complete flag is persisted at world scope.
+
+Disabling The Sift while players are in its world attempts to teleport them to the first loaded non-Sift world spawn. The plugin does not unload the dimension. This has unit/build coverage only; an actual Paper plugin disable/re-enable was not run because the disposable server EULA remains unaccepted.
+
 Do not publish a resource-pack ZIP yet: the repository contains PNG assets of unresolved provenance. The embedded `TheSiftGeyser.jar.embedded` also has unknown provenance; it remains excluded from plugin artifacts and must not be released pending owner confirmation.
