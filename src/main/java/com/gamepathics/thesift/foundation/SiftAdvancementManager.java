@@ -11,6 +11,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.inventory.CraftItemEvent;
 import org.bukkit.inventory.ItemStack;
@@ -48,13 +49,32 @@ public final class SiftAdvancementManager implements Listener {
     @EventHandler
     public void onCraft(CraftItemEvent event) {
         String id = contentId(event.getRecipe().getResult());
-        if (id != null && id.startsWith("siftite_")
+        if (isSiftiteGear(id)
                 && event.getWhoClicked() instanceof Player player) grant(player, "shard_gear");
+    }
+
+    private boolean isSiftiteGear(String id) {
+        if (id == null) return false;
+        return switch (id) {
+            case "siftite_sword", "siftite_axe", "siftite_pickaxe", "siftite_shovel", "siftite_hoe",
+                    "siftite_spear", "siftite_helmet", "siftite_chestplate", "siftite_leggings",
+                    "siftite_boots" -> true;
+            default -> false;
+        };
     }
 
     @EventHandler
     public void onConsume(PlayerItemConsumeEvent event) {
         if ("ichor_bottle".equals(contentId(event.getItem()))) grant(event.getPlayer(), "storm");
+    }
+
+    /** IchorListener cancels vanilla consumption and handles bottle effects from this interaction. */
+    @EventHandler(priority = org.bukkit.event.EventPriority.MONITOR)
+    public void onIchorBottleDrink(PlayerInteractEvent event) {
+        if (event.getHand() != org.bukkit.inventory.EquipmentSlot.HAND
+                || event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_AIR
+                || !"ichor_bottle".equals(contentId(event.getItem()))) return;
+        grant(event.getPlayer(), "storm");
     }
 
     @EventHandler
@@ -65,7 +85,7 @@ public final class SiftAdvancementManager implements Listener {
         if (killer == null || id == null) return;
         switch (id) {
             case "prism_warden" -> grant(killer, "warden", "prismatic");
-            case "the_sifter", "sifter" -> grant(killer, "sifter", "tyrant", "matriarch");
+            case "the_sifter", "sifter" -> grant(killer, "sifter");
             default -> { }
         }
     }
