@@ -304,15 +304,20 @@ java v5, change that step to v6 in a separate CI-only commit.
 
 ### Commits and verification state
 
-Pushed follow-up commits through the config audit: `1199aba31f2875f3a633aabd3f33ff3ebb7d06cc`
+Pushed follow-up commits: `1199aba31f2875f3a633aabd3f33ff3ebb7d06cc`
 (Singer combat), `73d05eee5306cebf318ad37fda6c74939080c2fc` (remove unused
 Rift block handler), `40a332b3252da92e95c4a3487ebf4b9ccc1c8e45` (ItemsAdder
 ID check), `fe832c57ef3782caab567ce6e32e5c01544a0acc` (chunk completion
 state), `d7dd35479e469315ebcf6a19c7ccfd43cbd20872` (exclude Geyser binary and
 inventory Paper JAR), `648276bf57ddb7300a69ccef259a63d68b6bc685` (CI actions and
 runner), and `0140842b8e71dfeeae6c9dbb0beadff65a10db8c` (report, handoff,
-NOTICE draft). Local clean build passed all 52 tests; GitHub Actions run
-`40086207489` passed for `0140842`. No live server verification was performed.
+NOTICE draft), `330d1381fe7ab53e21b96eb966a001abe1da6b44` (CI evidence),
+`362a8e520145e0eb5c6c5e38d66fc84b7ffc66dc` (complete ContentId config audit),
+and `3ff2a135b4e5b4e5a98539e59069f89c297194e6` (exclude unverified PNGs from
+Paper JAR and refresh its inventory). Local clean build passed all 52 tests;
+GitHub Actions run `40086670762` passed for `3ff2a13`. This report-only
+commit-list correction is pushed separately; its CI result is linked in the
+final response. No live server verification was performed.
 
 ## Gradle/Mockito root-cause capture (2026-10-24, before remediation)
 
