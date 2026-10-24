@@ -341,15 +341,17 @@ git status
 - `NOTICE.draft.md` records only the current source investigation. No LICENSE
   was created. Step 1 follow-up added config no-effect comments, archive
   reproducibility, current stable CI actions, and a Paper 26.3 run-paper task.
-  The owner has since prioritized provider-first dimension readiness. Strict
-  gating is not implemented yet: decide the version-3 config migration policy,
-  approve the primary provider pair, and confirm that `/sift return` remains an
-  exit path if providers are missing. The current provider audit is in
-  `docs/parity-matrix.md`.
-  The note-block/Rift implementation is paused until the owner chooses how
-  portal stations are registered; see the design options in
-  `IMPLEMENTATION_REPORT.md`. Server testing, external-provider validation,
-  and the rest of Step 2 remain pending.
+  The owner requested provider-first strict readiness. It is now implemented
+  with `providers.strict: true` by default, per-ID readiness for item/block/mob
+  groups, optional-provider diagnostics, and a development fallback when
+  strict is disabled. A failing readiness check preserves existing dimension
+  data and the return command remains an exit route. Canonical definitions and
+  current evidence levels are in `integrations/content-spec.json` and
+  `docs/parity-matrix.md`. Provider parsing and live Paper 26.3 checks remain
+  pending. ResourcePackManager has a public Java API; The Sift currently only
+  detects it, with registration integration deferred. Do not release the
+  unresolved Geyser embedded jar or resource-pack ZIP before provenance is
+  resolved.
 git log --oneline -5
 ```
 

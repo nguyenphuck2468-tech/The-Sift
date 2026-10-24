@@ -2,6 +2,11 @@ package com.gamepathics.thesift.foundation;
 
 import dev.lone.itemsadder.api.CustomBlock;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.ServicePriority;
+import com.gamepathics.thesift.foundation.api.SiftBlockProvider;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,5 +44,33 @@ class ExternalBlockBridgeTest {
 
         CustomBlock.setPlacedIdForTest("thesift:charoite_ore");
         assertTrue(bridge.isBlock("charoite_ore", block));
+    }
+
+    @Test
+    void portalMelodyRequiresTaggedDeepslateAndLeavesProviderBlocksAlone() {
+        var world = server.addSimpleWorld("sonorous-fixture");
+        Block base = world.getBlockAt(0, 63, 0);
+        Block note = world.getBlockAt(0, 64, 0);
+        base.setType(Material.DEEPSLATE);
+        note.setType(Material.NOTE_BLOCK);
+        RiftManager rifts = new RiftManager(plugin);
+        SonorousBlockRegistry tags = new SonorousBlockRegistry(plugin);
+        assertFalse(rifts.canHandlePortalSong(note), "untagged vanilla note blocks keep vanilla handling");
+        tags.mark(base);
+        assertTrue(rifts.canHandlePortalSong(note));
+
+        plugin.getConfig().set("integrations.blocks.provider", "fixture");
+        plugin.getConfig().set("integrations.blocks.definitions.siftslate", "thesift:siftslate");
+        plugin.getServer().getServicesManager().register(SiftBlockProvider.class, new FixtureProvider(), plugin,
+                ServicePriority.Normal);
+        assertFalse(rifts.canHandlePortalSong(note), "provider-owned base blocks must not be intercepted");
+        assertTrue(new ExternalBlockBridge(plugin).isProviderOwned(note), "provider-owned note blocks are never intercepted");
+    }
+
+    private static final class FixtureProvider implements SiftBlockProvider {
+        @Override public String getProviderId() { return "fixture"; }
+        @Override public boolean placeBlock(String contentId, Location location) { return false; }
+        @Override public boolean supports(String contentId) { return true; }
+        @Override public boolean isBlock(String contentId, Block block) { return block.getY() == 63 || block.getY() == 64; }
     }
 }

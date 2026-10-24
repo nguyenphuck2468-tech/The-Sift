@@ -377,7 +377,12 @@ public final class SiftEcologyManager implements Listener {
     }
 
     private void placeBlock(Block block, String contentId, Material fallback) {
-        if (!blockBridge.place(contentId, block.getLocation())) block.setType(fallback, false);
+        if (!blockBridge.place(contentId, block.getLocation())) {
+            block.setType(fallback, false);
+            if (contentId.equals("siftslate") && fallback == Material.DEEPSLATE) {
+                new SonorousBlockRegistry(plugin).mark(block);
+            }
+        }
     }
 
     private void generateCharoiteOre(Chunk chunk, Random random) {
@@ -562,6 +567,7 @@ public final class SiftEcologyManager implements Listener {
         if (world.getBlockAt(x, surface - 4, z).getType().isAir()) {
             Entity sniffer = mobFactory.spawn("dark_sniffer",
                     new Location(world, x + .5, surface - 4, z + .5), EntityType.SNIFFER);
+            if (sniffer == null) return;
             sniffer.setCustomName("§5Dark Sniffer");
             sniffer.setCustomNameVisible(false);
             sniffer.setPersistent(true);
@@ -624,6 +630,7 @@ public final class SiftEcologyManager implements Listener {
             String mobId = name.toLowerCase(Locale.ROOT).replace(' ', '_');
             Location spawnAt = new Location(world, x + .5, y, z + .5);
             Entity entity = mobFactory.spawn(mobId, spawnAt, type);
+            if (entity == null) continue;
             entity.setPersistent(true);
             entity.setCustomName("§d" + name);
             entity.setCustomNameVisible(random.nextInt(4) == 0);
@@ -669,6 +676,7 @@ public final class SiftEcologyManager implements Listener {
         int y = chunk.getWorld().getHighestBlockYAt(x, z) + 1;
         Location location = new Location(chunk.getWorld(), x + .5, y, z + .5);
         Entity entity = mobFactory.spawn(id, location, type);
+        if (entity == null) return;
         entity.setPersistent(true);
         entity.setCustomName("§5§l" + name);
         entity.setCustomNameVisible(true);
@@ -732,6 +740,7 @@ public final class SiftEcologyManager implements Listener {
 
         boolean boss = id.equals("the_sifter") || id.equals("prism_warden");
         Entity entity = mobFactory.spawn(id, location, type);
+        if (entity == null) return false;
         entity.setPersistent(true);
         entity.setCustomName((boss ? "§5§l" : "§d") + display);
         entity.setCustomNameVisible(true);

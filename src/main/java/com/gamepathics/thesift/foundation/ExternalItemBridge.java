@@ -39,6 +39,22 @@ final class ExternalItemBridge {
         return null;
     }
 
+    boolean resolves(String backend, String id) {
+        try {
+            return switch (backend) {
+                case "SiftItemProvider" -> plugin.getServer().getServicesManager()
+                        .getRegistrations(SiftItemProvider.class).stream().map(RegisteredServiceProvider::getProvider)
+                        .anyMatch(p -> p != null && (plugin.getConfig().getString("integrations.items.provider", "auto").equalsIgnoreCase("auto")
+                                || plugin.getConfig().getString("integrations.items.provider", "auto").equalsIgnoreCase(p.getProviderId()))
+                                && p.supports(id));
+                case "Nexo" -> fromNexo(id) != null;
+                case "ItemsAdder" -> fromItemsAdder(id) != null;
+                case "Oraxen" -> fromOraxen(id) != null;
+                default -> false;
+            };
+        } catch (RuntimeException e) { return false; }
+    }
+
     private ItemStack fromServices(String id, String configured) {
         for (RegisteredServiceProvider<SiftItemProvider> registration : plugin.getServer()
                 .getServicesManager().getRegistrations(SiftItemProvider.class)) {

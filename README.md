@@ -116,36 +116,30 @@ this build because both use the `TheSift` plugin identity.
 
 ## Custom content providers
 
-Provider parity and current definition coverage are tracked in
-`docs/parity-matrix.md`. The current build still permits vanilla fallbacks;
-strict provider readiness enforcement has not been implemented yet. The
-intended release behavior is provider-first, with fallback reserved for
-development/CI.
+Provider parity and definition coverage are tracked in
+`docs/parity-matrix.md`. `providers.strict` defaults to `true`; dimension
+creation and entry are blocked until a selected item, block, and mob backend
+each resolves every required ID. Set it to `false` only for development/CI,
+where vanilla fallback remains available. `/sift doctor` reports the installed
+backends, versions, selected providers, resolved/missing IDs, and setup hints.
 
-For the intended custom-content presentation, install **Nexo**, **ItemsAdder**,
-or **Oraxen** (choose one) and serve The Sift resource pack through it. Without
-a custom-content provider, the plugin uses built-in material/entity fallbacks.
-The item bridge calls the provider
-API and adds The Sift's persistent item ID afterward, so the existing recipes,
-commands, drops, and listeners continue to recognize the item. With `auto`,
-Nexo is preferred when multiple built-in providers are installed. Recipes are
-refreshed shortly after startup to account for asynchronous item registry loads.
+The canonical content definition is `integrations/content-spec.json`. Generate
+provider configs with `./gradlew generateProviderDefinitions`; install the
+outputs under `build/generated/provider-definitions/`, as described in
+`docs/TESTING.md`. Do not treat the older hand-maintained YAML snapshots under
+`integrations/{nexo,itemsadder,oraxen,mythicmobs}/` as canonical. The generator
+currently emits item/block definitions for Nexo, ItemsAdder, and Oraxen, and
+mob definitions for MythicMobs. It does not emit ItemsAdder custom-entity or
+EliteMobs boss definitions. No generated file has yet been parsed by its real
+provider or tested on a real server; see `docs/parity-matrix.md`.
 
-For Nexo, copy `integrations/nexo/the-sift.yml` into `plugins/Nexo/items/`,
-merge `assets/thesift` from `TheSift-resource-pack.zip` into Nexo's pack assets,
-then run `/nexo reload`. For ItemsAdder, copy
-`integrations/itemsadder/sift-items.yml` into
-`plugins/ItemsAdder/contents/thesift/`, copy the resource pack's
-`assets/thesift/models` and `assets/thesift/textures` folders into that
-namespace, then run `/iazip` and `/iareload`. Starter definitions cover the
-configured Sift item IDs; wrapper models use bundled custom models where
-available and otherwise retain the item's vanilla material appearance.
-
-For Oraxen, copy `integrations/oraxen/the-sift.yml` into
-`plugins/Oraxen/items/`, copy the resource pack's `assets/thesift/models` into
-`plugins/Oraxen/pack/models/thesift/` and `assets/thesift/textures` into
-`plugins/Oraxen/pack/textures/thesift/`, then reload Oraxen and regenerate or
-reupload its pack.
+With `auto`, item/block backends are tried in this order: registered Sift
+services, Nexo, ItemsAdder, Oraxen. Mob order is registered service,
+ItemsAdder entity, MythicMobs, EliteMobs. Set each
+`integrations.{items,blocks,mobs}.provider` to override selection. Other
+plugins remain optional soft dependencies. Strict mode checks every mandatory
+ID before allowing dimension access; it preserves existing world data when a
+provider disappears. `/sift return` remains an emergency exit.
 
 ### Custom blocks in generated terrain
 
@@ -169,9 +163,8 @@ integrations:
 
 `auto` tries registered `SiftBlockProvider` adapters, then Nexo, ItemsAdder,
 and Oraxen. ItemsAdder IDs without a namespace are treated as `thesift:<id>`.
-Failed placements use the built-in material fallback. Starter item definitions
-alone do not create placeable blocks; each mapped ID must be configured as a
-custom block in the selected provider.
+When strict mode is enabled, a missing provider block is a readiness failure;
+fallback placement is only available with `providers.strict: false`.
 
 Other plugins can integrate without a The Sift code change by registering
 Bukkit services implementing `com.gamepathics.thesift.foundation.api.SiftItemProvider`,
@@ -254,10 +247,10 @@ to their own world and spawn-reason settings. Other custom-mob systems can be
 connected through `SiftMobProvider`; they are not automatically detected just
 because they are installed.
 
-Custom block placement is wired into selected generated features, but provider
-block definitions are server-configured and still need runtime checks with
-each provider installed. Other generated blocks continue to use built-in
-fallbacks until their mappings and gameplay interactions are connected.
+Custom block placement is wired into selected generated features. Provider
+definitions are generated from the canonical spec, but API parsing and live
+runtime behavior still need checks with each provider installed. The parity
+matrix records these evidence levels separately.
 
 ## The Sift dimension prototype
 

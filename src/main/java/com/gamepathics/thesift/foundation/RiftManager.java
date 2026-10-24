@@ -50,6 +50,8 @@ public final class RiftManager implements Listener {
     private final JavaPlugin plugin;
     private final NamespacedKey riftKey;
     private final SiftMobFactory mobFactory;
+    private final ExternalBlockBridge blockBridge;
+    private final SonorousBlockRegistry sonorousBlocks;
     private final Map<UUID, RiftInstance> rifts = new HashMap<>();
     private final Set<UUID> travelling = new HashSet<>();
     private BukkitTask updateTask;
@@ -60,6 +62,8 @@ public final class RiftManager implements Listener {
         this.plugin = plugin;
         this.riftKey = new NamespacedKey(plugin, "rift_key");
         this.mobFactory = new SiftMobFactory(plugin);
+        this.blockBridge = new ExternalBlockBridge(plugin);
+        this.sonorousBlocks = new SonorousBlockRegistry(plugin);
     }
 
     public void start() {
@@ -178,6 +182,7 @@ public final class RiftManager implements Listener {
         if (event.getHand() != EquipmentSlot.HAND) return;
         if (event.getClickedBlock() == null || event.getClickedBlock().getType() != Material.NOTE_BLOCK) return;
         Block block = event.getClickedBlock();
+        if (!canHandlePortalSong(block)) return;
         if (!(block.getBlockData() instanceof NoteBlock noteBlock)) return;
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
             event.setCancelled(true);
@@ -209,6 +214,13 @@ public final class RiftManager implements Listener {
             event.getPlayer().playSound(block.getLocation(), "minecraft:block.note_block.bass", 0.8f, 0.6f);
             event.getPlayer().sendActionBar("§cWrong note; the Sift song resets.");
         }
+    }
+
+    boolean canHandlePortalSong(Block noteBlock) {
+        if (noteBlock == null || noteBlock.getType() != Material.NOTE_BLOCK) return false;
+        Block base = noteBlock.getRelative(org.bukkit.block.BlockFace.DOWN);
+        return !blockBridge.isProviderOwned(noteBlock) && !blockBridge.isProviderOwned(base)
+                && base.getType() == Material.DEEPSLATE && sonorousBlocks.contains(base);
     }
 
     public class RiftInstance {
@@ -257,6 +269,13 @@ public final class RiftManager implements Listener {
                     ? Bukkit.getWorlds().stream().filter(w -> w.getEnvironment() == World.Environment.NORMAL)
                         .findFirst().orElse(null)
                     : Bukkit.getWorld(NamespacedKey.fromString("thesift:the_sift"));
+            if (targetWorld != null && targetWorld.getKey().equals(SiftDimensionManager.DIMENSION_KEY)) {
+                ProviderReadiness readiness = new ProviderReadiness(plugin);
+                if (readiness.strict() && !readiness.dimensionAllowed()) {
+                    plugin.getLogger().severe("Blocked Rift destination into The Sift: required providers are unavailable. Run /sift doctor. Existing world data is preserved.");
+                    return;
+                }
+            }
             if (targetWorld == null) return;
             int x = center.getBlockX();
             int z = center.getBlockZ();
@@ -290,6 +309,7 @@ public final class RiftManager implements Listener {
                 
                 // Spawn Enderman-like or custom mob
                 Entity entity = mobFactory.spawn("rift_walker", spawnLoc, EntityType.ENDERMAN);
+                if (entity == null) continue;
                 entity.setCustomName("§5Rift Walker");
                 entity.setCustomNameVisible(true);
             }

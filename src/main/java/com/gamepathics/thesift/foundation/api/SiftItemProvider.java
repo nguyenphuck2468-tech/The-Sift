@@ -12,4 +12,7 @@ public interface SiftItemProvider {
 
     /** Return the custom item for a The Sift content ID, or null if unsupported. */
     ItemStack createItem(String contentId);
+
+    /** Read-only readiness probe; implementations should return false for IDs they do not own. */
+    default boolean supports(String contentId) { return false; }
 }

@@ -132,11 +132,16 @@ siftite:
 compatibility:
   minecraft-target: "27.1 (planned)"
 
+providers:
+  # Strict provider-first mode: dimension access is denied until all mandatory IDs resolve.
+  strict: true
+  bedrock-enabled: false
+
 integrations:
   blocks:
     # Choose one block backend, or auto to discover SiftBlockProvider services then Nexo, ItemsAdder, and Oraxen.
     provider: auto
-    # Map generated Sift block IDs to the external custom-block IDs. Unmapped IDs use the built-in fallback.
+    # Optional per-ID override. By default each backend resolves the canonical ID (ItemsAdder: thesift:<id>).
     definitions: {}
   items:
     # auto discovers API services, then tries Nexo, ItemsAdder, and Oraxen.

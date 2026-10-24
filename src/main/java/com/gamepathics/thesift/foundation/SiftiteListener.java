@@ -6,6 +6,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.NamespacedKey;
 import org.bukkit.persistence.PersistentDataType;
@@ -21,6 +22,7 @@ public final class SiftiteListener implements Listener {
     private final NamespacedKey oreMarker;
     private final NamespacedKey siftiteOreMarker;
     private final ExternalBlockBridge blockBridge;
+    private final SonorousBlockRegistry sonorousBlocks;
 
     public SiftiteListener(JavaPlugin plugin, SiftiteContent content) {
         this.plugin = plugin;
@@ -28,6 +30,16 @@ public final class SiftiteListener implements Listener {
         this.oreMarker = new NamespacedKey(plugin, "charoite_ore_positions");
         this.siftiteOreMarker = new NamespacedKey(plugin, "siftite_ore_positions");
         this.blockBridge = new ExternalBlockBridge(plugin);
+        this.sonorousBlocks = new SonorousBlockRegistry(plugin);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onSonorousDeepslatePlace(BlockPlaceEvent event) {
+        if (!content.is(event.getItemInHand(), "siftslate")) return;
+        Block placed = event.getBlockPlaced();
+        if (placed.getType() == Material.DEEPSLATE && !blockBridge.isProviderOwned(placed)) {
+            sonorousBlocks.mark(placed);
+        }
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)

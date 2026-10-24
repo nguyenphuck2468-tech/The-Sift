@@ -65,6 +65,7 @@ public final class ResonanceManager implements Listener {
 
     public LivingEntity summonSinger(Location location) {
         LivingEntity singer = mobFactory.spawn(SINGER_ID, location, EntityType.ALLAY);
+        if (singer == null) return null;
         singer.getPersistentDataContainer().set(entityKey, PersistentDataType.STRING, SINGER_ID);
         singer.setCustomName("§5§lSinger");
         singer.setCustomNameVisible(true);

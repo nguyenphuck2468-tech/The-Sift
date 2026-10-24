@@ -1,64 +1,53 @@
 # The Sift provider parity matrix
 
-This matrix records the repository state at commit `c17369e` (2026-10-24).
-It audits starter definitions and implemented adapter paths, not whether an
-external plugin is installed or has successfully loaded them on a server.
-“Full” means the current repository's 72 item IDs are all declared for that
-provider; it does not certify asset rights, API compatibility, or future
-content. A block item definition is not a custom-block definition.
+## Status scale
 
-| Content surface | Nexo | ItemsAdder | Oraxen | MythicMobs | EliteMobs | ModelEngine |
-|---|---|---|---|---|---|---|
-| Items | có định nghĩa đầy đủ | có định nghĩa đầy đủ | có định nghĩa đầy đủ | chưa | chưa | chưa |
-| Placeable custom blocks | chưa | chưa | chưa | chưa | chưa | chưa |
-| Custom mob spawning | chưa | có định nghĩa một phần | chưa | có định nghĩa một phần | có định nghĩa một phần | chưa |
-| Mob models | chưa | chưa | chưa | chưa | chưa | có định nghĩa một phần |
+Each cell lists the highest verified level reached:
 
-## Evidence and gaps
+1. **Detected**: runtime can identify the optional plugin/service by name.
+2. **Generated**: `generateProviderDefinitions` emits definitions from `integrations/content-spec.json`.
+3. **Parseable**: that provider has successfully parsed the generated definitions.
+4. **Live checked**: behavior was exercised on a real Paper 26.3 server with that plugin installed.
 
-- **Items:** `integrations/nexo/the-sift.yml`,
-  `integrations/itemsadder/sift-items.yml`, and
-  `integrations/oraxen/the-sift.yml` each declare the same 72 IDs. The code
-  bridges are in `ExternalItemBridge`; live API resolution is not verified.
-  Resource-pack assets include PNG files of unresolved provenance, so the
-  definitions do not authorize publishing the pack.
-- **Blocks:** the Nexo, ItemsAdder, and Oraxen placement/detection API paths
-  exist in `ExternalBlockBridge`, but `integrations.blocks.definitions` is
-  empty in the default config and there are no provider-specific custom-block
-  definitions. The existing item YAML entries do not make those IDs placeable
-  custom blocks. The `SiftBlockProvider` service contract is available for
-  third-party adapters.
-- **ItemsAdder entities:** `MythicMobBridge` includes a `CustomEntity` path and
-  `integrations.mobs.itemsadder.entities` permits ID mapping, but the current
-  ItemsAdder YAML has no custom-entity section. This is bridge support, not a
-  ready custom-entity pack.
-- **MythicMobs:** `integrations/mythicmobs/Mobs/TheSift.yml` contains 22
-  prototype entries and is loaded by the MythicMobs bridge for IDs routed
-  through `SiftMobFactory`. Some encounter managers still spawn their own
-  Bukkit entity directly and bypass that provider path; full mob parity is
-  therefore not complete.
-- **EliteMobs:** the bridge can spawn configured custom bosses and the config
-  provides a definitions map, but the default definitions map is empty. It is
-  not a full wildlife backend.
-- **ModelEngine:** `ModelEngineBridge` can attach a configured model ID to
-  provider-spawned entities; the default model map is empty. It supplies models,
-  not mob spawning or AI.
+No plugin in this matrix has reached **Live checked** in this repository. `Generated` describes repository generation only; it does not mean a provider accepted or loaded the files.
 
-## Proposed primary providers (not yet approved)
+| Content | Nexo | ItemsAdder | Oraxen | Sift service | MythicMobs | EliteMobs | ModelEngine | ResourcePackManager | Geyser | Floodgate | ViaVersion | ViaBackwards | ViaRewind |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Item lookup / creation | Detected + Generated | Detected + Generated | Detected + Generated | Detected | — | — | — | — | — | — | — | — | — |
+| Placeable blocks | Detected + Generated | Detected + Generated | Detected + Generated | Detected | — | — | — | — | — | — | — | — | — |
+| Custom mob spawning | — | Detected (spawn path; readiness not safely probeable) | — | Detected | Detected + Generated | Detected (file mapping only) | — | — | — | — | — | — | — |
+| Mob rendering | — | — | — | — | — | — | Detected (attach path) | — | — | — | — | — | — |
+| Bedrock level 1 detection | — | — | — | — | — | — | — | Detected | Detected | Detected | Detected | Detected | Detected |
+| Bedrock level 2 generated pack / Geyser mappings | **MISSING** | **MISSING** | **MISSING** | — | — | — | — | **MISSING** | **MISSING** | — | — | — | — |
 
-Recommend **ItemsAdder** as the primary item and block backend: the item bridge
-and all 72 current item IDs already exist, the plugin has custom-block API
-paths, and the established `thesift:<id>` namespace matches current config and
-starter data. The significant remaining work is a real block-definition pack,
-strict per-ID validation, and live API testing. Nexo and Oraxen retain their
-current 72-item definitions and adapters; their block-definition parity is
-also still absent.
+`Detected` for optional plugins is based on the declared plugin name and reflective/service path in the code, not proof of API compatibility. `ResourcePackManager` is currently detection and doctor reporting only. Its public Java API supports pack registration, but integration is deferred; no API calls or telemetry are used. Geyser, Floodgate, ViaVersion, ViaBackwards, ViaRewind, and ResourcePackManager never gate dimension readiness.
 
-Recommend **MythicMobs** as the primary mob backend: it already has 22
-prototype definitions and a direct configured-spawn path for ecology IDs.
-It still needs ID-by-ID coverage, encounter-manager routing, Mythic skill/AI
-polish, and server validation. Keep ModelEngine optional for visual models;
-its absence should warn in `/sift doctor`, but must not fail strict readiness.
+Bedrock level 2 (pack generation, custom mappings, and end-to-end Geyser validation) is estimated **high / roughly 1–3 engineering weeks**, assuming usable asset provenance and a test server with Geyser + ResourcePackManager. This is a planning estimate, not a commitment.
 
-No primary provider has been selected by the owner. Do not create the large
-primary-provider block/entity definitions until that decision is confirmed.
+## Content source and generation
+
+- Canonical definitions: [`integrations/content-spec.json`](../integrations/content-spec.json).
+- Nexo stable block variations: [`integrations/nexo/block-variants.yml`](../integrations/nexo/block-variants.yml). The generator rejects duplicated IDs/variations, out-of-range values, and missing mappings. The allocated variation range may still conflict with unrelated Nexo content on a user's server; there is no safe public API collision probe implemented yet.
+- Run `./gradlew generateProviderDefinitions`. Outputs go under `build/generated/provider-definitions/` and are not bundled in the plugin jar.
+- The generator emits Nexo, ItemsAdder, and Oraxen item/block YAML, plus MythicMobs mob YAML. It does not generate ItemsAdder custom entities or EliteMobs boss files because the canonical spec currently has no verified target schema for those formats. Those cells remain partial/missing until a tested definition can be produced.
+- Generated item/block models refer to `thesift` model paths. This repository's PNG provenance is unresolved; do not publish a resource-pack ZIP or ship those textures until provenance is cleared.
+- `ichor_water` is a simulated block placement and does not implement a flowing custom fluid. Record it as a **STAND-IN** in gameplay parity until a provider can represent the required fluid behavior.
+
+## Strict readiness
+
+With `providers.strict: true`, readiness requires at least one selected backend resolving **every** mandatory item ID, at least one selected backend resolving **every** mandatory block ID, and at least one selected mob backend resolving **every** mandatory mob ID. The canonical lists are in `integrations/content-spec.json`; Gradle generates the runtime lists in `ProviderContentIds`. Some APIs (notably ItemsAdder custom entity and EliteMobs bosses) do not yet have a verified side-effect-free readiness probe, so doctor reports those IDs unresolved rather than spawning test mobs. The dimension and its existing save remain untouched when readiness fails.
+
+With `providers.strict: false`, vanilla fallback remains available for development/CI and a startup warning is logged. Bedrock support is optional and controlled by `providers.bedrock-enabled`.
+
+## Public references used
+
+- Nexo custom blocks and stable `custom_variation` range: [NoteBlock Mechanic](https://docs.nexomc.com/mechanics/custom-block-mechanics/noteblock-mechanic), [Custom Block Mechanics](https://docs.nexomc.com/mechanics/custom-block-mechanics).
+- ItemsAdder item/entity/block APIs and definitions: [ItemsAdder Java API examples](https://github.com/LoneDev6/Wiki-ItemsAdder/blob/master/developers/java-api/examples.md), [My First Block](https://wiki.itemsadder.com/plugin-usage/beginners/my-first-block/).
+- Oraxen custom block API and item mechanics: [Oraxen API](https://docs.oraxen.com/developers/api), [Oraxen items](https://docs.oraxen.com/configuration/items).
+- MythicMobs uses `MythicMobs` plugin name; source descriptor: [plugin.yml](https://github.com/Magmaguysv/MythicMobs/blob/master/dist/plugin.yml) (if unavailable in a release branch, verify the installed descriptor before setup).
+- EliteMobs plugin name: [public plugin.yml](https://github.com/MagmaGuy/EliteMobs/blob/master/src/main/resources/plugin.yml).
+- ResourcePackManager plugin name: [public plugin.yml](https://github.com/MagmaGuy/ResourcePackManager/blob/master/resourcepackmanager-bukkit/src/main/resources/plugin.yml).
+- ResourcePackManager's public Java API allows programmatic resource-pack registration: [API reference](https://wiki.nightbreak.io/ResourcePackManager/api/). The Sift only detects it for now.
+- Geyser's current supported Java server version and ViaVersion condition: [setup](https://geysermc.org/wiki/geyser/setup/), [supported versions](https://geysermc.org/wiki/geyser/supported-versions/).
+- Floodgate installation and auth use: [Floodgate setup](https://geysermc.org/wiki/floodgate/setup/).
+- Plugin names and public evidence notes: [`docs/provider-sources.md`](provider-sources.md). Bukkit softdepend names are in `src/main/resources/plugin.yml`; Paper's optional load order is in `src/main/resources/paper-plugin.yml`.

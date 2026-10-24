@@ -1,0 +1,12 @@
+# The Sift-owned stable Nexo NOTEBLOCK variations. Keep these values fixed after placement.
+# The generator rejects duplicate IDs, duplicate variations, and values outside Nexo's 1..1149 range.
+charoite_ore: 500
+siftite_ore: 501
+sift_grass: 502
+sift_leaves: 503
+sift_log: 504
+siftstone: 505
+siftstone_bricks: 506
+ichor_water: 507
+soul_block: 508
+siftslate: 509

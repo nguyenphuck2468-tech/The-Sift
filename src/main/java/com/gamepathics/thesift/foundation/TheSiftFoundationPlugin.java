@@ -24,6 +24,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     private SiftDimensionManager siftDimensionManager;
     private SiftEcologyManager siftEcologyManager;
     private SiftAdvancementManager advancementManager;
+    private ProviderReadiness providerReadiness;
 
     @Override
     public void onEnable() {
@@ -44,6 +45,12 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             return;
         }
         loadContentFlags();
+        providerReadiness = new ProviderReadiness(this);
+        if (!providerReadiness.strict()) {
+            getLogger().warning("providers.strict is disabled; vanilla fallback is enabled for development/CI.");
+        } else if (!providerReadiness.dimensionAllowed()) {
+            getLogger().severe("The Sift dimension access is locked: required item, block, or mob provider IDs are unresolved. Run /sift doctor for the exact provider and ID list. Existing world data is preserved.");
+        }
         if (contentRegistry.isEnabled(ContentId.ICHOR)) {
             ichorContent = new IchorContent(this);
             ichorState = new IchorState(this);
@@ -169,12 +176,17 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                 sender.sendMessage("- " + entry.getKey().key() + ": "
                         + (entry.getValue() ? "enabled" : "disabled"));
             }
+            for (String line : providerReadiness.summary().split("\\n")) sender.sendMessage(line);
+            for (String warning : providerWarnings()) sender.sendMessage("WARNING: " + warning);
+            for (String conflict : pluginConflicts()) sender.sendMessage("ERROR: " + conflict);
             return true;
         }
         if (args.length == 1 && (args[0].equalsIgnoreCase("dimension")
                 || args[0].equalsIgnoreCase("enter"))) {
             if (siftDimensionManager == null) {
                 sender.sendMessage("The Sift dimension is disabled.");
+            } else if (!providerReadiness.dimensionAllowed() && providerReadiness.strict()) {
+                sender.sendMessage("The Sift dimension is locked because required provider IDs are missing. Run /sift doctor; see integrations/README.md for setup instructions.");
             } else if (sender instanceof Player player) {
                 siftDimensionManager.enter(player);
             } else {
@@ -310,6 +322,30 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         }
         sender.sendMessage("Usage: /sift <doctor|reload|dimension|return|give|summon singer|summon echo_golem|summon rift|give rift_key>");
         return true;
+    }
+
+    private java.util.List<String> providerWarnings() {
+        java.util.List<String> warnings = new java.util.ArrayList<>();
+        if (!getServer().getPluginManager().isPluginEnabled("ModelEngine"))
+            warnings.add("ModelEngine is absent; custom mob rendering will use provider defaults.");
+        if (getConfig().getBoolean("providers.bedrock-enabled", false)) {
+            if (!getServer().getPluginManager().isPluginEnabled("Geyser-Spigot")) warnings.add("Bedrock support is enabled but Geyser-Spigot is missing.");
+            if (!getServer().getPluginManager().isPluginEnabled("floodgate")) warnings.add("Floodgate is missing; Bedrock access may require Java authentication.");
+            if (!getServer().getPluginManager().isPluginEnabled("ViaVersion")) warnings.add("ViaVersion is missing; it is required when this Paper server is older than Geyser's emulated Java version.");
+        }
+        if (!getServer().getPluginManager().isPluginEnabled("ResourcePackManager")) warnings.add("ResourcePackManager is absent; only plugin detection is implemented.");
+        return warnings;
+    }
+
+    private java.util.List<String> pluginConflicts() {
+        java.util.List<String> conflicts = new java.util.ArrayList<>();
+        for (org.bukkit.plugin.Plugin other : getServer().getPluginManager().getPlugins()) {
+            if (other == this) continue;
+            if (other.getName().equalsIgnoreCase("TheSift")) conflicts.add("Another plugin is also named TheSift: " + other.getName() + ". Remove one TheSift plugin.");
+            if (other.getDescription().getCommands() != null && other.getDescription().getCommands().keySet().stream().anyMatch(key -> key.equalsIgnoreCase("sift")))
+                conflicts.add("Another plugin declares /sift: " + other.getName() + ". Resolve the command conflict before using The Sift commands.");
+        }
+        return conflicts;
     }
 
     private void loadContentFlags() {

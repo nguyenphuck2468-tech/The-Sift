@@ -25,3 +25,21 @@ dependencies:
     ModelEngine:
       load: AFTER
       required: false
+    Geyser-Spigot:
+      load: AFTER
+      required: false
+    floodgate:
+      load: AFTER
+      required: false
+    ViaVersion:
+      load: AFTER
+      required: false
+    ViaBackwards:
+      load: AFTER
+      required: false
+    ViaRewind:
+      load: AFTER
+      required: false
+    ResourcePackManager:
+      load: AFTER
+      required: false

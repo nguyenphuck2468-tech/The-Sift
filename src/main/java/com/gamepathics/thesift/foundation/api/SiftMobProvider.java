@@ -10,4 +10,7 @@ public interface SiftMobProvider {
 
     /** Spawn a custom creature for a The Sift ID, or return null if unsupported. */
     LivingEntity spawn(String creatureId, Location location);
+
+    /** Read-only readiness probe; do not spawn entities from this method. */
+    default boolean supports(String creatureId) { return false; }
 }

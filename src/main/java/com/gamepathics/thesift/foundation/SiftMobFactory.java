@@ -21,6 +21,10 @@ final class SiftMobFactory {
     LivingEntity spawn(String id, Location location, EntityType fallbackType) {
         Entity entity = providers.spawn(id, location);
         if (!(entity instanceof LivingEntity)) {
+            if (plugin.getConfig().getBoolean("providers.strict", true)) {
+                plugin.getLogger().warning("No configured mob provider resolved '" + id + "'; strict mode skipped spawn.");
+                return null;
+            }
             entity = location.getWorld().spawnEntity(location, fallbackType);
         }
         modelEngine.attach(entity, id);

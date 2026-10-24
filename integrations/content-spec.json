@@ -1,0 +1,645 @@
+{
+  "namespace": "thesift",
+  "items": [
+    {
+      "id": "charoite",
+      "material": "AMETHYST_SHARD",
+      "name": "Charoite",
+      "model": null
+    },
+    {
+      "id": "siftite_nugget",
+      "material": "IRON_NUGGET",
+      "name": "Siftite Nugget",
+      "model": null
+    },
+    {
+      "id": "siftite_ingot",
+      "material": "NETHERITE_INGOT",
+      "name": "Siftite Ingot",
+      "model": null
+    },
+    {
+      "id": "sift_shard",
+      "material": "AMETHYST_SHARD",
+      "name": "Sift Shard",
+      "model": "thesift:item/sift_shard"
+    },
+    {
+      "id": "spire_fragment",
+      "material": "AMETHYST_SHARD",
+      "name": "Spire Fragment",
+      "model": "thesift:item/spire_fragment"
+    },
+    {
+      "id": "sky_fragment",
+      "material": "PHANTOM_MEMBRANE",
+      "name": "Sky Fragment",
+      "model": "thesift:item/sky_fragment"
+    },
+    {
+      "id": "frost_fragment",
+      "material": "PRISMARINE_SHARD",
+      "name": "Frost Fragment",
+      "model": "thesift:item/frost_fragment"
+    },
+    {
+      "id": "sift_core",
+      "material": "ECHO_SHARD",
+      "name": "Heart of the Sift",
+      "model": "thesift:item/sift_core"
+    },
+    {
+      "id": "sift_catalyst",
+      "material": "BLAZE_POWDER",
+      "name": "Sift Catalyst",
+      "model": "thesift:item/sift_catalyst"
+    },
+    {
+      "id": "sift_crown",
+      "material": "GOLDEN_HELMET",
+      "name": "Sift Crown",
+      "model": "thesift:item/sift_crown"
+    },
+    {
+      "id": "rift_key",
+      "material": "TRIAL_KEY",
+      "name": "Rift Key",
+      "model": "thesift:item/rift_key"
+    },
+    {
+      "id": "raw_loomer",
+      "material": "RABBIT",
+      "name": "Raw Loomer",
+      "model": "thesift:item/raw_loomer"
+    },
+    {
+      "id": "cooked_loomer",
+      "material": "COOKED_RABBIT",
+      "name": "Cooked Loomer",
+      "model": "thesift:item/cooked_loomer"
+    },
+    {
+      "id": "bulb_glow",
+      "material": "GLOWSTONE_DUST",
+      "name": "Bulb Glow",
+      "model": "thesift:item/bulb_glow"
+    },
+    {
+      "id": "prism_blade",
+      "material": "NETHERITE_SWORD",
+      "name": "Prism Blade",
+      "model": "thesift:item/prism_blade"
+    },
+    {
+      "id": "prism_helmet",
+      "material": "NETHERITE_HELMET",
+      "name": "Prism Helmet",
+      "model": "thesift:item/prism_helmet"
+    },
+    {
+      "id": "prism_chestplate",
+      "material": "NETHERITE_CHESTPLATE",
+      "name": "Prism Chestplate",
+      "model": "thesift:item/prism_chestplate"
+    },
+    {
+      "id": "prism_leggings",
+      "material": "NETHERITE_LEGGINGS",
+      "name": "Prism Leggings",
+      "model": "thesift:item/prism_leggings"
+    },
+    {
+      "id": "prism_boots",
+      "material": "NETHERITE_BOOTS",
+      "name": "Prism Boots",
+      "model": "thesift:item/prism_boots"
+    },
+    {
+      "id": "phase_boots",
+      "material": "DIAMOND_BOOTS",
+      "name": "Phase Boots",
+      "model": "thesift:item/phase_boots"
+    },
+    {
+      "id": "ichor_bottle",
+      "material": "GLASS_BOTTLE",
+      "name": "Ichor Bottle",
+      "model": "minecraft:item/glass_bottle"
+    },
+    {
+      "id": "ichor_glass",
+      "material": "GLASS",
+      "name": "Ichor Glass",
+      "model": "minecraft:block/glass"
+    },
+    {
+      "id": "ichor_glass_pane",
+      "material": "GLASS_PANE",
+      "name": "Ichor Glass Pane",
+      "model": "minecraft:item/glass_pane"
+    },
+    {
+      "id": "ichor_snow",
+      "material": "SNOW",
+      "name": "Ichor Snow",
+      "model": "minecraft:item/snow"
+    },
+    {
+      "id": "ichor_snow_block",
+      "material": "SNOW_BLOCK",
+      "name": "Ichor Snow Block",
+      "model": "minecraft:item/snow"
+    },
+    {
+      "id": "bulb",
+      "material": "SLIME_BALL",
+      "name": "Bulb",
+      "model": "thesift:item/bulb"
+    },
+    {
+      "id": "chiseled_siftstone",
+      "material": "CHISELED_DEEPSLATE",
+      "name": "Chiseled Siftstone",
+      "model": "thesift:item/chiseled_siftstone"
+    },
+    {
+      "id": "drifter",
+      "material": "ENDERMAN_SPAWN_EGG",
+      "name": "Drifter",
+      "model": "thesift:item/drifter"
+    },
+    {
+      "id": "frost_stalker",
+      "material": "STRAY_SPAWN_EGG",
+      "name": "Frost Stalker",
+      "model": "thesift:item/frost_stalker"
+    },
+    {
+      "id": "glimmerwing",
+      "material": "BEE_SPAWN_EGG",
+      "name": "Glimmerwing",
+      "model": "thesift:item/glimmerwing"
+    },
+    {
+      "id": "glowbell",
+      "material": "BAT_SPAWN_EGG",
+      "name": "Glowbell",
+      "model": "thesift:item/glowbell"
+    },
+    {
+      "id": "heart_of_the_sift",
+      "material": "ECHO_SHARD",
+      "name": "Heart Of The Sift",
+      "model": "thesift:item/heart_of_the_sift"
+    },
+    {
+      "id": "hollow_bulb",
+      "material": "ZOMBIE_SPAWN_EGG",
+      "name": "Hollow Bulb",
+      "model": "thesift:item/hollow_bulb"
+    },
+    {
+      "id": "koi",
+      "material": "TROPICAL_FISH_SPAWN_EGG",
+      "name": "Koi",
+      "model": "thesift:item/koi"
+    },
+    {
+      "id": "loomer",
+      "material": "RABBIT_SPAWN_EGG",
+      "name": "Loomer",
+      "model": "thesift:item/loomer"
+    },
+    {
+      "id": "lumen_tulip",
+      "material": "TORCHFLOWER_SEEDS",
+      "name": "Lumen Tulip",
+      "model": "thesift:item/lumen_tulip"
+    },
+    {
+      "id": "prism_warden",
+      "material": "WARDEN_SPAWN_EGG",
+      "name": "Prism Warden",
+      "model": "thesift:item/prism_warden"
+    },
+    {
+      "id": "prismite",
+      "material": "SILVERFISH_SPAWN_EGG",
+      "name": "Prismite",
+      "model": "thesift:item/prismite"
+    },
+    {
+      "id": "rift_gate",
+      "material": "CRYING_OBSIDIAN",
+      "name": "Rift Gate",
+      "model": "thesift:item/rift_gate"
+    },
+    {
+      "id": "shard_axe",
+      "material": "NETHERITE_AXE",
+      "name": "Shard Axe",
+      "model": "thesift:item/shard_axe"
+    },
+    {
+      "id": "shard_ore",
+      "material": "AMETHYST_BLOCK",
+      "name": "Shard Ore",
+      "model": "thesift:item/shard_ore"
+    },
+    {
+      "id": "shard_pickaxe",
+      "material": "NETHERITE_PICKAXE",
+      "name": "Shard Pickaxe",
+      "model": "thesift:item/shard_pickaxe"
+    },
+    {
+      "id": "shard_sword",
+      "material": "NETHERITE_SWORD",
+      "name": "Shard Sword",
+      "model": "thesift:item/shard_sword"
+    },
+    {
+      "id": "shardling",
+      "material": "ENDERMITE_SPAWN_EGG",
+      "name": "Shardling",
+      "model": "thesift:item/shardling"
+    },
+    {
+      "id": "sift_altar",
+      "material": "CHISELED_DEEPSLATE",
+      "name": "Sift Altar",
+      "model": "thesift:item/sift_altar"
+    },
+    {
+      "id": "sift_grass",
+      "material": "MOSS_BLOCK",
+      "name": "Sift Grass",
+      "model": "thesift:item/sift_grass"
+    },
+    {
+      "id": "sift_leaves",
+      "material": "CHERRY_LEAVES",
+      "name": "Sift Leaves",
+      "model": "thesift:item/sift_leaves"
+    },
+    {
+      "id": "sift_log",
+      "material": "CHERRY_LOG",
+      "name": "Sift Log",
+      "model": "thesift:item/sift_log"
+    },
+    {
+      "id": "sift_planks",
+      "material": "CHERRY_PLANKS",
+      "name": "Sift Planks",
+      "model": "thesift:item/sift_planks"
+    },
+    {
+      "id": "sift_soil",
+      "material": "ROOTED_DIRT",
+      "name": "Sift Soil",
+      "model": "thesift:item/sift_soil"
+    },
+    {
+      "id": "siftstone",
+      "material": "TUFF",
+      "name": "Siftstone",
+      "model": "thesift:item/siftstone"
+    },
+    {
+      "id": "siftstone_bricks",
+      "material": "TUFF_BRICKS",
+      "name": "Siftstone Bricks",
+      "model": "thesift:item/siftstone_bricks"
+    },
+    {
+      "id": "sunspore",
+      "material": "MOOSHROOM_SPAWN_EGG",
+      "name": "Sunspore",
+      "model": "thesift:item/sunspore"
+    },
+    {
+      "id": "the_sifter",
+      "material": "RAVAGER_SPAWN_EGG",
+      "name": "The Sifter",
+      "model": "thesift:item/the_sifter"
+    },
+    {
+      "id": "thornback",
+      "material": "TURTLE_SPAWN_EGG",
+      "name": "Thornback",
+      "model": "thesift:item/thornback"
+    },
+    {
+      "id": "violet_wisp",
+      "material": "VEX_SPAWN_EGG",
+      "name": "Violet Wisp",
+      "model": "thesift:item/violet_wisp"
+    },
+    {
+      "id": "wisp",
+      "material": "ALLAY_SPAWN_EGG",
+      "name": "Wisp",
+      "model": "thesift:item/wisp"
+    },
+    {
+      "id": "siftite_sword",
+      "material": "NETHERITE_SWORD",
+      "name": "Siftite Sword",
+      "model": "thesift:item/siftite_sword"
+    },
+    {
+      "id": "siftite_axe",
+      "material": "NETHERITE_AXE",
+      "name": "Siftite Axe",
+      "model": "thesift:item/siftite_axe"
+    },
+    {
+      "id": "siftite_pickaxe",
+      "material": "NETHERITE_PICKAXE",
+      "name": "Siftite Pickaxe",
+      "model": "thesift:item/siftite_pickaxe"
+    },
+    {
+      "id": "siftite_shovel",
+      "material": "NETHERITE_SHOVEL",
+      "name": "Siftite Shovel",
+      "model": "thesift:item/siftite_shovel"
+    },
+    {
+      "id": "siftite_hoe",
+      "material": "NETHERITE_HOE",
+      "name": "Siftite Hoe",
+      "model": "thesift:item/siftite_hoe"
+    },
+    {
+      "id": "siftite_helmet",
+      "material": "NETHERITE_HELMET",
+      "name": "Siftite Helmet",
+      "model": "thesift:item/siftite_helmet"
+    },
+    {
+      "id": "siftite_chestplate",
+      "material": "NETHERITE_CHESTPLATE",
+      "name": "Siftite Chestplate",
+      "model": "thesift:item/siftite_chestplate"
+    },
+    {
+      "id": "siftite_leggings",
+      "material": "NETHERITE_LEGGINGS",
+      "name": "Siftite Leggings",
+      "model": "thesift:item/siftite_leggings"
+    },
+    {
+      "id": "siftite_boots",
+      "material": "NETHERITE_BOOTS",
+      "name": "Siftite Boots",
+      "model": "thesift:item/siftite_boots"
+    },
+    {
+      "id": "charoite_ore",
+      "material": "AMETHYST_BLOCK",
+      "name": "Charoite Ore",
+      "model": "thesift:item/charoite_ore"
+    },
+    {
+      "id": "siftite_upgrade_smithing_template",
+      "material": "NETHERITE_UPGRADE_SMITHING_TEMPLATE",
+      "name": "Siftite Upgrade Smithing Template",
+      "model": "thesift:item/siftite_upgrade_smithing_template"
+    },
+    {
+      "id": "siftite_spear",
+      "material": "NETHERITE_SWORD",
+      "name": "Siftite Spear",
+      "model": "thesift:item/siftite_spear"
+    },
+    {
+      "id": "healthy_sculk",
+      "material": "SCULK",
+      "name": "Healthy Sculk",
+      "model": "thesift:item/healthy_sculk"
+    },
+    {
+      "id": "overgrown_willow",
+      "material": "CHERRY_LOG",
+      "name": "Overgrown Willow",
+      "model": "thesift:item/overgrown_willow"
+    },
+    {
+      "id": "siftslate",
+      "material": "DEEPSLATE",
+      "name": "Siftslate",
+      "model": "thesift:item/siftslate"
+    }
+  ],
+  "mobs": [
+    {
+      "id": "wisp",
+      "type": "ALLAY",
+      "display": "&dWisp",
+      "health": 20.0,
+      "damage": 4.0
+    },
+    {
+      "id": "blub",
+      "type": "AXOLOTL",
+      "display": "&bBlub",
+      "health": 20.0,
+      "damage": 3.0
+    },
+    {
+      "id": "loomer",
+      "type": "RABBIT",
+      "display": "&dLoomer",
+      "health": 16.0,
+      "damage": 2.0
+    },
+    {
+      "id": "koi",
+      "type": "TROPICAL_FISH",
+      "display": "&bKoi",
+      "health": 10.0,
+      "damage": 2.0
+    },
+    {
+      "id": "bulb",
+      "type": "SLIME",
+      "display": "&aBulb",
+      "health": 28.0,
+      "damage": 4.0
+    },
+    {
+      "id": "violet_wisp",
+      "type": "VEX",
+      "display": "&5Violet Wisp",
+      "health": 24.0,
+      "damage": 5.0
+    },
+    {
+      "id": "hollow_bulb",
+      "type": "ZOMBIE",
+      "display": "&dHollow Bulb",
+      "health": 32.0,
+      "damage": 5.0
+    },
+    {
+      "id": "frost_stalker",
+      "type": "STRAY",
+      "display": "&bFrost Stalker",
+      "health": 36.0,
+      "damage": 6.0
+    },
+    {
+      "id": "thornback",
+      "type": "TURTLE",
+      "display": "&dThornback",
+      "health": 40.0,
+      "damage": 5.0
+    },
+    {
+      "id": "glimmerwing",
+      "type": "BEE",
+      "display": "&eGlimmerwing",
+      "health": 24.0,
+      "damage": 5.0
+    },
+    {
+      "id": "sunspore",
+      "type": "MOOSHROOM",
+      "display": "&dSunspore",
+      "health": 32.0,
+      "damage": 2.0
+    },
+    {
+      "id": "drifter",
+      "type": "ENDERMAN",
+      "display": "&5Drifter",
+      "health": 40.0,
+      "damage": 7.0
+    },
+    {
+      "id": "dark_sniffer",
+      "type": "SNIFFER",
+      "display": "&5Dark Sniffer",
+      "health": 60.0,
+      "damage": 8.0
+    },
+    {
+      "id": "prismite",
+      "type": "SILVERFISH",
+      "display": "&dPrismite",
+      "health": 14.0,
+      "damage": 4.0
+    },
+    {
+      "id": "shardling",
+      "type": "ENDERMITE",
+      "display": "&dShardling",
+      "health": 18.0,
+      "damage": 5.0
+    },
+    {
+      "id": "prism_warden",
+      "type": "WARDEN",
+      "display": "&5&lPrism Warden",
+      "health": 180.0,
+      "damage": 28.0
+    },
+    {
+      "id": "the_sifter",
+      "type": "RAVAGER",
+      "display": "&5&lThe Sifter",
+      "health": 220.0,
+      "damage": 24.0
+    },
+    {
+      "id": "glowbell",
+      "type": "BAT",
+      "display": "&dGlowbell",
+      "health": 12.0,
+      "damage": 2.0
+    },
+    {
+      "id": "sift_wastes_stalker",
+      "type": "HUSK",
+      "display": "&5Sift Wastes Stalker",
+      "health": 36.0,
+      "damage": 6.0
+    },
+    {
+      "id": "singer",
+      "type": "ALLAY",
+      "display": "&5&lSinger",
+      "health": 40.0,
+      "damage": 2.0
+    },
+    {
+      "id": "echo_golem",
+      "type": "IRON_GOLEM",
+      "display": "&b&lEcho Golem",
+      "health": 80.0,
+      "damage": 12.0
+    },
+    {
+      "id": "rift_walker",
+      "type": "ENDERMAN",
+      "display": "&5Rift Walker",
+      "health": 40.0,
+      "damage": 7.0
+    }
+  ],
+  "blocks": [
+    {
+      "id": "charoite_ore",
+      "material": "PAPER",
+      "model": "block/charoite_ore"
+    },
+    {
+      "id": "siftite_ore",
+      "material": "PAPER",
+      "model": "block/siftite_ore"
+    },
+    {
+      "id": "sift_grass",
+      "material": "PAPER",
+      "model": "block/sift_grass"
+    },
+    {
+      "id": "sift_leaves",
+      "material": "PAPER",
+      "model": "block/sift_leaves"
+    },
+    {
+      "id": "sift_log",
+      "material": "PAPER",
+      "model": "block/sift_log"
+    },
+    {
+      "id": "siftstone",
+      "material": "PAPER",
+      "model": "block/siftstone"
+    },
+    {
+      "id": "siftstone_bricks",
+      "material": "PAPER",
+      "model": "block/siftstone_bricks"
+    },
+    {
+      "id": "ichor_water",
+      "material": "PAPER",
+      "model": "block/ichor_water"
+    },
+    {
+      "id": "soul_block",
+      "material": "PAPER",
+      "model": "block/soul_block"
+    },
+    {
+      "id": "siftslate",
+      "material": "PAPER",
+      "model": "block/siftslate"
+    }
+  ]
+}

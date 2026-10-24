@@ -504,41 +504,35 @@ startup/reload logs for duplicate biome warnings and compare the active biome
 definition. Record Paper build, plugin versions, seed, route, logs, and results
 in the tables before drawing a runtime conclusion.
 
-## Provider-first strict mode request (not implemented pending owner decisions)
+## Provider-first strict mode and generated provider definitions (2026-10-24)
 
-The owner requested `providers.strict: true` by default, provider-backed
-dimension readiness, per-ID checks, an expanded `/sift doctor`, and tests with
-no real external plugin dependency. `docs/parity-matrix.md` records the current
-provider definition coverage and proposed primary providers.
+Implemented provider-first readiness with `providers.strict: true` by default,
+optional soft dependencies, per-ID item/block/mob checks, `/sift doctor`
+diagnostics, and a fallback mode when strict is disabled. `integrations/content-spec.json`
+is the canonical list for generated Nexo/ItemsAdder/Oraxen item and block YAML,
+MythicMobs mob YAML, and the generated Java readiness ID lists. Nexo block
+variation assignments live in `integrations/nexo/block-variants.yml` with
+duplicate/range validation. ItemsAdder custom entity and EliteMobs definitions
+are not generated or treated as resolved by readiness because this repo has
+not verified safe complete ID probes/definition schemas. ModelEngine is only
+rendering support. ResourcePackManager is detected, but its public Java API
+registration integration is deferred.
 
-Compatibility risk: `ConfigMigration.CURRENT_VERSION` is currently 3 and
-existing version-3 configurations have no `providers.strict` key. Reading a
-missing key as `true` would switch existing installations from today's vanilla
-fallback behavior to a blocked dimension immediately. Existing dimension data
-would remain untouched, but users could lose access until every required ID
-resolves. Recommendation: version the config to 4; fresh installs default to
-strict `true`, while an existing version-3 config with no explicit strict key
-is migrated to `false` and receives a one-time migration warning. Preserve an
-explicit user-supplied strict value. `/sift doctor` should call out this
-compatibility state so operators can set strict true after providers load.
-Alternative: apply strict true to every existing server at upgrade and accept
-that dimension access will be blocked until providers and definitions are
-completed. No migration has been written yet.
+Compatibility risk: existing installations without `providers.strict` now
+read the default `true` and can lose dimension access until mandatory IDs
+resolve. Existing world data is preserved; `/sift return` remains an exit
+route. This is the explicit provider-first behavior the owner requested. A
+future compatibility migration to opt legacy servers into development mode
+would soften the change, but would contradict strict-by-default unless the
+owner asks for it.
 
-Exit safety issue: current `/sift return` calls `returnToOverworld` and moves a
-player out of The Sift. Blocking that command when a provider disappears can
-trap a player in a loaded Sift world. Recommendation: strict readiness should
-block dimension creation/loading and all routes *into* The Sift, while always
-allowing safe travel out. The request wording also says to block `/sift return`;
-confirm whether this means a return route into The Sift or the current
-`/sift return` command that exits it before implementation.
+Exit safety: `/sift return` is intentionally left available when readiness
+fails so players can leave an existing dimension save.
 
-Audit found that all three item starter packs declare the same 72 IDs. Their
-item adapters can still fail at runtime, and the current IDs are not fully
-validated at startup. Custom-block mappings are empty in default config and no
-provider-specific custom-block definitions exist. The MythicMobs starter file
-contains 22 entries, but some dedicated encounter managers spawn vanilla
-entities directly instead of using `SiftMobFactory`. The detailed status and
-gaps are in `docs/parity-matrix.md`. Proposed primary pair: ItemsAdder for
-items/blocks and MythicMobs for mobs; no large definitions were added because
-the provider choice is awaiting owner confirmation.
+Verification: local `test` and `generateProviderDefinitions` pass (52 tests in
+the latest run); generated YAML syntax was parsed with PyYAML in an earlier
+run. Provider-native parsing and Paper 26.3 live checks have not run. The
+matrix explicitly separates detection, generation, parsing, and live
+validation. Do not describe any backend as fully supported until its live
+server row is verified. See `docs/parity-matrix.md`, `docs/provider-sources.md`,
+and `docs/TESTING.md`.

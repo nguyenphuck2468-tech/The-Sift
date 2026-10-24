@@ -66,6 +66,7 @@ public final class EchoGolemManager implements Listener {
 
     public LivingEntity summonEchoGolem(Location location) {
         LivingEntity golem = mobFactory.spawn(ECHO_GOLEM_ID, location, EntityType.IRON_GOLEM);
+        if (golem == null) return null;
         golem.getPersistentDataContainer().set(entityKey, PersistentDataType.STRING, ECHO_GOLEM_ID);
         golem.setCustomName("§b§lEcho Golem");
         golem.setCustomNameVisible(true);

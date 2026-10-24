@@ -27,6 +27,8 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
+sourceSets.main.java.srcDir(layout.buildDirectory.dir("generated/provider-definitions/java"))
+
 tasks.withType(JavaCompile).configureEach {
     options.encoding = "UTF-8"
     options.release = 25
@@ -57,6 +59,103 @@ tasks.register("siftResourcePack", Zip) {
     destinationDirectory = layout.buildDirectory.dir("distributions")
     from("src/main/resources/pack")
 }
+
+tasks.register("generateProviderDefinitions") {
+    group = "distribution"
+    description = "Generates provider YAML definitions from integrations/content-spec.json."
+    inputs.file("integrations/content-spec.json")
+    inputs.file("integrations/nexo/block-variants.yml")
+    outputs.dir(layout.buildDirectory.dir("generated/provider-definitions"))
+    doLast {
+        def spec = new groovy.json.JsonSlurper().parse(file("integrations/content-spec.json"))
+        def blockVariants = [:]
+        def variantEntries = []
+        file("integrations/nexo/block-variants.yml").eachLine { line ->
+            def match = line =~ /^([a-z0-9_]+):\s*(\d+)\s*$/
+            if (match.matches()) {
+                def entry = [id: match[0][1], value: Integer.parseInt(match[0][2])]
+                variantEntries << entry
+                blockVariants[entry.id] = entry.value
+            }
+        }
+        def duplicateIds = variantEntries.collect { it.id }.groupBy { it }
+                .findAll { entry -> entry.value.size() > 1 }.keySet()
+        def duplicateValues = variantEntries.collect { it.value }.groupBy { it }
+                .findAll { entry -> entry.value.size() > 1 }
+        def invalidValues = blockVariants.findAll { entry -> !(entry.value instanceof Integer) || entry.value < 1 || entry.value > 1149 }
+        if (duplicateIds.size() > 0 || duplicateValues.size() > 0 || invalidValues.size() > 0) {
+            throw new GradleException("Nexo block variation collision/invalid value. Duplicate IDs=${duplicateIds}; duplicate variations=${duplicateValues.keySet()}; invalid=${invalidValues.keySet()}; allowed range is 1..1149.")
+        }
+        def missingVariations = spec.blocks.collect { it.id }.findAll { !blockVariants.containsKey(it) }
+        if (!missingVariations.empty) throw new GradleException("Missing stable Nexo block variations for: ${missingVariations.join(', ')}")
+        def root = layout.buildDirectory.dir("generated/provider-definitions").get().asFile
+        def write = { String path, String contents ->
+            def target = new File(root, path)
+            target.parentFile.mkdirs()
+            target.setText(contents, "UTF-8")
+        }
+        def quote = { value -> '"' + value.toString().replace('"', '\\"') + '"' }
+        def nl = System.lineSeparator()
+        def nexo = new StringBuilder("# Generated from integrations/content-spec.json; merge into plugins/Nexo/items/").append(nl)
+        def oraxen = new StringBuilder("# Generated from integrations/content-spec.json; copy to plugins/Oraxen/items/").append(nl)
+        def ia = new StringBuilder("# Generated from integrations/content-spec.json; copy to plugins/ItemsAdder/contents/thesift/configs/").append(nl)
+        ia.append("info:").append(nl).append("  namespace: ${spec.namespace}").append(nl).append("items:").append(nl)
+        def blockById = spec.blocks.collectEntries { [(it.id): it] }
+        def allDefinitions = new LinkedHashMap()
+        spec.items.each { allDefinitions[it.id] = it }
+        spec.blocks.each { if (!allDefinitions.containsKey(it.id)) allDefinitions[it.id] = [id: it.id, name: it.id.replace('_', ' ').capitalize(), material: it.material, model: it.model] }
+        allDefinitions.values().each { item ->
+            def model = item.model ?: "item/${item.id}"
+            def block = blockById[item.id]
+            nexo.append("${item.id}:").append(nl).append("  itemname: \"<light_purple>${item.name}\"").append(nl)
+                    .append("  material: ${item.material}").append(nl).append("  Pack:").append(nl).append("    model: ${model}").append(nl)
+            if (block != null) nexo.append("  Mechanics:").append(nl).append("    custom_block:").append(nl)
+                    .append("      type: NOTEBLOCK").append(nl).append("      custom_variation: ${blockVariants[item.id]}").append(nl)
+                    .append("      model: ${item.id}").append(nl)
+            oraxen.append("${item.id}:").append(nl).append("  material: ${item.material}").append(nl)
+                    .append("  itemname: \"<light_purple>${item.name}\"").append(nl).append("  pack:").append(nl)
+                    .append("    model: ${spec.namespace}/${model}").append(nl)
+            if (block != null) oraxen.append("  Mechanics:").append(nl).append("    block:").append(nl)
+                    .append("      type: FULL").append(nl).append("      custom-variation: ${blockVariants[item.id]}").append(nl)
+                    .append("      appearance:").append(nl).append("        model: ${spec.namespace}/${block.model}").append(nl)
+            ia.append("  ${item.id}:").append(nl).append("    display_name: ${quote(item.name)}").append(nl)
+                    .append("    resource:").append(nl).append("      material: ${item.material}").append(nl)
+                    .append("      generate: false").append(nl).append("      model_path: ${model}").append(nl)
+            if (block != null) ia.append("    behaviours:").append(nl).append("      block:").append(nl)
+                    .append("        placed_model:").append(nl).append("          type: REAL_NOTE").append(nl)
+        }
+        write("nexo/items.yml", nexo.toString())
+        write("oraxen/items.yml", oraxen.toString())
+        write("itemsadder/items.yml", ia.toString())
+        def mythic = new StringBuilder("# Generated from integrations/content-spec.json; copy to plugins/MythicMobs/Mobs/").append(nl)
+        spec.mobs.each { mob ->
+            mythic.append("${mob.id}:").append(nl).append("  Type: ${mob.type}").append(nl)
+                    .append("  Display: ${quote(mob.display)}").append(nl).append("  Health: ${mob.health}").append(nl)
+                    .append("  Damage: ${mob.damage}").append(nl).append("  Options:").append(nl)
+                    .append("    Persistent: true").append(nl).append("    Despawn: false").append(nl)
+        }
+        write("mythicmobs/TheSift.yml", mythic.toString())
+        def idSource = new StringBuilder("package com.gamepathics.thesift.foundation;").append(nl).append(nl)
+                .append("import java.util.List;").append(nl).append(nl)
+                .append("/** Generated strict-readiness IDs from integrations/content-spec.json. */").append(nl)
+                .append("final class ProviderContentIds {").append(nl)
+        [["ITEM_IDS", spec.items.collect { it.id }], ["BLOCK_IDS", spec.blocks.collect { it.id }],
+         ["MOB_IDS", spec.mobs.collect { it.id }]].each { pair ->
+            idSource.append("    static final List<String> ${pair[0]} = List.of(").append(nl)
+            pair[1].collate(6).eachWithIndex { group, index ->
+                idSource.append("            ").append(group.collect { quote(it) }.join(", "))
+                if ((index + 1) * 6 < pair[1].size()) idSource.append(",")
+                idSource.append(nl)
+            }
+            idSource.append("    );").append(nl)
+        }
+        idSource.append("    private ProviderContentIds() {} ").append(nl).append("}").append(nl)
+        write("java/com/gamepathics/thesift/foundation/ProviderContentIds.java", idSource.toString())
+        write("README.txt", "Source: integrations/content-spec.json. Generated: Nexo, ItemsAdder and Oraxen items; MythicMobs entities. IA custom entities and EliteMobs have no verified complete data mapping in this generator.${nl}")
+    }
+}
+
+tasks.named("compileJava").configure { dependsOn("generateProviderDefinitions") }
 
 runServer {
     minecraftVersion("26.3")

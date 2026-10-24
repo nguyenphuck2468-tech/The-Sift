@@ -18,6 +18,11 @@ public final class SiftDimensionManager {
     }
 
     public World getOrCreateWorld() {
+        ProviderReadiness readiness = new ProviderReadiness(plugin);
+        if (readiness.strict() && !readiness.dimensionAllowed()) {
+            plugin.getLogger().severe("Blocked The Sift dimension load: provider requirements are unresolved. Run /sift doctor. Existing dimension save was left untouched.");
+            return null;
+        }
         World world = Bukkit.getWorld(DIMENSION_KEY);
         if (world != null) {
             return world;
@@ -28,7 +33,7 @@ public final class SiftDimensionManager {
     public boolean enter(Player player) {
         World world = getOrCreateWorld();
         if (world == null) {
-            player.sendMessage("The Sift dimension is unavailable. Check that TheSift/provided is enabled in /datapack list.");
+            player.sendMessage("The Sift dimension is unavailable. Run /sift doctor for provider readiness, then check TheSift/provided in /datapack list.");
             plugin.getLogger().warning("Could not load dimension " + DIMENSION_KEY
                     + ". Ensure the bundled TheSift/provided datapack is enabled.");
             return false;
