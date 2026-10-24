@@ -97,6 +97,13 @@ public final class SiftEcologyManager implements Listener {
         if ((key.contains("overgrown") || key.endsWith("carapace")) && random.nextInt(24) == 0) {
             generateIchorSpring(chunk, random);
         }
+        if (random.nextInt(32) == 0) {
+            if (key.contains("deep_dark")) generateSnifferCave(chunk, random);
+            else if (key.contains("siftslate") || key.contains("wastes")) generateSoulCanyon(chunk, random);
+            else if (key.contains("overgrown_peaks") || key.contains("ichor_snowy_peaks")) {
+                generateCliffArch(chunk, random);
+            } else if (key.contains("overgrown")) generateMonolith(chunk, random);
+        }
         spawnSiftWildlife(chunk, key, random);
         if (key.endsWith("pink_meadows") && random.nextInt(22) == 0) {
             summonSinger(chunk, random);
@@ -283,6 +290,92 @@ public final class SiftEcologyManager implements Listener {
         world.getBlockAt(x, y + 1, z).setType(Material.WATER, false);
         world.spawnParticle(Particle.DRIPPING_OBSIDIAN_TEAR, new Location(world, x + .5, y + 1, z + .5),
                 12, 1, .2, 1, .02);
+    }
+
+    private void generateSoulCanyon(Chunk chunk, Random random) {
+        World world = chunk.getWorld();
+        int centerZ = chunk.getZ() * 16 + 8;
+        for (int localX = 1; localX < 15; localX++) {
+            int x = chunk.getX() * 16 + localX;
+            int surfaceY = world.getHighestBlockYAt(x, centerZ);
+            int width = 2 + (int) (Math.sin(localX * 0.72) * 1.5);
+            for (int dz = -width; dz <= width; dz++) {
+                for (int dy = 0; dy < 7; dy++) {
+                    int y = surfaceY - dy;
+                    Block block = world.getBlockAt(x, y, centerZ + dz);
+                    if (block.getType() == Material.BEDROCK || block.getType() == Material.WATER) continue;
+                    block.setType(dy == 6 ? Material.SOUL_SOIL : Material.AIR, false);
+                }
+            }
+        }
+        world.spawnParticle(Particle.SOUL, new Location(world, chunk.getX() * 16 + 8.5,
+                world.getHighestBlockYAt(chunk.getX() * 16 + 8, centerZ) - 3, centerZ + .5), 35, 5, 2, 1, .02);
+    }
+
+    private void generateCliffArch(Chunk chunk, Random random) {
+        World world = chunk.getWorld();
+        int centerX = chunk.getX() * 16 + 8;
+        int z = chunk.getZ() * 16 + 8;
+        int base = world.getHighestBlockYAt(centerX, z) + 1;
+        Material stone = random.nextBoolean() ? Material.CALCITE : Material.TUFF;
+        for (int side : new int[]{-4, 4}) {
+            int height = 5 + random.nextInt(3);
+            for (int y = 0; y < height; y++) world.getBlockAt(centerX + side, base + y, z).setType(stone, false);
+        }
+        for (int step = -4; step <= 4; step++) {
+            int rise = 5 + 4 - Math.abs(step);
+            world.getBlockAt(centerX + step, base + rise, z).setType(stone, false);
+            if (Math.abs(step) < 3) world.getBlockAt(centerX + step, base + rise, z + 1).setType(stone, false);
+        }
+    }
+
+    private void generateMonolith(Chunk chunk, Random random) {
+        World world = chunk.getWorld();
+        int x = chunk.getX() * 16 + 8;
+        int z = chunk.getZ() * 16 + 8;
+        int y = world.getHighestBlockYAt(x, z) + 1;
+        Material stone = random.nextBoolean() ? Material.POLISHED_DEEPSLATE : Material.TUFF_BRICKS;
+        for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
+            if (Math.abs(dx) == 2 || Math.abs(dz) == 2) world.getBlockAt(x + dx, y, z + dz).setType(stone, false);
+        }
+        int height = 8 + random.nextInt(7);
+        for (int dy = 1; dy < height; dy++) {
+            world.getBlockAt(x, y + dy, z).setType(stone, false);
+            if (dy % 4 == 0) world.getBlockAt(x + 1, y + dy, z).setType(Material.AMETHYST_BLOCK, false);
+        }
+        world.getBlockAt(x, y + height, z).setType(Material.SHROOMLIGHT, false);
+    }
+
+    private void generateSnifferCave(Chunk chunk, Random random) {
+        World world = chunk.getWorld();
+        int x = chunk.getX() * 16 + 8;
+        int z = chunk.getZ() * 16 + 8;
+        int surface = world.getHighestBlockYAt(x, z);
+        for (int dx = -3; dx <= 3; dx++) for (int dz = -3; dz <= 3; dz++) {
+            if (dx * dx + dz * dz > 9) continue;
+            for (int dy = 0; dy < 6; dy++) {
+                int y = surface - dy;
+                Block block = world.getBlockAt(x + dx, y, z + dz);
+                if (block.getType() != Material.BEDROCK && block.getType() != Material.WATER) {
+                    block.setType(dy == 5 ? Material.SCULK : Material.AIR, false);
+                }
+            }
+        }
+        for (int step = 0; step < 6; step++) {
+            int y = surface - 5;
+            Block tunnel = world.getBlockAt(x + 3 + step, y, z);
+            if (tunnel.getType() != Material.BEDROCK && tunnel.getType() != Material.WATER) {
+                tunnel.setType(Material.AIR, false);
+                world.getBlockAt(x + 3 + step, y - 1, z).setType(Material.SCULK, false);
+            }
+        }
+        if (world.getBlockAt(x, surface - 4, z).getType().isAir()) {
+            Entity sniffer = world.spawnEntity(new Location(world, x + .5, surface - 4, z + .5), EntityType.SNIFFER);
+            sniffer.setCustomName("§5Dark Sniffer");
+            sniffer.setCustomNameVisible(false);
+            sniffer.setPersistent(true);
+            sniffer.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING, "dark_sniffer");
+        }
     }
 
     private void spawnSiftWildlife(Chunk chunk, String biome, Random random) {

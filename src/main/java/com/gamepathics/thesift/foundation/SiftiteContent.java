@@ -28,7 +28,7 @@ public final class SiftiteContent {
 
     public void registerRecipes() {
         Server server = plugin.getServer();
-        addShaped("charoite", item(Material.AMETHYST_SHARD, "charoite", "Charoite"),
+        addShaped("charoite", item(Material.LAPIS_LAZULI, "charoite", "Charoite"),
                 " C ", "CAC", " C ", 'C', Material.AMETHYST_SHARD, 'A', Material.AMETHYST_BLOCK);
         addShapeless("siftite_nugget", item(Material.IRON_NUGGET, "siftite_nugget", "Siftite Nugget"),
                 Material.IRON_NUGGET, Material.AMETHYST_SHARD);
@@ -79,7 +79,7 @@ public final class SiftiteContent {
 
     public ItemStack forId(String id) {
         ItemStack foundationItem = switch (id) {
-            case "charoite" -> item(Material.AMETHYST_SHARD, id, "Charoite");
+            case "charoite" -> item(Material.LAPIS_LAZULI, id, "Charoite");
             case "charoite_ore" -> item(Material.AMETHYST_BLOCK, id, "Charoite Ore");
             case "siftite_nugget" -> item(Material.IRON_NUGGET, id, "Siftite Nugget");
             case "siftite_ingot" -> item(Material.NETHERITE_INGOT, id, "Siftite Ingot");

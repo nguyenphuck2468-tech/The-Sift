@@ -52,6 +52,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             siftiteContent.registerRecipes();
             getServer().getPluginManager().registerEvents(new SiftiteListener(siftiteContent), this);
             getServer().getPluginManager().registerEvents(new SiftiteRecoveryManager(this), this);
+            getServer().getPluginManager().registerEvents(new CharoiteEnchantingListener(this), this);
         }
         if (contentRegistry.isEnabled(ContentId.SINGER)) {
             resonanceManager = new ResonanceManager(this);

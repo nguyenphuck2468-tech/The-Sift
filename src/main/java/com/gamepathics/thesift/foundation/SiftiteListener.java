@@ -26,7 +26,7 @@ public final class SiftiteListener implements Listener {
         if (!tool.getType().name().endsWith("PICKAXE")) return;
         event.setDropItems(false);
         int amount = ThreadLocalRandom.current().nextInt(1, 3);
-        ItemStack drop = content.item(Material.AMETHYST_SHARD, "charoite", "Charoite");
+        ItemStack drop = content.item(Material.LAPIS_LAZULI, "charoite", "Charoite");
         drop.setAmount(amount);
         block.getWorld().dropItemNaturally(block.getLocation(), drop);
     }

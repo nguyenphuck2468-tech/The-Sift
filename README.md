@@ -65,9 +65,13 @@ remains unverified.
 - Ichor weather adds colored rain particles, regeneration/slowness on contact
   with Sift water, and up to two snow layers in Ichor Snowy Peaks.
 - Chunk decoration can add Ichor springs and abandoned portal ruins with
-  prototype loot. Dark Sniffer proxies use a sonic-pull effect.
+  prototype loot, plus Soul Canyon cuts, Sniffer Cave entrances, cliff arches,
+  and monoliths. Dark Sniffer proxies use a sonic-pull effect.
 - Tagged Siftite equipment dropped on death is returned after respawn through
   a Mini Rift effect; this prototype keeps pending recovery in memory.
+- Charoite uses a Lapis Lazuli stand-in in enchanting tables: offers add 20
+  levels and raise rolled enchantments above level I. Charoite-enchanted items
+  can still be renamed but cannot be combined on anvils.
 - The bundled Java item/block model assets can be built into
   `build/distributions/TheSift-resource-pack.zip` with
   `gradle siftResourcePack`; players must install or be served the pack to see
