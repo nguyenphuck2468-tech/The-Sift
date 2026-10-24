@@ -5,7 +5,7 @@ These references were read as public documentation/source only. No third-party p
 | Declared plugin/service key | Public evidence for product/API name | Runtime behavior used by The Sift |
 |---|---|---|
 | `Nexo` | [Nexo docs](https://docs.nexomc.com/) and [Nexo commands](https://docs.nexomc.com/general-usage/commands) | Item API + custom block API through reflection. |
-| `ItemsAdder` | [ItemsAdder API examples](https://github.com/LoneDev6/Wiki-ItemsAdder/blob/master/developers/java-api/examples.md) | CustomStack, CustomBlock and CustomEntity reflection paths. |
+| `ItemsAdder` | [ItemsAdder API examples](https://wiki.itemsadder.com/developers/java-api/examples/), [CustomEntity registry API](https://lonedev6.github.io/API-ItemsAdder/dev/lone/itemsadder/api/CustomEntity.html) | CustomStack, CustomBlock, CustomEntity `isInRegistry` and spawn reflection paths. |
 | `Oraxen` | [Oraxen official API docs](https://docs.oraxen.com/developers/api), [public build descriptor names Oraxen](https://github.com/oraxen/oraxen/blob/master/build.gradle.kts) | Item and block API through reflection. |
 | `MythicMobs` | [MythicCraft API documentation](https://wiki.mythiccraft.io/mythicmobs/API), [mob file locations and `/mm reload`](https://wiki.mythiccraft.io/mythicmobs/Guides/%28Step-2%29-Files-And-Directories) | Mythic mob registry/spawn API through reflection. |
 | `EliteMobs` | [Public plugin.yml](https://github.com/MagmaGuy/EliteMobs/blob/master/src/main/resources/plugin.yml) | Configured boss spawn bridge. Strict readiness remains unresolved until a side-effect-free registry check is implemented. |

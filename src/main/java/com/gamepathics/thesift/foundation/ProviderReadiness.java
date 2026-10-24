@@ -132,12 +132,25 @@ final class ProviderReadiness {
                                 || safe(p.getProviderId(), configured("integrations.mobs.provider")))
                             && p.supports(id));
         }
-        if (backend.equals("ItemsAdder")) return false; // No supported entity-registry probe is exposed here yet.
+        if (backend.equals("ItemsAdder")) return itemsAdderEntityResolves(id);
         if (backend.equals("MythicMobs")) return invokeStatic("io.lumine.mythic.bukkit.MythicBukkit", "inst") != null
                 && invokeMobRegistry(id);
         // The bridge can spawn a configured EliteMobs boss, but no verified side-effect-free
         // registry probe is available here. Do not treat a config string as a resolved ID.
         return false;
+    }
+
+    private boolean itemsAdderEntityResolves(String id) {
+        if (!plugin.getServer().getPluginManager().isPluginEnabled("ItemsAdder")) return false;
+        String entityId = plugin.getConfig().getString(
+                "integrations.mobs.itemsadder.entities." + id, "thesift:" + id).trim();
+        try {
+            Class<?> customEntity = Class.forName("dev.lone.itemsadder.api.CustomEntity");
+            return Boolean.TRUE.equals(customEntity.getMethod("isInRegistry", String.class)
+                    .invoke(null, entityId));
+        } catch (ReflectiveOperationException | LinkageError exception) {
+            return false;
+        }
     }
 
     private boolean invokeMobRegistry(String id) {

@@ -513,8 +513,10 @@ is the canonical list for generated Nexo/ItemsAdder/Oraxen item and block YAML,
 MythicMobs mob YAML, and the generated Java readiness ID lists. Nexo block
 variation assignments live in `integrations/nexo/block-variants.yml` with
 duplicate/range validation. ItemsAdder custom entity and EliteMobs definitions
-are not generated or treated as resolved by readiness because this repo has
-not verified safe complete ID probes/definition schemas. ModelEngine is only
+are not generated. ItemsAdder entity readiness uses its documented, read-only
+`CustomEntity.isInRegistry` API and configured ID mapping; EliteMobs remains
+unresolved because no side-effect-free complete ID probe was verified.
+ModelEngine is only
 rendering support. ResourcePackManager is detected, but its public Java API
 registration integration is deferred.
 

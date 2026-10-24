@@ -15,7 +15,7 @@ No plugin in this matrix has reached **Live checked** in this repository. `Gener
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Item lookup / creation | Detected + Generated | Detected + Generated | Detected + Generated | Detected | — | — | — | — | — | — | — | — | — |
 | Placeable blocks | Detected + Generated | Detected + Generated | Detected + Generated | Detected | — | — | — | — | — | — | — | — | — |
-| Custom mob spawning | — | Detected (spawn path; readiness not safely probeable) | — | Detected | Detected + Generated | Detected (file mapping only) | — | — | — | — | — | — | — |
+| Custom mob spawning | — | Detected (registry probe + spawn path; definitions not generated) | — | Detected | Detected + Generated | Detected (file mapping only) | — | — | — | — | — | — | — |
 | Mob rendering | — | — | — | — | — | — | Detected (attach path) | — | — | — | — | — | — |
 | Bedrock level 1 detection | — | — | — | — | — | — | — | Detected | Detected | Detected | Detected | Detected | Detected |
 | Bedrock level 2 generated pack / Geyser mappings | **MISSING** | **MISSING** | **MISSING** | — | — | — | — | **MISSING** | **MISSING** | — | — | — | — |
@@ -42,7 +42,7 @@ With `providers.strict: false`, vanilla fallback remains available for developme
 ## Public references used
 
 - Nexo custom blocks and stable `custom_variation` range: [NoteBlock Mechanic](https://docs.nexomc.com/mechanics/custom-block-mechanics/noteblock-mechanic), [Custom Block Mechanics](https://docs.nexomc.com/mechanics/custom-block-mechanics).
-- ItemsAdder item/entity/block APIs and definitions: [ItemsAdder Java API examples](https://github.com/LoneDev6/Wiki-ItemsAdder/blob/master/developers/java-api/examples.md), [My First Block](https://wiki.itemsadder.com/plugin-usage/beginners/my-first-block/).
+- ItemsAdder item/entity/block APIs and definitions: [ItemsAdder Java API examples](https://wiki.itemsadder.com/developers/java-api/examples/), [CustomEntity API including `isInRegistry`](https://lonedev6.github.io/API-ItemsAdder/dev/lone/itemsadder/api/CustomEntity.html), [My First Block](https://wiki.itemsadder.com/plugin-usage/beginners/my-first-block/).
 - Oraxen custom block API and item mechanics: [Oraxen API](https://docs.oraxen.com/developers/api), [Oraxen items](https://docs.oraxen.com/configuration/items).
 - MythicMobs uses `MythicMobs` plugin name; source descriptor: [plugin.yml](https://github.com/Magmaguysv/MythicMobs/blob/master/dist/plugin.yml) (if unavailable in a release branch, verify the installed descriptor before setup).
 - EliteMobs plugin name: [public plugin.yml](https://github.com/MagmaGuy/EliteMobs/blob/master/src/main/resources/plugin.yml).
