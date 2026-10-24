@@ -373,3 +373,31 @@ Khi tạo commit mới, giữ commit message ngắn và thêm trailer:
 ```text
 Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
 ```
+
+## Follow-up state (2026-10-24)
+
+- Sonorous station identity now uses per-chunk PDC integer coordinates, lazily
+  migrates the old world-level list, discards ambiguous vanilla-deepslate
+  entries, and clears markers on block removal/movement events.
+- Provider-native item stacks are recognized for Sonorous Deepslate and Soul
+  Block placement. Soul Block markers clear on ordinary replacement; its
+  break path reuses the shared `SiftiteContent` instance.
+- Ecology no longer tags generated fallback deepslate as a portal station.
+- Provider readiness is shared, cached for up to one second, and invalidated
+  by recognized provider reload events. Strict readiness also guards player
+  teleports/world changes into The Sift; compatibility with external world
+  managers is not verified.
+- `/sift doctor` includes datapack/resource-pack state, provider readiness and
+  duplicate plugin/command diagnostics. Suggestions expose current content and
+  mob IDs.
+- Baseline suite: 58 tests. This follow-up adds five tests; `clean build
+  siftResourcePack` passed with 63/63 tests.
+- `runServer` uses run-paper 3.1.0 and targets Paper 26.3 in
+  `run/paper-26.3`. A live server, non-op permission check and provider parse
+  have not been verified. Paper 26.3 build 222 bootstrap discovered the plugin,
+  then stopped because EULA acceptance is pending; no plugin enable occurred.
+  Do not use PlugMan-style disable/reload; use full
+  server shutdown/restart because the Paper world/datapack lifecycle is not
+  safely reversible from this plugin.
+- See the follow-up evidence table in `IMPLEMENTATION_REPORT.md` and smoke
+  steps in `docs/TESTING.md`.

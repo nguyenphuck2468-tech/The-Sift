@@ -12,13 +12,18 @@ public final class SiftDimensionManager {
     public static final NamespacedKey DIMENSION_KEY = NamespacedKey.fromString("thesift:the_sift");
 
     private final JavaPlugin plugin;
+    private final ProviderReadiness readiness;
 
     public SiftDimensionManager(JavaPlugin plugin) {
+        this(plugin, new ProviderReadiness(plugin));
+    }
+
+    SiftDimensionManager(JavaPlugin plugin, ProviderReadiness readiness) {
         this.plugin = plugin;
+        this.readiness = readiness;
     }
 
     public World getOrCreateWorld() {
-        ProviderReadiness readiness = new ProviderReadiness(plugin);
         if (readiness.strict() && !readiness.dimensionAllowed()) {
             plugin.getLogger().severe("Blocked The Sift dimension load: provider requirements are unresolved. Run /sift doctor. Existing dimension save was left untouched.");
             return null;

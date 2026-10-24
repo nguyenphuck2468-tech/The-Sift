@@ -52,6 +52,7 @@ public final class RiftManager implements Listener {
     private final SiftMobFactory mobFactory;
     private final ExternalBlockBridge blockBridge;
     private final SonorousBlockRegistry sonorousBlocks;
+    private final ProviderReadiness providerReadiness;
     private final Map<UUID, RiftInstance> rifts = new HashMap<>();
     private final Set<UUID> travelling = new HashSet<>();
     private BukkitTask updateTask;
@@ -59,7 +60,12 @@ public final class RiftManager implements Listener {
     private static final List<Integer> PORTAL_SONG = List.of(1, 3, 7, 6, 5, 2, 4, 8);
 
     public RiftManager(JavaPlugin plugin) {
+        this(plugin, new ProviderReadiness(plugin));
+    }
+
+    RiftManager(JavaPlugin plugin, ProviderReadiness providerReadiness) {
         this.plugin = plugin;
+        this.providerReadiness = providerReadiness;
         this.riftKey = new NamespacedKey(plugin, "rift_key");
         this.mobFactory = new SiftMobFactory(plugin);
         this.blockBridge = new ExternalBlockBridge(plugin);
@@ -270,8 +276,7 @@ public final class RiftManager implements Listener {
                         .findFirst().orElse(null)
                     : Bukkit.getWorld(NamespacedKey.fromString("thesift:the_sift"));
             if (targetWorld != null && targetWorld.getKey().equals(SiftDimensionManager.DIMENSION_KEY)) {
-                ProviderReadiness readiness = new ProviderReadiness(plugin);
-                if (readiness.strict() && !readiness.dimensionAllowed()) {
+                if (providerReadiness.strict() && !providerReadiness.dimensionAllowed()) {
                     plugin.getLogger().severe("Blocked Rift destination into The Sift: required providers are unavailable. Run /sift doctor. Existing world data is preserved.");
                     return;
                 }

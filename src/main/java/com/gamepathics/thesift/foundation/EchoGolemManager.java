@@ -34,6 +34,7 @@ import java.util.UUID;
 public final class EchoGolemManager implements Listener {
     private static final String ECHO_GOLEM_ID = "echo_golem";
     private final JavaPlugin plugin;
+    private final SiftiteContent content;
     private final NamespacedKey entityKey;
     private final NamespacedKey ownerKey;
     private final NamespacedKey contentKey;
@@ -43,7 +44,12 @@ public final class EchoGolemManager implements Listener {
     private long tick;
 
     public EchoGolemManager(JavaPlugin plugin) {
+        this(plugin, new SiftiteContent(plugin));
+    }
+
+    EchoGolemManager(JavaPlugin plugin, SiftiteContent content) {
         this.plugin = plugin;
+        this.content = content;
         this.entityKey = new NamespacedKey(plugin, "echo_golem_entity");
         this.ownerKey = new NamespacedKey(plugin, "echo_golem_owner");
         this.contentKey = new NamespacedKey(plugin, "content");
@@ -183,7 +189,6 @@ public final class EchoGolemManager implements Listener {
         }
         if (plugin.getConfig().getBoolean("echo-golem.drop-siftite", true)) {
             // Drop Siftite Ingot
-            SiftiteContent content = new SiftiteContent(plugin);
             event.getDrops().add(content.item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot"));
         }
     }
@@ -223,7 +228,7 @@ public final class EchoGolemManager implements Listener {
             event.setCancelled(true);
         } else if (carrying && hand.getType().isAir()) {
             pdc.remove(cargoKey);
-            ItemStack soul = new SiftiteContent(plugin).forId("soul_block");
+            ItemStack soul = content.forId("soul_block");
             player.getInventory().addItem(soul).values()
                     .forEach(leftover -> player.getWorld().dropItemNaturally(player.getLocation(), leftover));
             player.sendMessage("§bThe Echo Golem returns its Soul Block to you.");

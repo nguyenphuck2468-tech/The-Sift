@@ -555,3 +555,47 @@ matrix explicitly separates detection, generation, parsing, and live
 validation. Do not describe any backend as fully supported until its live
 server row is verified. See `docs/parity-matrix.md`, `docs/provider-sources.md`,
 and `docs/TESTING.md`.
+
+## Follow-up: P0/P1/P2 regression pass (2026-10-24)
+
+This section supersedes earlier test counts and evidence for the specific
+changes below. Base commit: `0e1534e74b1295ab5ad4c374edf491b49feaa16d`.
+
+| Area | Change and evidence | Verification level |
+|---|---|---|
+| Sonorous Deepslate index | Replaced repeated world-PDC string lookup with chunk-local integer coordinates in PDC. Legacy world index migrates lazily and idempotently; only positions still recognized as provider-defined Sonorous Deepslate/Siftslate survive migration. Ordinary vanilla deepslate fallback positions are dropped to avoid false Rift stations. Added cleanup for break, explosion, burn, entity change, and piston movement. | Automated tests: legacy provider block retained, vanilla fallback dropped, PDC marker removed after break; provider item placement path creates station without The Sift item tag. No live provider test. |
+| Soul Block provider identity | Placement accepts provider-native item identity through the configured Sift service; stale marker is cleared before a new placement is evaluated. Break drops use the shared `SiftiteContent` instance. Added regression fixture distinguishing provider Soul Sand from ordinary Soul Sand, including replacement at a previously marked position. | Automated test. No live provider test. |
+| Ecology fallback marker | Removed the broad generated-deepslate station marker. Chunk decoration retains explicit in-progress/complete state; failure clears completion and removes newly spawned non-player entities, but partial block mutations are not transactionally rolled back. | Automated test for retry marker behavior. No server crash/restart or chunk-generation warning test. |
+| Readiness refresh | `ProviderReadiness` is shared between dimension and Rift managers, caches ID probes for up to one second, invalidates on recognized provider reload events, and has a delayed startup report. Doctor now distinguishes provider absent, all IDs resolved by runtime probe, and present but unresolved (which may be loading or missing definitions). | Automated test suite; Paper/provider event timing remains unverified. |
+| Strict dimension entry | `ProviderAccessGuard` cancels teleports into the Sift dimension when strict readiness fails and attempts to return a player if an external world-change path bypasses teleport cancellation. `/sift return` remains available as an exit. High-priority event handlers can still be affected by other plugins; no Multiverse or live server test. | Code review only plus readiness unit tests; handler interaction not live-tested. |
+| `/sift doctor` and command UX | Doctor reports Paper/API target, datapack discovery/enabled status, server resource-pack status, provider/plugin versions, missing IDs, and duplicate plugin or `/sift` declarations. Tab suggestions include `soul_block`, `sonorous_deepslate`, and creature IDs. The old `onCommand` path is removed; `pluginConflicts()` is used by doctor and was not dead code. | Compiles; command suggestions unit test. Command permission behavior still needs a non-op on live Paper. |
+
+Test count: **58 before this follow-up → 63 after** (five new tests across
+provider placement/index migration, Soul Block identity cleanup, and command
+suggestions). One initial run found a bad Soul Block fixture: it modeled every
+Soul Sand stack as the custom item. The fixture was corrected to use provider
+metadata; no assertions were weakened. The targeted replacement regression
+test then passed. Final `clean build siftResourcePack` passed with 63/63 tests.
+
+The plugin lifecycle review found that disabling the plugin does not unload
+the Paper dimension or close the bootstrap datapack resource explicitly.
+Paper owns the world/datapack lifecycle; forcibly unloading the world from
+`onDisable` is unsafe because other plugins may hold references. The datapack
+bootstrap uses a jar resource URI, so PlugMan-style disable/reload remains
+unsupported and could invalidate open resource handles. This is a static risk
+assessment, not a reproduced Paper 26.3 failure. Use full server shutdown and
+restart; no server run has yet verified this behavior.
+
+Still unverified: provider-native YAML parsing, Nexo/Oraxen/ItemsAdder live
+block identity API compatibility, real Paper permission defaults, external
+world-manager bypass behavior, Geyser/ViaVersion, datapack precedence, and
+asset/Geyser-jar provenance. `docs/TESTING.md` now includes the run-paper 3.1.0
+Paper 26.3 command and explicitly leaves EULA acceptance to the server owner.
+
+Run-paper attempt: `runServer --console=plain` fetched Paper `26.3-222-main`
+for Minecraft 26.3 and Java `25.0.4.1+1-LTS`; Paper's initializer listed
+`TheSift (2.0.0-foundation)`. Bootstrap then stopped before plugin load because
+the run directory had no accepted EULA. I did not change `eula.txt`. Thus this
+is bootstrap/plugin discovery evidence only, not a loaded-plugin/server test.
+Paper also emitted Windows OSHI performance-counter warnings during startup;
+the trace was in Paper's system-report code, before plugin enable.

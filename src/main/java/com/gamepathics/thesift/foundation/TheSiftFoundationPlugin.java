@@ -2,7 +2,6 @@ package com.gamepathics.thesift.foundation;
 
 import io.papermc.paper.command.brigadier.BasicCommand;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
-import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
@@ -38,6 +37,12 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             public String permission() {
                 return "thesift.foundation.admin";
             }
+
+            @Override
+            public java.util.Collection<String> suggest(CommandSourceStack source, String[] args) {
+                return commandSuggestions(args, getServer().getOnlinePlayers().stream()
+                        .map(Player::getName).toList());
+            }
         });
         saveDefaultConfig();
         if (!ConfigMigration.migrate(this)) {
@@ -46,11 +51,9 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         }
         loadContentFlags();
         providerReadiness = new ProviderReadiness(this);
-        if (!providerReadiness.strict()) {
-            getLogger().warning("providers.strict is disabled; vanilla fallback is enabled for development/CI.");
-        } else if (!providerReadiness.dimensionAllowed()) {
-            getLogger().severe("The Sift dimension access is locked: required item, block, or mob provider IDs are unresolved. Run /sift doctor for the exact provider and ID list. Existing world data is preserved.");
-        }
+        getServer().getPluginManager().registerEvents(new ProviderAccessGuard(this, providerReadiness), this);
+        if (!providerReadiness.strict()) getLogger().warning(
+                "providers.strict is disabled; vanilla fallback is enabled for development/CI.");
         if (contentRegistry.isEnabled(ContentId.ICHOR)) {
             ichorContent = new IchorContent(this);
             ichorState = new IchorState(this);
@@ -75,17 +78,18 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             resonanceManager.start();
         }
         if (contentRegistry.isEnabled(ContentId.ECHO_GOLEM)) {
-            echoGolemManager = new EchoGolemManager(this);
+            if (siftiteContent == null) siftiteContent = new SiftiteContent(this);
+            echoGolemManager = new EchoGolemManager(this, siftiteContent);
             getServer().getPluginManager().registerEvents(echoGolemManager, this);
             echoGolemManager.start();
         }
         if (contentRegistry.isEnabled(ContentId.RIFT)) {
-            riftManager = new RiftManager(this);
+            riftManager = new RiftManager(this, providerReadiness);
             getServer().getPluginManager().registerEvents(riftManager, this);
             riftManager.start();
         }
         if (contentRegistry.isEnabled(ContentId.SIFT_DIMENSION)) {
-            siftDimensionManager = new SiftDimensionManager(this);
+            siftDimensionManager = new SiftDimensionManager(this, providerReadiness);
             siftEcologyManager = new SiftEcologyManager(this, resonanceManager, echoGolemManager, riftManager);
             getServer().getPluginManager().registerEvents(siftEcologyManager, this);
             siftEcologyManager.populateLoadedSpawnChunks();
@@ -93,12 +97,13 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             getServer().getPluginManager().registerEvents(advancementManager, this);
         }
         if (contentRegistry.isEnabled(ContentId.SOUL_BLOCK)) {
-            getServer().getPluginManager().registerEvents(new SoulBlockListener(this), this);
+            getServer().getPluginManager().registerEvents(new SoulBlockListener(this, siftiteContent), this);
         }
         registerContentPluginReloadHooks();
         // Keep a delayed initial refresh as a fallback for providers without a load event.
         getServer().getScheduler().runTaskLater(this, () -> {
             refreshContentRecipes();
+            reportProviderReadiness();
         }, 200L);
         getLogger().info("The Sift fan-made Paper 26.3 plugin enabled; not affiliated with Mojang or Microsoft.");
     }
@@ -115,7 +120,11 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             Class<? extends Event> eventType = Class.forName(eventClassName).asSubclass(Event.class);
             Listener listener = new Listener() {};
             getServer().getPluginManager().registerEvent(eventType, listener, EventPriority.MONITOR,
-                    (ignored, event) -> getServer().getScheduler().runTask(this, this::refreshContentRecipes),
+                    (ignored, event) -> getServer().getScheduler().runTask(this, () -> {
+                        providerReadiness.invalidate();
+                        refreshContentRecipes();
+                        reportProviderReadiness();
+                    }),
                     this, true);
         } catch (ClassNotFoundException | LinkageError exception) {
             getLogger().fine("Could not register " + pluginName + " content reload hook: "
@@ -126,6 +135,16 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     private void refreshContentRecipes() {
         if (ichorContent != null) ichorContent.registerRecipes();
         if (siftiteContent != null) siftiteContent.registerRecipes();
+    }
+
+    private void reportProviderReadiness() {
+        providerReadiness.invalidate();
+        if (providerReadiness.strict() && !providerReadiness.dimensionAllowed()) {
+            getLogger().warning("The Sift dimension remains locked because required provider IDs are unresolved. "
+                    + "Run /sift doctor for provider status and exact missing IDs. Existing world data is preserved.");
+        } else if (providerReadiness.strict()) {
+            getLogger().info("The Sift provider requirements are ready; the dimension can be loaded.");
+        }
     }
 
     @Override
@@ -147,14 +166,6 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         }
     }
 
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!command.getName().equalsIgnoreCase("sift")) {
-            return false;
-        }
-        return handleSiftCommand(sender, args);
-    }
-
     private boolean handleSiftCommand(CommandSender sender, String[] args) {
         if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
             reloadConfig();
@@ -163,13 +174,16 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                 return true;
             }
             loadContentFlags();
+            providerReadiness.invalidate();
             refreshContentRecipes();
+            reportProviderReadiness();
             sender.sendMessage("The Sift config was reloaded. Restart the server to apply content flag changes.");
             return true;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("doctor")) {
             sender.sendMessage("The Sift foundation: " + getDescription().getVersion());
             sender.sendMessage("Runtime target: Paper 26.3 / Paper API 26.3.build.218-stable");
+            sender.sendMessage(contentPackStatus());
             for (Map.Entry<ContentId, Boolean> entry : contentRegistry.snapshot().entrySet()) {
                 sender.sendMessage("- " + entry.getKey().key() + ": "
                         + (entry.getValue() ? "enabled" : "disabled"));
@@ -318,8 +332,42 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             }
             return true;
         }
-        sender.sendMessage("Usage: /sift <doctor|reload|dimension|return|give|summon singer|summon echo_golem|summon rift|give rift_key>");
+        sender.sendMessage("Usage: /sift <doctor|reload|dimension|return|give <item> <player>|summon <species> [player]>");
         return true;
+    }
+
+    private String contentPackStatus() {
+        java.util.List<String> packs = getServer().getDatapackManager().getPacks().stream()
+                .map(io.papermc.paper.datapack.DiscoveredDatapack::getName)
+                .filter(name -> name.toLowerCase(java.util.Locale.ROOT).contains("thesift"))
+                .sorted().toList();
+        java.util.List<String> enabled = getServer().getDatapackManager().getEnabledPacks().stream()
+                .map(io.papermc.paper.datapack.DiscoveredDatapack::getName)
+                .filter(name -> name.toLowerCase(java.util.Locale.ROOT).contains("thesift"))
+                .sorted().toList();
+        String packUrl = getServer().getResourcePack();
+        return "Datapack packs: " + (packs.isEmpty() ? "The Sift pack not discovered" : packs)
+                + "; enabled: " + (enabled.isEmpty() ? "none" : enabled)
+                + "; server resource pack: " + (packUrl == null || packUrl.isBlank() ? "not configured" : "configured")
+                + "; required: " + getServer().isResourcePackRequired();
+    }
+
+    static java.util.List<String> commandSuggestions(String[] args, java.util.Collection<String> players) {
+        java.util.List<String> candidates;
+        if (args.length == 1) candidates = java.util.List.of("doctor", "reload", "dimension", "return", "give", "summon");
+        else if (args.length == 2 && args[0].equalsIgnoreCase("give")) candidates = java.util.List.of(
+                "ichor_bottle", "rift_key", "soul_block", "sonorous_deepslate", "siftslate", "charoite",
+                "siftite_ingot", "siftite_nugget", "siftite_upgrade_smithing_template");
+        else if (args.length == 2 && args[0].equalsIgnoreCase("summon")) candidates = java.util.List.of(
+                "singer", "echo_golem", "rift", "blub", "dark_sniffer", "bulb", "loomer", "wisp",
+                "violet_wisp", "koi", "hollow_bulb", "glowbell", "thornback", "glimmerwing",
+                "the_sifter", "sifter", "frost_stalker", "sunspore", "drifter", "shardling",
+                "prism_warden", "prismite", "lumen_tulip");
+        else if (args.length == 3 && (args[0].equalsIgnoreCase("give")
+                || args[0].equalsIgnoreCase("summon"))) candidates = java.util.List.copyOf(players);
+        else return java.util.List.of();
+        String prefix = args[args.length - 1].toLowerCase(java.util.Locale.ROOT);
+        return candidates.stream().filter(value -> value.toLowerCase(java.util.Locale.ROOT).startsWith(prefix)).toList();
     }
 
     private java.util.List<String> providerWarnings() {

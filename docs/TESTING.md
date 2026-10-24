@@ -32,10 +32,21 @@ Official references: [Geyser setup](https://geysermc.org/wiki/geyser/setup/), [s
 ## Repeatable local checks
 
 ```powershell
-.\gradlew.bat test
+.\gradlew.bat clean build siftResourcePack
 .\gradlew.bat generateProviderDefinitions
-.\gradlew.bat runServer
+.\gradlew.bat runServer --console=plain
 ```
+
+`runServer` is configured by run-paper 3.1.0 for Minecraft/Paper 26.3 and uses
+`run/paper-26.3`. It has not yet been verified with an interactive operator,
+third-party providers, or a Bedrock client. Do not accept the Minecraft server
+EULA automatically on behalf of the server owner; if Gradle stops at the EULA
+step, review `run/paper-26.3/eula.txt` and start the disposable server yourself
+after accepting it.
+
+Local automated evidence for the provider bridge and strict gate is recorded
+in `IMPLEMENTATION_REPORT.md`; it does not establish that a third-party
+provider has parsed its generated YAML or works on a live server.
 
 On the test server, run `/sift give soul_block <player>`, `/sift summon singer <player>`, `/sift summon echo_golem <player>`, and `/sift give sonorous_deepslate <player>`. Place Sonorous Deepslate and a normal vanilla note block on top. Right-click to tune; left-click the sequence `1, 3, 7, 6, 5, 2, 4, 8` to open a Rift. Provider-owned note blocks are left to their provider. Then run `/sift doctor`, verify provider logs and each mandatory content ID, check `/plugins` for duplicate TheSift installations, and inspect `logs/latest.log` for API errors. No real-provider server test is claimed until recorded in `docs/parity-matrix.md`.
 

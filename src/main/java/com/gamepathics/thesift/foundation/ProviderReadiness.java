@@ -15,6 +15,7 @@ import java.util.Map;
 
 /** Read-only provider inventory used by strict dimension gating and /sift doctor. */
 final class ProviderReadiness {
+    private static final long CACHE_NANOS = 1_000_000_000L;
     private static final List<String> OPTIONAL = List.of("Nexo", "ItemsAdder", "Oraxen", "MythicMobs",
             "EliteMobs", "ModelEngine", "Geyser-Spigot", "floodgate", "ViaVersion", "ViaBackwards",
             "ViaRewind", "ResourcePackManager");
@@ -22,6 +23,10 @@ final class ProviderReadiness {
     private final JavaPlugin plugin;
     private final ExternalItemBridge items;
     private final ExternalBlockBridge blocks;
+    private volatile long cacheExpiresAt;
+    private volatile List<Backend> cachedItems = List.of();
+    private volatile List<Backend> cachedBlocks = List.of();
+    private volatile List<Backend> cachedMobs = List.of();
 
     ProviderReadiness(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -30,6 +35,8 @@ final class ProviderReadiness {
     }
 
     boolean strict() { return plugin.getConfig().getBoolean("providers.strict", true); }
+
+    void invalidate() { cacheExpiresAt = 0L; }
 
     Map<String, String> pluginVersions() {
         Map<String, String> result = new LinkedHashMap<>();
@@ -41,6 +48,11 @@ final class ProviderReadiness {
     }
 
     List<Backend> itemBackends() {
+        ensureCache(false);
+        return cachedItems;
+    }
+
+    private List<Backend> scanItemBackends() {
         List<Backend> result = new ArrayList<>();
         String configured = configured("integrations.items.provider");
         for (String backend : List.of("SiftItemProvider", "Nexo", "ItemsAdder", "Oraxen")) {
@@ -52,6 +64,11 @@ final class ProviderReadiness {
     }
 
     List<Backend> blockBackends() {
+        ensureCache(false);
+        return cachedBlocks;
+    }
+
+    private List<Backend> scanBlockBackends() {
         List<Backend> result = new ArrayList<>();
         String configured = configured("integrations.blocks.provider");
         for (String backend : List.of("SiftBlockProvider", "Nexo", "ItemsAdder", "Oraxen")) {
@@ -63,6 +80,11 @@ final class ProviderReadiness {
     }
 
     List<Backend> mobBackends() {
+        ensureCache(false);
+        return cachedMobs;
+    }
+
+    private List<Backend> scanMobBackends() {
         List<Backend> result = new ArrayList<>();
         String configured = configured("integrations.mobs.provider");
         for (String backend : List.of("SiftMobProvider", "ItemsAdder", "MythicMobs", "EliteMobs")) {
@@ -86,6 +108,7 @@ final class ProviderReadiness {
     }
 
     String summary() {
+        ensureCache(true);
         StringBuilder out = new StringBuilder("Provider strict: ").append(strict())
                 .append("; dimension allowed: ").append(dimensionAllowed());
         append(out, "Items", itemBackends(), ProviderContentIds.ITEM_IDS.size());
@@ -95,13 +118,25 @@ final class ProviderReadiness {
         return out.toString();
     }
 
+    private synchronized void ensureCache(boolean force) {
+        long now = System.nanoTime();
+        if (!force && now < cacheExpiresAt) return;
+        cachedItems = scanItemBackends();
+        cachedBlocks = scanBlockBackends();
+        cachedMobs = scanMobBackends();
+        cacheExpiresAt = System.nanoTime() + CACHE_NANOS;
+    }
+
     private void append(StringBuilder out, String label, List<Backend> backends, int totalIds) {
         String path = switch (label) { case "Items" -> "integrations.items.provider";
             case "Blocks" -> "integrations.blocks.provider"; default -> "integrations.mobs.provider"; };
         out.append("\n").append(label).append(" provider selected: ").append(configured(path));
         for (Backend b : backends) {
-            out.append("\n- ").append(b.name()).append(": ").append(b.installed() ? "present" : "missing")
-                    .append("; version ").append(pluginVersions().getOrDefault(b.name(), "service"))
+            String state = !b.installed() ? "not installed"
+                    : b.complete() ? "loaded/resolved by runtime ID probe"
+                    : "present; unresolved (provider may still be loading or definitions are missing)";
+            out.append("\n- ").append(b.name()).append(": ").append(state)
+                    .append("; version ").append(pluginVersions().getOrDefault(b.name(), "registered service; version unavailable"))
                     .append("; resolved ").append(totalIds - b.missing().size()).append('/').append(totalIds)
                     .append("; missing IDs: ").append(b.missing().isEmpty() ? "none" : String.join(", ", b.missing()));
             if (!b.complete()) out.append("; fix: ").append(fixHint(b.name(), label));
