@@ -5,3 +5,17 @@ bootstrapper: com.gamepathics.thesift.foundation.TheSiftBootstrap
 description: Foundation for The Sift content and dimension
 author: Gamepathics
 api-version: '26.3'
+dependencies:
+  server:
+    Nexo:
+      load: AFTER
+      required: false
+    ItemsAdder:
+      load: AFTER
+      required: false
+    Oraxen:
+      load: AFTER
+      required: false
+    MythicMobs:
+      load: AFTER
+      required: false

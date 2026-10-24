@@ -1,0 +1,103 @@
+# Copy to plugins/Oraxen/items/the-sift.yml.
+# Copy assets/thesift/models into plugins/Oraxen/pack/models/thesift/ and
+# assets/thesift/textures into plugins/Oraxen/pack/textures/thesift/.
+sift_shard:
+  material: AMETHYST_SHARD
+  itemname: "<light_purple>Sift Shard"
+  pack:
+    model: thesift/item/sift_shard
+spire_fragment:
+  material: AMETHYST_SHARD
+  itemname: "<light_purple>Spire Fragment"
+  pack:
+    model: thesift/item/spire_fragment
+sky_fragment:
+  material: PHANTOM_MEMBRANE
+  itemname: "<light_purple>Sky Fragment"
+  pack:
+    model: thesift/item/sky_fragment
+frost_fragment:
+  material: PRISMARINE_SHARD
+  itemname: "<light_purple>Frost Fragment"
+  pack:
+    model: thesift/item/frost_fragment
+sift_core:
+  material: ECHO_SHARD
+  itemname: "<light_purple>Heart of the Sift"
+  pack:
+    model: thesift/item/sift_core
+sift_catalyst:
+  material: BLAZE_POWDER
+  itemname: "<light_purple>Sift Catalyst"
+  pack:
+    model: thesift/item/sift_catalyst
+sift_crown:
+  material: GOLDEN_HELMET
+  itemname: "<light_purple>Sift Crown"
+  pack:
+    model: thesift/item/sift_crown
+rift_key:
+  material: TRIAL_KEY
+  itemname: "<light_purple>Rift Key"
+  pack:
+    model: thesift/item/rift_key
+raw_loomer:
+  material: RABBIT
+  itemname: "<light_purple>Raw Loomer"
+  pack:
+    model: thesift/item/raw_loomer
+cooked_loomer:
+  material: COOKED_RABBIT
+  itemname: "<light_purple>Cooked Loomer"
+  pack:
+    model: thesift/item/cooked_loomer
+bulb_glow:
+  material: GLOWSTONE_DUST
+  itemname: "<light_purple>Bulb Glow"
+  pack:
+    model: thesift/item/bulb_glow
+prism_blade:
+  material: NETHERITE_SWORD
+  itemname: "<light_purple>Prism Blade"
+  pack:
+    model: thesift/item/prism_blade
+prism_helmet:
+  material: NETHERITE_HELMET
+  itemname: "<light_purple>Prism Helmet"
+  pack:
+    model: thesift/item/prism_helmet
+prism_chestplate:
+  material: NETHERITE_CHESTPLATE
+  itemname: "<light_purple>Prism Chestplate"
+  pack:
+    model: thesift/item/prism_chestplate
+prism_leggings:
+  material: NETHERITE_LEGGINGS
+  itemname: "<light_purple>Prism Leggings"
+  pack:
+    model: thesift/item/prism_leggings
+prism_boots:
+  material: NETHERITE_BOOTS
+  itemname: "<light_purple>Prism Boots"
+  pack:
+    model: thesift/item/prism_boots
+phase_boots:
+  material: DIAMOND_BOOTS
+  itemname: "<light_purple>Phase Boots"
+  pack:
+    model: thesift/item/phase_boots
+shard_sword:
+  material: NETHERITE_SWORD
+  itemname: "<light_purple>Shard Sword"
+  pack:
+    model: thesift/item/shard_sword
+shard_pickaxe:
+  material: NETHERITE_PICKAXE
+  itemname: "<light_purple>Shard Pickaxe"
+  pack:
+    model: thesift/item/shard_pickaxe
+shard_axe:
+  material: NETHERITE_AXE
+  itemname: "<light_purple>Shard Axe"
+  pack:
+    model: thesift/item/shard_axe

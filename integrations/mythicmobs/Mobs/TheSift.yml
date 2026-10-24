@@ -1,0 +1,136 @@
+# Copy to plugins/MythicMobs/Mobs/ and run /mm reload.
+wisp:
+  Type: ALLAY
+  Display: '&dWisp'
+  Health: 20
+  Damage: 4
+  Options:
+    Persistent: true
+    Despawn: false
+    AlwaysShowName: false
+blub:
+  Type: AXOLOTL
+  Display: '&bBlub'
+  Health: 20
+  Damage: 3
+  Options:
+    Persistent: true
+    Despawn: false
+loomer:
+  Type: RABBIT
+  Display: '&dLoomer'
+  Health: 16
+  Damage: 2
+  Options:
+    Persistent: true
+    Despawn: false
+koi:
+  Type: TROPICAL_FISH
+  Display: '&bKoi'
+  Health: 10
+  Options:
+    Persistent: true
+    Despawn: false
+bulb:
+  Type: SLIME
+  Display: '&aBulb'
+  Health: 28
+  Damage: 4
+  Options:
+    Persistent: true
+    Despawn: false
+violet_wisp:
+  Type: VEX
+  Display: '&5Violet Wisp'
+  Health: 24
+  Damage: 5
+  Options:
+    Persistent: true
+    Despawn: false
+hollow_bulb:
+  Type: ZOMBIE
+  Display: '&dHollow Bulb'
+  Health: 32
+  Damage: 5
+  Options:
+    Persistent: true
+    Despawn: false
+frost_stalker:
+  Type: STRAY
+  Display: '&bFrost Stalker'
+  Health: 36
+  Damage: 6
+  Options:
+    Persistent: true
+    Despawn: false
+thornback:
+  Type: TURTLE
+  Display: '&dThornback'
+  Health: 40
+  Damage: 5
+  Options:
+    Persistent: true
+    Despawn: false
+glimmerwing:
+  Type: BEE
+  Display: '&eGlimmerwing'
+  Health: 24
+  Damage: 5
+  Options:
+    Persistent: true
+    Despawn: false
+sunspore:
+  Type: MOOSHROOM
+  Display: '&dSunspore'
+  Health: 32
+  Options:
+    Persistent: true
+    Despawn: false
+drifter:
+  Type: ENDERMAN
+  Display: '&5Drifter'
+  Health: 40
+  Damage: 7
+  Options:
+    Persistent: true
+    Despawn: false
+dark_sniffer:
+  Type: SNIFFER
+  Display: '&5Dark Sniffer'
+  Health: 60
+  Damage: 8
+  Options:
+    Persistent: true
+    Despawn: false
+prismite:
+  Type: SILVERFISH
+  Display: '&dPrismite'
+  Health: 14
+  Damage: 4
+  Options:
+    Persistent: true
+    Despawn: false
+shardling:
+  Type: ENDERMITE
+  Display: '&dShardling'
+  Health: 18
+  Damage: 5
+  Options:
+    Persistent: true
+    Despawn: false
+prism_warden:
+  Type: WARDEN
+  Display: '&5&lPrism Warden'
+  Health: 180
+  Damage: 28
+  Options:
+    Persistent: true
+    Despawn: false
+the_sifter:
+  Type: RAVAGER
+  Display: '&5&lThe Sifter'
+  Health: 220
+  Damage: 24
+  Options:
+    Persistent: true
+    Despawn: false

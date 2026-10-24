@@ -1,0 +1,121 @@
+# Copy to plugins/Nexo/items/ and merge the complete Java resource pack into
+# plugins/Nexo/pack/assets/. See README.md before choosing this provider.
+charoite:
+  itemname: "<light_purple>Charoite"
+  material: AMETHYST_SHARD
+siftite_nugget:
+  itemname: "<light_purple>Siftite Nugget"
+  material: IRON_NUGGET
+siftite_ingot:
+  itemname: "<light_purple>Siftite Ingot"
+  material: NETHERITE_INGOT
+sift_shard:
+  itemname: "<light_purple>Sift Shard"
+  material: AMETHYST_SHARD
+  Pack:
+    model: thesift:item/sift_shard
+spire_fragment:
+  itemname: "<light_purple>Spire Fragment"
+  material: AMETHYST_SHARD
+  Pack:
+    model: thesift:item/spire_fragment
+sky_fragment:
+  itemname: "<light_purple>Sky Fragment"
+  material: PHANTOM_MEMBRANE
+  Pack:
+    model: thesift:item/sky_fragment
+frost_fragment:
+  itemname: "<light_purple>Frost Fragment"
+  material: PRISMARINE_SHARD
+  Pack:
+    model: thesift:item/frost_fragment
+sift_core:
+  itemname: "<light_purple>Heart of the Sift"
+  material: ECHO_SHARD
+  Pack:
+    model: thesift:item/sift_core
+sift_catalyst:
+  itemname: "<light_purple>Sift Catalyst"
+  material: BLAZE_POWDER
+  Pack:
+    model: thesift:item/sift_catalyst
+sift_crown:
+  itemname: "<light_purple>Sift Crown"
+  material: GOLDEN_HELMET
+  Pack:
+    model: thesift:item/sift_crown
+rift_key:
+  itemname: "<light_purple>Rift Key"
+  material: TRIAL_KEY
+  Pack:
+    model: thesift:item/rift_key
+raw_loomer:
+  itemname: "<light_purple>Raw Loomer"
+  material: RABBIT
+  Pack:
+    model: thesift:item/raw_loomer
+cooked_loomer:
+  itemname: "<light_purple>Cooked Loomer"
+  material: COOKED_RABBIT
+  Pack:
+    model: thesift:item/cooked_loomer
+bulb_glow:
+  itemname: "<light_purple>Bulb Glow"
+  material: GLOWSTONE_DUST
+  Pack:
+    model: thesift:item/bulb_glow
+prism_blade:
+  itemname: "<light_purple>Prism Blade"
+  material: NETHERITE_SWORD
+  Pack:
+    model: thesift:item/prism_blade
+prism_helmet:
+  itemname: "<light_purple>Prism Helmet"
+  material: NETHERITE_HELMET
+  Pack:
+    model: thesift:item/prism_helmet
+prism_chestplate:
+  itemname: "<light_purple>Prism Chestplate"
+  material: NETHERITE_CHESTPLATE
+  Pack:
+    model: thesift:item/prism_chestplate
+prism_leggings:
+  itemname: "<light_purple>Prism Leggings"
+  material: NETHERITE_LEGGINGS
+  Pack:
+    model: thesift:item/prism_leggings
+prism_boots:
+  itemname: "<light_purple>Prism Boots"
+  material: NETHERITE_BOOTS
+  Pack:
+    model: thesift:item/prism_boots
+phase_boots:
+  itemname: "<light_purple>Phase Boots"
+  material: DIAMOND_BOOTS
+  Pack:
+    model: thesift:item/phase_boots
+ichor_bottle:
+  itemname: "<aqua>Ichor Bottle"
+  material: GLASS_BOTTLE
+  Pack:
+    model: minecraft:item/glass_bottle
+ichor_glass:
+  itemname: "<aqua>Ichor Glass"
+  material: GLASS
+  Pack:
+    model: minecraft:block/glass
+ichor_glass_pane:
+  itemname: "<aqua>Ichor Glass Pane"
+  material: GLASS_PANE
+  Pack:
+    model: minecraft:item/glass_pane
+ichor_snow:
+  itemname: "<aqua>Ichor Snow"
+  material: SNOW
+  Pack:
+    model: minecraft:item/snow
+ichor_snow_block:
+  itemname: "<aqua>Ichor Snow Block"
+  material: SNOW_BLOCK
+  Pack:
+    model: minecraft:item/snow

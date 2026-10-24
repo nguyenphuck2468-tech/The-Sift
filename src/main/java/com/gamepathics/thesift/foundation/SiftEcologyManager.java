@@ -42,6 +42,7 @@ public final class SiftEcologyManager implements Listener {
     private final RiftManager riftManager;
     private final NamespacedKey decoratedChunkKey;
     private final NamespacedKey creatureKey;
+    private final MythicMobBridge mythicMobs;
     private final BukkitTask tideTask;
     private long tideTick;
 
@@ -53,6 +54,7 @@ public final class SiftEcologyManager implements Listener {
         this.riftManager = riftManager;
         this.decoratedChunkKey = new NamespacedKey(plugin, "sift_ecology_generated");
         this.creatureKey = new NamespacedKey(plugin, "sift_creature");
+        this.mythicMobs = new MythicMobBridge(plugin);
         this.tideTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             tickTide();
             tickIchorWeather();
@@ -430,12 +432,14 @@ public final class SiftEcologyManager implements Listener {
                 String[] mob = peaks[random.nextInt(peaks.length)];
                 type = EntityType.valueOf(mob[0]); name = mob[1];
             }
-            Entity entity = world.spawnEntity(new Location(world, x + .5, y, z + .5), type);
+            String mobId = name.toLowerCase(Locale.ROOT).replace(' ', '_');
+            Location spawnAt = new Location(world, x + .5, y, z + .5);
+            Entity entity = mythicMobs.spawn(mobId, spawnAt);
+            if (entity == null) entity = world.spawnEntity(spawnAt, type);
             entity.setPersistent(true);
             entity.setCustomName("§d" + name);
             entity.setCustomNameVisible(random.nextInt(4) == 0);
-            entity.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING,
-                    name.toLowerCase(Locale.ROOT).replace(' ', '_'));
+            entity.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING, mobId);
             if (entity instanceof LivingEntity living && (type == EntityType.ZOMBIE || type == EntityType.VEX
                     || type == EntityType.SILVERFISH || type == EntityType.ENDERMITE)) {
                 living.setRemoveWhenFarAway(false);
@@ -482,7 +486,8 @@ public final class SiftEcologyManager implements Listener {
         int x = chunk.getX() * 16 + 8, z = chunk.getZ() * 16 + 8;
         int y = chunk.getWorld().getHighestBlockYAt(x, z) + 1;
         Location location = new Location(chunk.getWorld(), x + .5, y, z + .5);
-        Entity entity = chunk.getWorld().spawnEntity(location, type);
+        Entity entity = mythicMobs.spawn(id, location);
+        if (entity == null) entity = chunk.getWorld().spawnEntity(location, type);
         entity.setPersistent(true);
         entity.setCustomName("§5§l" + name);
         entity.setCustomNameVisible(true);
@@ -545,7 +550,8 @@ public final class SiftEcologyManager implements Listener {
         }
 
         boolean boss = id.equals("the_sifter") || id.equals("prism_warden");
-        Entity entity = location.getWorld().spawnEntity(location, type);
+        Entity entity = mythicMobs.spawn(id, location);
+        if (entity == null) entity = location.getWorld().spawnEntity(location, type);
         entity.setPersistent(true);
         entity.setCustomName((boss ? "§5§l" : "§d") + display);
         entity.setCustomNameVisible(true);

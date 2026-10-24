@@ -22,12 +22,14 @@ public final class IchorContent {
     public static final String ICHOR_SNOW_BLOCK_ID = "ichor_snow_block";
 
     private final JavaPlugin plugin;
+    private final ExternalItemBridge externalItems;
     private final NamespacedKey contentKey;
     private final NamespacedKey bottleRecipeKey;
     private final NamespacedKey paneRecipeKey;
 
     public IchorContent(JavaPlugin plugin) {
         this.plugin = Objects.requireNonNull(plugin);
+        this.externalItems = new ExternalItemBridge(plugin);
         this.contentKey = new NamespacedKey(plugin, "content");
         this.bottleRecipeKey = new NamespacedKey(plugin, "ichor_glass");
         this.paneRecipeKey = new NamespacedKey(plugin, "ichor_glass_pane");
@@ -75,9 +77,11 @@ public final class IchorContent {
     }
 
     public ItemStack create(Material material, String id, String name) {
-        ItemStack item = new ItemStack(material);
+        ItemStack item = externalItems.create(id);
+        boolean providerItem = item != null;
+        if (item == null) item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§d" + name);
+        if (!providerItem) meta.setDisplayName("§d" + name);
         meta.getPersistentDataContainer().set(contentKey, PersistentDataType.STRING, id);
         item.setItemMeta(meta);
         return item;

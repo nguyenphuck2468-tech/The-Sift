@@ -4,6 +4,7 @@ main: com.gamepathics.thesift.foundation.TheSiftFoundationPlugin
 description: Foundation for the next The Sift content update
 author: Gamepathics
 api-version: '26.3'
+softdepend: [Nexo, ItemsAdder, Oraxen, MythicMobs]
 
 commands:
   sift:

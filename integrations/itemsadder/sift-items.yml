@@ -1,0 +1,126 @@
+# Copy to plugins/ItemsAdder/contents/thesift/sift-items.yml.
+# Copy assets/thesift/models and textures from TheSift-resource-pack.zip into
+# this namespace as models/ and textures/ before running /iazip.
+info:
+  namespace: thesift
+items:
+  sift_shard:
+    display_name: "Sift Shard"
+    resource:
+      material: AMETHYST_SHARD
+      generate: false
+      model_path: item/sift_shard
+  spire_fragment:
+    display_name: "Spire Fragment"
+    resource:
+      material: AMETHYST_SHARD
+      generate: false
+      model_path: item/spire_fragment
+  sky_fragment:
+    display_name: "Sky Fragment"
+    resource:
+      material: PHANTOM_MEMBRANE
+      generate: false
+      model_path: item/sky_fragment
+  frost_fragment:
+    display_name: "Frost Fragment"
+    resource:
+      material: PRISMARINE_SHARD
+      generate: false
+      model_path: item/frost_fragment
+  sift_core:
+    display_name: "Heart of the Sift"
+    resource:
+      material: ECHO_SHARD
+      generate: false
+      model_path: item/sift_core
+  sift_catalyst:
+    display_name: "Sift Catalyst"
+    resource:
+      material: BLAZE_POWDER
+      generate: false
+      model_path: item/sift_catalyst
+  sift_crown:
+    display_name: "Sift Crown"
+    resource:
+      material: GOLDEN_HELMET
+      generate: false
+      model_path: item/sift_crown
+  rift_key:
+    display_name: "Rift Key"
+    resource:
+      material: TRIAL_KEY
+      generate: false
+      model_path: item/rift_key
+  raw_loomer:
+    display_name: "Raw Loomer"
+    resource:
+      material: RABBIT
+      generate: false
+      model_path: item/raw_loomer
+  cooked_loomer:
+    display_name: "Cooked Loomer"
+    resource:
+      material: COOKED_RABBIT
+      generate: false
+      model_path: item/cooked_loomer
+  bulb_glow:
+    display_name: "Bulb Glow"
+    resource:
+      material: GLOWSTONE_DUST
+      generate: false
+      model_path: item/bulb_glow
+  prism_blade:
+    display_name: "Prism Blade"
+    resource:
+      material: NETHERITE_SWORD
+      generate: false
+      model_path: item/prism_blade
+  prism_helmet:
+    display_name: "Prism Helmet"
+    resource:
+      material: NETHERITE_HELMET
+      generate: false
+      model_path: item/prism_helmet
+  prism_chestplate:
+    display_name: "Prism Chestplate"
+    resource:
+      material: NETHERITE_CHESTPLATE
+      generate: false
+      model_path: item/prism_chestplate
+  prism_leggings:
+    display_name: "Prism Leggings"
+    resource:
+      material: NETHERITE_LEGGINGS
+      generate: false
+      model_path: item/prism_leggings
+  prism_boots:
+    display_name: "Prism Boots"
+    resource:
+      material: NETHERITE_BOOTS
+      generate: false
+      model_path: item/prism_boots
+  phase_boots:
+    display_name: "Phase Boots"
+    resource:
+      material: DIAMOND_BOOTS
+      generate: false
+      model_path: item/phase_boots
+  shard_sword:
+    display_name: "Shard Sword"
+    resource:
+      material: NETHERITE_SWORD
+      generate: false
+      model_path: item/shard_sword
+  shard_pickaxe:
+    display_name: "Shard Pickaxe"
+    resource:
+      material: NETHERITE_PICKAXE
+      generate: false
+      model_path: item/shard_pickaxe
+  shard_axe:
+    display_name: "Shard Axe"
+    resource:
+      material: NETHERITE_AXE
+      generate: false
+      model_path: item/shard_axe

@@ -76,10 +76,73 @@ remains unverified.
   `build/distributions/TheSift-resource-pack.zip` with
   `gradle siftResourcePack`; players must install or be served the pack to see
   those custom models.
+- Optional Nexo, ItemsAdder, and Oraxen item bridges: The Sift resolves
+  provider items when available and keeps its own persistent content IDs for
+  recipes and gameplay. `auto` tries registered API adapters first, then Nexo,
+  ItemsAdder, and Oraxen. Set the provider to `nexo`, `itemsadder`, `oraxen`,
+  `vanilla`, or an external provider's service ID to choose explicitly.
+- Optional MythicMobs spawning: configured Mythic mobs are used for natural
+  Sift wildlife and `/sift summon`; unconfigured mob IDs continue to use the
+  vanilla-backed prototypes. Starter configs are in `integrations/`.
 
 Portal, mob, Ichor, and Rift behavior are being migrated into the source
 registry in vertical slices. Do not install an older TheSift jar alongside
 this build because both use the `TheSift` plugin identity.
+
+## Optional server plugin integrations
+
+The Sift remains loadable without any of these plugins. For the best content
+pack experience, install **Nexo**, **ItemsAdder**, or **Oraxen** (choose one) and serve the
+The Sift resource pack through that plugin. The item bridge calls the provider
+API and adds The Sift's persistent item ID afterward, so the existing recipes,
+commands, drops, and listeners continue to recognize the item. With `auto`,
+Nexo is preferred when multiple built-in providers are installed. Recipes are
+refreshed shortly after startup to account for asynchronous item registry loads.
+
+For Nexo, copy `integrations/nexo/the-sift.yml` into `plugins/Nexo/items/`,
+merge `assets/thesift` from `TheSift-resource-pack.zip` into Nexo's pack assets,
+then run `/nexo reload`. For ItemsAdder, copy
+`integrations/itemsadder/sift-items.yml` into
+`plugins/ItemsAdder/contents/thesift/`, copy the resource pack's
+`assets/thesift/models` and `assets/thesift/textures` folders into that
+namespace, then run `/iazip` and `/iareload`. Provider items without a matching
+custom model still use their configured vanilla material appearance.
+
+For Oraxen, copy `integrations/oraxen/the-sift.yml` into
+`plugins/Oraxen/items/`, copy the resource pack's `assets/thesift/models` into
+`plugins/Oraxen/pack/models/thesift/` and `assets/thesift/textures` into
+`plugins/Oraxen/pack/textures/thesift/`, then reload Oraxen and regenerate or
+reupload its pack.
+
+Other plugins can integrate without a The Sift code change by registering
+Bukkit services implementing `com.gamepathics.thesift.foundation.api.SiftItemProvider`
+and/or `SiftMobProvider`. The item provider gets a
+content ID (for example, `rift_key`) and returns an `ItemStack` or `null` if it
+does not own that item. Give the add-on a `depend: [TheSift]` entry, register
+the service during its enable, and set `integrations.items.provider` to the
+provider ID, or leave it `auto` for service discovery. The Sift adds its own
+persistent ID after receiving the item, preserving recipe and gameplay checks.
+The mob provider receives an ID and location and returns a spawned Bukkit
+`Entity` or `null`. Select it with `integrations.mobs.provider`, or leave it
+`auto` to discover services before trying MythicMobs. Service registration:
+
+```java
+getServer().getServicesManager().register(
+    SiftItemProvider.class, myProvider, this, ServicePriority.Normal);
+getServer().getServicesManager().register(
+    SiftMobProvider.class, myMobProvider, this, ServicePriority.Normal);
+```
+
+Install **MythicMobs** if you want editable mob definitions and stats. Copy
+`integrations/mythicmobs/Mobs/TheSift.yml` into `plugins/MythicMobs/Mobs/` and
+run `/mm reload`. The bridge spawns a configured Mythic mob by its lowercase
+Sift ID; missing definitions automatically fall back to the Bukkit entity
+prototype. Nexo/ItemsAdder/Oraxen handle items and resource packs; MythicMobs handles
+mob configuration. **ModelEngine is not a required dependency currently**:
+the repository's entity JSON files are not ModelEngine/Blockbench model files,
+so they cannot be attached as animated custom mobs without conversion and
+ModelEngine-specific assets. The available config and API integration do not
+claim those mob models are already rendered in game.
 
 ## The Sift dimension prototype
 

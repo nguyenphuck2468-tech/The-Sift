@@ -75,6 +75,11 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             getServer().getPluginManager().registerEvents(siftEcologyManager, this);
             siftEcologyManager.populateLoadedSpawnChunks();
         }
+        // Nexo finishes loading its item registry asynchronously; refresh outputs after startup.
+        getServer().getScheduler().runTaskLater(this, () -> {
+            if (ichorContent != null) ichorContent.registerRecipes();
+            if (siftiteContent != null) siftiteContent.registerRecipes();
+        }, 200L);
         getLogger().info("The Sift foundation enabled for Minecraft "
                 + getConfig().getString("compatibility.minecraft-target", "unknown") + ".");
     }

@@ -20,10 +20,12 @@ import java.util.Objects;
 public final class SiftiteContent {
     private final JavaPlugin plugin;
     private final NamespacedKey idKey;
+    private final ExternalItemBridge externalItems;
 
     public SiftiteContent(JavaPlugin plugin) {
         this.plugin = Objects.requireNonNull(plugin);
         this.idKey = new NamespacedKey(plugin, "content");
+        this.externalItems = new ExternalItemBridge(plugin);
     }
 
     public void registerRecipes() {
@@ -55,14 +57,18 @@ public final class SiftiteContent {
     }
 
     public ItemStack item(Material material, String id, String name) {
-        ItemStack result = new ItemStack(material);
+        ItemStack result = externalItems.create(id);
+        boolean providerItem = result != null;
+        if (result == null) result = new ItemStack(material);
         ItemMeta meta = result.getItemMeta();
-        meta.setDisplayName("§d" + name);
+        if (!providerItem) meta.setDisplayName("§d" + name);
         meta.getPersistentDataContainer().set(idKey, PersistentDataType.STRING, id);
-        try (var modelFile = plugin.getResource("pack/assets/thesift/items/" + id + ".json")) {
-            if (modelFile != null) meta.setItemModel(NamespacedKey.fromString("thesift:" + id));
-        } catch (java.io.IOException exception) {
-            plugin.getLogger().fine("Could not inspect item model for " + id + ": " + exception.getMessage());
+        if (!providerItem) {
+            try (var modelFile = plugin.getResource("pack/assets/thesift/items/" + id + ".json")) {
+                if (modelFile != null) meta.setItemModel(NamespacedKey.fromString("thesift:" + id));
+            } catch (java.io.IOException exception) {
+                plugin.getLogger().fine("Could not inspect item model for " + id + ": " + exception.getMessage());
+            }
         }
         if (id.startsWith("siftite_") && !id.equals("siftite_upgrade_smithing_template")) {
             addAttributes(meta, id);

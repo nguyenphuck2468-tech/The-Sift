@@ -4,6 +4,28 @@ Updated: 2026-10-24
 Build baseline: Java 25, Paper API `26.3.build.218-stable`  
 Target: Minecraft 27.1 is planned, not released or verified.
 
+## Optional content-plugin integration (2026-10-24)
+
+- Added reflection-based Nexo/ItemsAdder/Oraxen item bridges, preserving The
+  Sift's persistent content tags and keeping provider APIs optional at compile time.
+- Added a public Bukkit `SiftItemProvider` service interface so third-party
+  item plugins can register adapters without The Sift depending on their APIs,
+  plus a `SiftMobProvider` service interface for other creature plugins.
+- Added provider selection (`auto`, `nexo`, `itemsadder`, `oraxen`, `vanilla`,
+  or a registered service ID), optional
+  load ordering, and a delayed recipe refresh for Nexo's asynchronous registry.
+- Added starter Nexo and ItemsAdder item definitions and import instructions.
+- Added a reflection-based MythicMobs spawn bridge. Configured IDs are used for
+  natural Sift wildlife and summon commands; missing IDs retain the Bukkit
+  entity fallback. Added starter definitions for the named creatures.
+- ModelEngine is documented as an optional future rendering integration. The
+  current entity JSON assets are not ModelEngine/Blockbench models and are not
+  claimed to render as animated custom entities.
+- Deferred: provider item configs cover the bundled custom item models and key
+  progression/Ichor items; provider-specific custom block mechanics are not
+  wired into the current Bukkit block-placement handlers. Provider runtime
+  behavior still needs validation on a server with these plugins installed.
+
 ## Added in this pass
 
 - Ten additional biome definitions based on the community Mielon's The Sift

@@ -95,6 +95,14 @@ siftite:
 compatibility:
   minecraft-target: "27.1 (planned)"
 
+integrations:
+  items:
+    # auto discovers API services, then tries Nexo, ItemsAdder, and Oraxen.
+    provider: auto
+  mobs:
+    # auto discovers SiftMobProvider services, then uses MythicMobs if available.
+    provider: auto
+
 sift-world:
   tide-period-seconds: 120
   ichor-weather-period-seconds: 900
