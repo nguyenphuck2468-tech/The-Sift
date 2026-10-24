@@ -27,10 +27,11 @@ Package plugin cũ dạng `.class`, bản mod Fabric reference và file ZIP lớ
 
 - Java 25.
 - Gradle 9.x.
-- Paper API mặc định: `1.21.4-R0.1-SNAPSHOT`.
-- Target gameplay được ghi là Minecraft `26.3`.
-- Paper API 26.3 chưa được hard-code vì dependency/API tương ứng chưa chắc đã
-  public trong môi trường build hiện tại.
+- Paper API mặc định: `26.3.build.218-stable`.
+- Target kế hoạch: Minecraft `27.1` (bản tương lai; schema/API chưa công bố).
+- Dimension The Sift hiện là prototype đóng gói theo data format 26.3.
+- Project chuyển sang Paper plugin loader để đăng ký datapack trước khi world
+  được nạp; plugin.yml vẫn có để giữ metadata/permission cho Bukkit tooling.
 
 Build:
 
@@ -126,6 +127,8 @@ thay runtime prototype bằng custom entity implementation.
 ```text
 /sift doctor
 /sift reload
+/sift dimension
+/sift return
 /sift give ichor_bottle <player>
 /sift give charoite <player>
 /sift give charoite_ore <player>
@@ -176,11 +179,37 @@ Các lệnh yêu cầu permission `thesift.foundation.admin`, mặc định là 
 - Singer đang dùng Allay prototype.
 - Chưa có Echo Golem.
 - Chưa có Rift event/persistence/reward.
-- Chưa có test tự động; hiện mới có compile/build validation.
+- Dimension The Sift prototype dùng Meadow biome và Overworld terrain
+  generator; chưa có noise settings, block custom hay portal block của Fabric
+  mod. Biome pack đầy đủ vẫn được giữ riêng vì các worldgen feature tham chiếu
+  chưa được đăng ký và hiện khiến registry load lỗi.
+- Unit tests có trong source nhưng 25/31 hiện fail trong môi trường test do lỗi
+  khởi tạo Mockito; build JAR và Paper server smoke test chạy được.
 - `reload` hiện reload config/flags nhưng không teardown và đăng ký lại toàn bộ
   module. Nếu thay đổi module flag lúc runtime, nên restart server.
-- Config target `26.3` là metadata; cần xác minh Paper API/server target trước
-  khi công bố compatibility.
+- Config target `27.1 (planned)` là kế hoạch, không khẳng định tương thích
+  trước khi Paper/Minecraft 27.1 được phát hành và kiểm tra.
+
+## 7.1 Dimension prototype
+
+Dimension files live at `src/main/resources/sift_dimension_datapack/`.
+`TheSiftBootstrap` registers this isolated bundled datapack as
+`TheSift/dimension`; `/sift dimension` creates/loads the world using the
+`thesift:the_sift` key. This follows Paper's datapack-discovery lifecycle and
+Paper 26.1+ `WorldCreator.ofKey` world keys. It is an implementation prototype
+for planned Minecraft 27.1, not a tested 27.1 implementation.
+
+Reference material reviewed:
+
+- The repository's historical Fabric reference archive `The Sift 1.1.2`
+  (26.3), including its `dimension/the_sift.json` and
+  `dimension_type/the_sift.json` definitions.
+- Paper datapack discovery docs:
+  https://docs.papermc.io/paper/dev/lifecycle/datapacks/
+- Paper world creation API:
+  https://jd.papermc.io/paper/26.3/org/bukkit/WorldCreator.html
+- Mojang's September 2026 announcement:
+  https://www.minecraft.net/en-us/article/mclive_sept2026_recap
 
 ## 7. Thứ tự công việc đề xuất
 

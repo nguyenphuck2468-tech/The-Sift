@@ -1,8 +1,10 @@
 # The Sift plugin foundation
 
 This project is the single source/build project for the next The Sift plugin
-update. It targets Java 25 and keeps runtime code, plugin metadata, datapack,
-resource pack, and Bedrock support under one source tree.
+update. It targets Java 25 and Paper 26.3 for its current build, while preparing
+the Sift dimension integration for the planned Minecraft 27.1 release. The
+27.1 data format and runtime API are not available yet, so this is a working
+26.3 prototype rather than a claim of 27.1 compatibility.
 
 ## Build
 
@@ -10,16 +12,19 @@ resource pack, and Bedrock support under one source tree.
 gradle clean build
 ```
 
-The default compile dependency is Paper API `1.21.4-R0.1-SNAPSHOT`. Override
-it when the Paper 26.3 API is published:
+The default compile dependency is Paper API `26.3.build.218-stable`. Override
+it when validating another Paper API version:
 
 ```bash
 gradle build -PpaperApiVersion=<paper-api-version>
 ```
 
-The `compatibility.minecraft-target` value is intentionally configuration
-metadata until a matching Paper API is available. The foundation must not
-claim 26.3 runtime compatibility based only on the resource-pack overlay.
+The plugin packages a small dimension datapack and registers it through
+Paper's datapack-discovery lifecycle. This requires Paper's plugin loader and
+Paper 26.3 or newer. The prototype uses the vanilla Meadow biome and Overworld
+terrain with custom Sift dimension visuals; the larger, unfinished biome pack
+is kept separate so its missing worldgen features do not prevent the server
+from loading.
 
 ## Current foundation scope
 
@@ -36,10 +41,31 @@ claim 26.3 runtime compatibility based only on the resource-pack overlay.
   sonic pulses, Charoite protection, boss bars, drops, and summon diagnostics.
 - `/sift doctor` to inspect enabled content flags.
 - `/sift reload` with migration validation.
+- The Sift custom dimension prototype, entered with `/sift dimension` and left
+  with `/sift return`.
 
 Portal, mob, Ichor, and Rift behavior are being migrated into the source
 registry in vertical slices. Do not install an older TheSift jar alongside
 this build because both use the `TheSift` plugin identity.
+
+## The Sift dimension prototype
+
+The Java datapack model was cross-checked against the Fabric reference mod
+`The Sift 1.1.2` (Minecraft 26.3), recovered from this repository's initial
+history, and the Paper datapack-discovery documentation. The plugin supplies
+the dimension data itself; it does not load or require the Fabric mod.
+
+On Paper 26.3+, use `/sift dimension` to create/load and enter the dimension.
+The console command creates/loads it without a player; players can enter with
+the same command. Use `/sift return` to return to the Overworld spawn.
+`/datapack list enabled` should show `TheSift/dimension`. The prototype uses
+the vanilla Meadow biome and Overworld terrain settings, so custom Sift blocks
+and the Fabric mod's bespoke terrain noise are not required.
+
+Minecraft's September 2026 announcement says The Sift is planned for Java and
+Bedrock next year, but does not publish a 27.1 datapack schema or Paper API.
+Recheck the dimension data against the official 27.1 release before claiming
+compatibility with that version.
 
 ## Ichor v2 test flow
 

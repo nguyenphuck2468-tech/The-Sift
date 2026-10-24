@@ -1,5 +1,7 @@
 package com.gamepathics.thesift.foundation;
 
+import io.papermc.paper.command.brigadier.BasicCommand;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -16,9 +18,21 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     private ResonanceManager resonanceManager;
     private EchoGolemManager echoGolemManager;
     private RiftManager riftManager;
+    private SiftDimensionManager siftDimensionManager;
 
     @Override
     public void onEnable() {
+        registerCommand("sift", new BasicCommand() {
+            @Override
+            public void execute(CommandSourceStack source, String[] args) {
+                handleSiftCommand(source.getSender(), args);
+            }
+
+            @Override
+            public String permission() {
+                return "thesift.foundation.admin";
+            }
+        });
         saveDefaultConfig();
         if (!ConfigMigration.migrate(this)) {
             getServer().getPluginManager().disablePlugin(this);
@@ -52,6 +66,9 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             getServer().getPluginManager().registerEvents(riftManager, this);
             riftManager.start();
         }
+        if (contentRegistry.isEnabled(ContentId.SIFT_DIMENSION)) {
+            siftDimensionManager = new SiftDimensionManager(this);
+        }
         getLogger().info("The Sift foundation enabled for Minecraft "
                 + getConfig().getString("compatibility.minecraft-target", "unknown") + ".");
     }
@@ -77,6 +94,10 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         if (!command.getName().equalsIgnoreCase("sift")) {
             return false;
         }
+        return handleSiftCommand(sender, args);
+    }
+
+    private boolean handleSiftCommand(CommandSender sender, String[] args) {
         if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
             reloadConfig();
             if (!ConfigMigration.migrate(this)) {
@@ -109,6 +130,31 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             for (Map.Entry<ContentId, Boolean> entry : contentRegistry.snapshot().entrySet()) {
                 sender.sendMessage("- " + entry.getKey().key() + ": "
                         + (entry.getValue() ? "enabled" : "disabled"));
+            }
+            return true;
+        }
+        if (args.length == 1 && (args[0].equalsIgnoreCase("dimension")
+                || args[0].equalsIgnoreCase("enter"))) {
+            if (siftDimensionManager == null) {
+                sender.sendMessage("The Sift dimension is disabled.");
+            } else if (sender instanceof Player player) {
+                siftDimensionManager.enter(player);
+            } else {
+                if (siftDimensionManager.getOrCreateWorld() != null) {
+                    sender.sendMessage("The Sift dimension is ready. Players can enter with /sift dimension.");
+                } else {
+                    sender.sendMessage("The Sift dimension could not be loaded; check the datapack and server log.");
+                }
+            }
+            return true;
+        }
+        if (args.length == 1 && args[0].equalsIgnoreCase("return")) {
+            if (siftDimensionManager == null) {
+                sender.sendMessage("The Sift dimension is disabled.");
+            } else if (!(sender instanceof Player player)) {
+                sender.sendMessage("Only players can return from The Sift.");
+            } else {
+                siftDimensionManager.returnToOverworld(player);
             }
             return true;
         }
@@ -207,13 +253,15 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             sender.sendMessage("Gave Rift Key to " + target.getName() + ".");
             return true;
         }
-        sender.sendMessage("Usage: /sift <doctor|reload|give|summon singer|summon echo_golem|summon rift|give rift_key>");
+        sender.sendMessage("Usage: /sift <doctor|reload|dimension|return|give|summon singer|summon echo_golem|summon rift|give rift_key>");
         return true;
     }
 
     private void loadContentFlags() {
         for (ContentId id : ContentId.values()) {
-            contentRegistry.setEnabled(id, getConfig().getBoolean("content." + id.key(), false));
+            boolean enabledByDefault = id == ContentId.SIFT_DIMENSION;
+            contentRegistry.setEnabled(id,
+                    getConfig().getBoolean("content." + id.key(), enabledByDefault));
         }
     }
 

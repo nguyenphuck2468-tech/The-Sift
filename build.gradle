@@ -12,20 +12,17 @@ java {
 }
 
 def paperApiVersion = providers.gradleProperty("paperApiVersion")
-        .orElse("1.21.4-R0.1-SNAPSHOT")
-
-repositories {
-    mavenCentral()
-    maven { url = "https://repo.papermc.io/repository/maven-public/" }
-}
+        .orElse("26.3.build.218-stable")
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:${paperApiVersion.get()}")
+    testImplementation("io.papermc.paper:paper-api:${paperApiVersion.get()}")
 
     // Test dependencies
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.0")
     testImplementation("org.mockito:mockito-core:5.12.0")
     testImplementation("org.mockito:mockito-junit-jupiter:5.12.0")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.withType(JavaCompile).configureEach {
@@ -34,7 +31,7 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 processResources {
-    filesMatching("plugin.yml") {
+    filesMatching(["plugin.yml", "paper-plugin.yml"]) {
         expand(version: project.version)
     }
 }

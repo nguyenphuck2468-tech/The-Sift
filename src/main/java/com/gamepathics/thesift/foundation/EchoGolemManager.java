@@ -74,7 +74,7 @@ public final class EchoGolemManager implements Listener {
         bars.put(golem.getUniqueId(), bar);
         
         // Resonance particles on spawn
-        location.getWorld().spawnParticle(Particle.RESONANCE, location.clone().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.1);
+        location.getWorld().spawnParticle(Particle.END_ROD, location.clone().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.1);
         location.getWorld().playSound(location, Sound.BLOCK_BEACON_POWER_SELECT, 1.0f, 1.2f);
         
         return golem;
@@ -100,7 +100,7 @@ public final class EchoGolemManager implements Listener {
                 double range = plugin.getConfig().getDouble("echo-golem.resonance-range", 20.0);
                 
                 // Resonance pulse effect
-                world.spawnParticle(Particle.RESONANCE, center.clone().add(0, 1.5, 0), 1);
+                world.spawnParticle(Particle.END_ROD, center.clone().add(0, 1.5, 0), 1);
                 world.playSound(center, Sound.ENTITY_WARDEN_HEARTBEAT, 0.6f, 0.8f);
                 
                 // Damage and slow players without Charoite

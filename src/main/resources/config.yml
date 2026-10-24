@@ -15,6 +15,7 @@ content:
   singer: true
   echo_golem: true
   rift: true
+  sift_dimension: true
 
 resonance:
   enabled: true
@@ -91,4 +92,4 @@ siftite:
   spear-reach: 4.5
 
 compatibility:
-  minecraft-target: "26.3"
+  minecraft-target: "27.1 (planned)"

@@ -3,7 +3,7 @@ version: '${version}'
 main: com.gamepathics.thesift.foundation.TheSiftFoundationPlugin
 description: Foundation for the next The Sift content update
 author: Gamepathics
-api-version: '1.21'
+api-version: '26.3'
 
 commands:
   sift:

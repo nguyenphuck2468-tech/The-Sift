@@ -1,0 +1,7 @@
+name: TheSift
+version: '${version}'
+main: com.gamepathics.thesift.foundation.TheSiftFoundationPlugin
+bootstrapper: com.gamepathics.thesift.foundation.TheSiftBootstrap
+description: Foundation for The Sift content and dimension
+author: Gamepathics
+api-version: '26.3'

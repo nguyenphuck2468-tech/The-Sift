@@ -31,6 +31,7 @@ public enum ContentId {
     SINGER("singer"),
     ECHO_GOLEM("echo_golem"),
     RIFT("rift"),
+    SIFT_DIMENSION("sift_dimension"),
     SIFTER("sifter");
 
     private final String key;
