@@ -134,3 +134,31 @@ the_sifter:
   Options:
     Persistent: true
     Despawn: false
+glowbell:
+  Type: BAT
+  Display: '&dGlowbell'
+  Health: 12
+  Options: { Persistent: true, Despawn: false }
+sift_wastes_stalker:
+  Type: HUSK
+  Display: '&5Sift Wastes Stalker'
+  Health: 36
+  Damage: 6
+  Options: { Persistent: true, Despawn: false }
+singer:
+  Type: ALLAY
+  Display: '&5&lSinger'
+  Health: 40
+  Options: { Persistent: true, Despawn: false }
+echo_golem:
+  Type: IRON_GOLEM
+  Display: '&b&lEcho Golem'
+  Health: 80
+  Damage: 12
+  Options: { Persistent: true, Despawn: false }
+rift_walker:
+  Type: ENDERMAN
+  Display: '&5Rift Walker'
+  Health: 40
+  Damage: 7
+  Options: { Persistent: true, Despawn: false }

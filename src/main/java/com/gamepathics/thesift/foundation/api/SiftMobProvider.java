@@ -1,7 +1,7 @@
 package com.gamepathics.thesift.foundation.api;
 
 import org.bukkit.Location;
-import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 
 /** Bukkit service contract for custom mob plugins used by The Sift. */
 public interface SiftMobProvider {
@@ -9,5 +9,5 @@ public interface SiftMobProvider {
     String getProviderId();
 
     /** Spawn a custom creature for a The Sift ID, or return null if unsupported. */
-    Entity spawn(String creatureId, Location location);
+    LivingEntity spawn(String creatureId, Location location);
 }

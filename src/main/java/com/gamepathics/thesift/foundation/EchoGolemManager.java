@@ -13,8 +13,8 @@ import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.IronGolem;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -34,12 +34,14 @@ public final class EchoGolemManager implements Listener {
     private static final String ECHO_GOLEM_ID = "echo_golem";
     private final JavaPlugin plugin;
     private final NamespacedKey entityKey;
+    private final SiftMobFactory mobFactory;
     private final Map<UUID, BossBar> bars = new HashMap<>();
     private long tick;
 
     public EchoGolemManager(JavaPlugin plugin) {
         this.plugin = plugin;
         this.entityKey = new NamespacedKey(plugin, "echo_golem_entity");
+        this.mobFactory = new SiftMobFactory(plugin);
     }
 
     public void start() {
@@ -55,20 +57,25 @@ public final class EchoGolemManager implements Listener {
         bars.clear();
     }
 
-    public IronGolem summonEchoGolem(Location location) {
-        IronGolem golem = (IronGolem) location.getWorld().spawnEntity(location, EntityType.IRON_GOLEM);
+    public LivingEntity summonEchoGolem(Location location) {
+        LivingEntity golem = mobFactory.spawn(ECHO_GOLEM_ID, location, EntityType.IRON_GOLEM);
         golem.getPersistentDataContainer().set(entityKey, PersistentDataType.STRING, ECHO_GOLEM_ID);
         golem.setCustomName("§b§lEcho Golem");
         golem.setCustomNameVisible(true);
         golem.setPersistent(true);
-        golem.setCanPickupItems(false);
-        golem.getAttribute(Attribute.MAX_HEALTH).setBaseValue(
-                plugin.getConfig().getDouble("echo-golem.max-health", 80.0));
-        golem.setHealth(golem.getAttribute(Attribute.MAX_HEALTH).getValue());
-        golem.getAttribute(Attribute.ATTACK_DAMAGE).setBaseValue(
+        if (golem instanceof Mob mob) mob.setCanPickupItems(false);
+        var maxHealth = golem.getAttribute(Attribute.MAX_HEALTH);
+        if (maxHealth != null) {
+            maxHealth.setBaseValue(plugin.getConfig().getDouble("echo-golem.max-health", 80.0));
+            golem.setHealth(maxHealth.getValue());
+        }
+        var attackDamage = golem.getAttribute(Attribute.ATTACK_DAMAGE);
+        if (attackDamage != null) attackDamage.setBaseValue(
                 plugin.getConfig().getDouble("echo-golem.attack-damage", 12.0));
-        golem.getAttribute(Attribute.MOVEMENT_SPEED).setBaseValue(0.28);
-        golem.getAttribute(Attribute.KNOCKBACK_RESISTANCE).setBaseValue(1.0);
+        var movementSpeed = golem.getAttribute(Attribute.MOVEMENT_SPEED);
+        if (movementSpeed != null) movementSpeed.setBaseValue(0.28);
+        var knockback = golem.getAttribute(Attribute.KNOCKBACK_RESISTANCE);
+        if (knockback != null) knockback.setBaseValue(1.0);
 
         BossBar bar = Bukkit.createBossBar("§bEcho Golem", BarColor.BLUE, BarStyle.SEGMENTED_20);
         bars.put(golem.getUniqueId(), bar);
@@ -92,7 +99,7 @@ public final class EchoGolemManager implements Listener {
             return;
         }
         for (World world : Bukkit.getWorlds()) {
-            for (Entity entity : world.getEntitiesByClass(IronGolem.class)) {
+            for (LivingEntity entity : world.getLivingEntities()) {
                 if (!isEchoGolem(entity)) {
                     continue;
                 }
@@ -120,7 +127,7 @@ public final class EchoGolemManager implements Listener {
                 
                 // Heal nearby Echo Golems
                 for (Entity nearby : world.getNearbyEntities(center, range, range, range)) {
-                    if (nearby instanceof IronGolem other && isEchoGolem(other) && other != entity) {
+                    if (nearby instanceof LivingEntity other && isEchoGolem(other) && other != entity) {
                         other.heal(plugin.getConfig().getDouble("echo-golem.heal-amount", 4.0));
                         other.getWorld().spawnParticle(Particle.HEART, other.getLocation().add(0, 1.5, 0), 3);
                     }
@@ -145,7 +152,8 @@ public final class EchoGolemManager implements Listener {
                     bar.addPlayer(player);
                 }
             }
-            double max = living.getAttribute(Attribute.MAX_HEALTH).getValue();
+            var maxHealth = living.getAttribute(Attribute.MAX_HEALTH);
+            double max = maxHealth == null ? living.getHealth() : maxHealth.getValue();
             bar.setProgress(Math.max(0, Math.min(1, living.getHealth() / max)));
             return false;
         });

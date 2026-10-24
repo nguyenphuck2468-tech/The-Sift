@@ -123,8 +123,11 @@ the service during its enable, and set `integrations.items.provider` to the
 provider ID, or leave it `auto` for service discovery. The Sift adds its own
 persistent ID after receiving the item, preserving recipe and gameplay checks.
 The mob provider receives an ID and location and returns a spawned Bukkit
-`Entity` or `null`. Select it with `integrations.mobs.provider`, or leave it
-`auto` to discover services before trying MythicMobs. Service registration:
+`LivingEntity` or `null`. Select it with `integrations.mobs.provider`, or leave
+it `auto` to discover services before trying built-in integrations. This SPI
+is the extension point for other mob plugins that do not have a built-in
+bridge; an add-on can register one adapter for any supported backend. Service
+registration:
 
 ```java
 getServer().getServicesManager().register(
@@ -133,7 +136,8 @@ getServer().getServicesManager().register(
     SiftMobProvider.class, myMobProvider, this, ServicePriority.Normal);
 ```
 
-Install **MythicMobs** if you want editable mob definitions and stats. Copy
+Install **MythicMobs** if you want editable definitions and stats for the
+Sift's natural creatures, Singer, Echo Golem, Rift Walker, and bosses. Copy
 `integrations/mythicmobs/Mobs/TheSift.yml` into `plugins/MythicMobs/Mobs/` and
 run `/mm reload`. The bridge spawns a configured Mythic mob by its lowercase
 Sift ID; missing definitions automatically fall back to the Bukkit entity
@@ -152,8 +156,8 @@ integrations:
         prism_warden: sift_prism_warden.yml
 ```
 
-With `auto`, MythicMobs gets first chance and EliteMobs is tried for configured
-IDs afterward.
+With `auto`, registered `SiftMobProvider`s get first chance, then MythicMobs;
+EliteMobs is tried for IDs explicitly mapped in `definitions`.
 
 **ModelEngine** can attach models to spawned Sift entities. Install/import your
 ModelEngine model pack, then map IDs such as
@@ -163,9 +167,13 @@ ModelEngine only supplies rendering; MythicMobs, EliteMobs, or a registered
 entity JSON files are not ModelEngine model assets, so they need conversion or
 replacement before ModelEngine can display them.
 
-Nexo/ItemsAdder/Oraxen handle items and resource packs; MythicMobs and
-EliteMobs handle custom mobs/bosses; ModelEngine adds custom mob rendering.
-These are optional integrations, each with its own supported role.
+Nexo/ItemsAdder/Oraxen handle items and resource packs. MythicMobs provides
+editable mob definitions; EliteMobs can replace configured boss spawns;
+ModelEngine supplies rendering only. LevelledMobs, InfernalMobs, and similar
+spawn-modifier plugins can act on Bukkit entities spawned by The Sift, subject
+to their own world and spawn-reason settings. Other custom-mob systems can be
+connected through `SiftMobProvider`; they are not automatically detected just
+because they are installed.
 
 ## The Sift dimension prototype
 
@@ -189,6 +197,12 @@ the same command. Use `/sift return` to return to the Overworld spawn.
 `/datapack list enabled` should show `TheSift/dimension`. The prototype uses
 the vanilla Meadow biome and Overworld terrain settings, so custom Sift blocks
 and the Fabric mod's bespoke terrain noise are not required.
+
+The dimension is stored in the same world save as the Overworld, Nether, and
+End. Paper's dimension-aware world storage places it under
+`<level-name>/dimensions/thesift/the_sift/`; Bukkit creates/loads this through
+the `thesift:the_sift` world key. The plugin should not create a separate
+top-level world folder manually.
 
 Mojang has named Meadows and Carapace and described new mobs, hazardous blocks,
 and shifting tides. The Java/Bedrock announcement does not publish final

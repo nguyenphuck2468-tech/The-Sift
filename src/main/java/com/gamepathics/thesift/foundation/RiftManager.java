@@ -51,6 +51,7 @@ public final class RiftManager implements Listener {
     private final JavaPlugin plugin;
     private final NamespacedKey riftKey;
     private final NamespacedKey blockKey;
+    private final SiftMobFactory mobFactory;
     private final Map<UUID, RiftInstance> rifts = new HashMap<>();
     private final Set<UUID> travelling = new HashSet<>();
     private final Map<UUID, List<Integer>> portalSongProgress = new HashMap<>();
@@ -60,6 +61,7 @@ public final class RiftManager implements Listener {
         this.plugin = plugin;
         this.riftKey = new NamespacedKey(plugin, "rift_key");
         this.blockKey = new NamespacedKey(plugin, "rift_block");
+        this.mobFactory = new SiftMobFactory(plugin);
     }
 
     public void start() {
@@ -80,11 +82,8 @@ public final class RiftManager implements Listener {
     }
 
     public ItemStack createRiftKey() {
-        ItemStack key = new ItemStack(Material.TRIAL_KEY);
+        ItemStack key = new SiftiteContent(plugin).item(Material.TRIAL_KEY, RIFT_KEY_ID, "Rift Key");
         ItemMeta meta = key.getItemMeta();
-        meta.setDisplayName("§5§lRift Key");
-        meta.setCustomModelData(1);
-        meta.setItemModel(NamespacedKey.fromString("thesift:rift_key"));
         meta.getPersistentDataContainer().set(riftKey, PersistentDataType.STRING, RIFT_KEY_ID);
         key.setItemMeta(meta);
         return key;
@@ -332,7 +331,7 @@ public final class RiftManager implements Listener {
                 spawnLoc.getWorld().getHighestBlockAt(spawnLoc).getLocation().add(0, 1, 0);
                 
                 // Spawn Enderman-like or custom mob
-                Entity entity = spawnLoc.getWorld().spawnEntity(spawnLoc, EntityType.ENDERMAN);
+                Entity entity = mobFactory.spawn("rift_walker", spawnLoc, EntityType.ENDERMAN);
                 entity.getPersistentDataContainer().set(blockKey, PersistentDataType.STRING, RIFT_BLOCK_ID);
                 entity.setCustomName("§5Rift Walker");
                 entity.setCustomNameVisible(true);

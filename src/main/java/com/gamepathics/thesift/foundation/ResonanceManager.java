@@ -9,9 +9,10 @@ import org.bukkit.World;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
-import org.bukkit.entity.Allay;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.EventHandler;
@@ -33,6 +34,7 @@ public final class ResonanceManager implements Listener {
     private final JavaPlugin plugin;
     private final NamespacedKey entityKey;
     private final NamespacedKey itemKey;
+    private final SiftMobFactory mobFactory;
     private final Map<UUID, BossBar> bars = new HashMap<>();
     private long tick;
     private int taskId = -1;
@@ -41,6 +43,7 @@ public final class ResonanceManager implements Listener {
         this.plugin = plugin;
         this.entityKey = new NamespacedKey(plugin, "resonance_entity");
         this.itemKey = new NamespacedKey(plugin, "content");
+        this.mobFactory = new SiftMobFactory(plugin);
     }
 
     public void start() {
@@ -60,16 +63,18 @@ public final class ResonanceManager implements Listener {
         bars.clear();
     }
 
-    public Allay summonSinger(Location location) {
-        Allay singer = (Allay) location.getWorld().spawnEntity(location, EntityType.ALLAY);
+    public LivingEntity summonSinger(Location location) {
+        LivingEntity singer = mobFactory.spawn(SINGER_ID, location, EntityType.ALLAY);
         singer.getPersistentDataContainer().set(entityKey, PersistentDataType.STRING, SINGER_ID);
         singer.setCustomName("§5§lSinger");
         singer.setCustomNameVisible(true);
         singer.setPersistent(true);
-        singer.setCanPickupItems(false);
-        singer.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).setBaseValue(
-                plugin.getConfig().getDouble("resonance.singer.max-health", 40.0));
-        singer.setHealth(singer.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getValue());
+        if (singer instanceof Mob mob) mob.setCanPickupItems(false);
+        var maxHealth = singer.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
+        if (maxHealth != null) {
+            maxHealth.setBaseValue(plugin.getConfig().getDouble("resonance.singer.max-health", 40.0));
+            singer.setHealth(maxHealth.getValue());
+        }
         BossBar bar = Bukkit.createBossBar("§5Singer Resonance", BarColor.PURPLE, BarStyle.SEGMENTED_10);
         bars.put(singer.getUniqueId(), bar);
         return singer;
@@ -87,7 +92,7 @@ public final class ResonanceManager implements Listener {
             return;
         }
         for (World world : Bukkit.getWorlds()) {
-            for (Entity entity : world.getEntitiesByClass(Allay.class)) {
+            for (LivingEntity entity : world.getLivingEntities()) {
                 if (!isSinger(entity)) {
                     continue;
                 }
@@ -125,7 +130,8 @@ public final class ResonanceManager implements Listener {
                     bar.addPlayer(player);
                 }
             }
-            double max = living.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getValue();
+            var maxHealth = living.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
+            double max = maxHealth == null ? living.getHealth() : maxHealth.getValue();
             bar.setProgress(Math.max(0, Math.min(1, living.getHealth() / max)));
             return false;
         });

@@ -2,6 +2,7 @@ package com.gamepathics.thesift.foundation;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import com.gamepathics.thesift.foundation.api.SiftMobProvider;
@@ -17,7 +18,7 @@ final class MythicMobBridge {
         this.plugin = plugin;
     }
 
-    Entity spawn(String id, Location location) {
+    LivingEntity spawn(String id, Location location) {
         String configured = plugin.getConfig().getString("integrations.mobs.provider", "auto")
                 .toLowerCase(java.util.Locale.ROOT);
         if (!configured.equals("vanilla") && !configured.equals("mythicmobs")) {
@@ -29,7 +30,7 @@ final class MythicMobBridge {
                 if (!configured.equals("auto") && (providerId == null
                         || !providerId.equalsIgnoreCase(configured))) continue;
                 try {
-                    Entity entity = provider.spawn(id, location);
+                    LivingEntity entity = provider.spawn(id, location);
                     if (entity != null) return entity;
                 } catch (RuntimeException exception) {
                     plugin.getLogger().warning("Custom mob provider '" + providerId
@@ -38,7 +39,7 @@ final class MythicMobBridge {
             }
         }
         if (configured.equals("auto") || configured.equals("mythicmobs")) {
-            Entity mythic = spawnMythic(id, location);
+            LivingEntity mythic = spawnMythic(id, location);
             if (mythic != null) return mythic;
         }
         if (configured.equals("auto") || configured.equals("elitemobs")) {
@@ -47,7 +48,7 @@ final class MythicMobBridge {
         return null;
     }
 
-    private Entity spawnMythic(String id, Location location) {
+    private LivingEntity spawnMythic(String id, Location location) {
         if (!plugin.getServer().getPluginManager().isPluginEnabled("MythicMobs")) return null;
         try {
             Class<?> mythicBukkit = Class.forName("io.lumine.mythic.bukkit.MythicBukkit");
@@ -72,7 +73,7 @@ final class MythicMobBridge {
             Object activeMob = spawn.invoke(mob, mythicLocation, 1.0);
             Object abstractEntity = activeMob.getClass().getMethod("getEntity").invoke(activeMob);
             Object bukkitEntity = abstractEntity.getClass().getMethod("getBukkitEntity").invoke(abstractEntity);
-            return bukkitEntity instanceof Entity entity ? entity : null;
+            return bukkitEntity instanceof LivingEntity entity ? entity : null;
         } catch (ReflectiveOperationException | LinkageError exception) {
             plugin.getLogger().warning("MythicMobs could not spawn " + id + "; using vanilla fallback: "
                     + exception.getMessage());
@@ -80,7 +81,7 @@ final class MythicMobBridge {
         }
     }
 
-    private Entity spawnEliteBoss(String id, Location location) {
+    private LivingEntity spawnEliteBoss(String id, Location location) {
         if (!plugin.getServer().getPluginManager().isPluginEnabled("EliteMobs")) return null;
         String file = plugin.getConfig().getString("integrations.mobs.elitemobs.definitions." + id, "");
         if (file.isBlank()) return null;
@@ -92,7 +93,7 @@ final class MythicMobBridge {
             bossType.getMethod("spawn", Location.class, int.class, boolean.class).invoke(boss, location,
                     plugin.getConfig().getInt("integrations.mobs.elitemobs.level", 1), true);
             Object livingEntity = bossType.getMethod("getLivingEntity").invoke(boss);
-            return livingEntity instanceof Entity entity ? entity : null;
+            return livingEntity instanceof LivingEntity entity ? entity : null;
         } catch (ReflectiveOperationException | LinkageError exception) {
             plugin.getLogger().warning("EliteMobs could not spawn configured Sift boss " + id + ": "
                     + exception.getMessage());
