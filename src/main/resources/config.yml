@@ -142,3 +142,7 @@ integrations:
 sift-world:
   tide-period-seconds: 120
   ichor-weather-period-seconds: 900
+
+debug:
+  chunk-generation-metrics:
+    enabled: false

@@ -88,6 +88,10 @@ public final class SiftEcologyManager implements Listener {
             return;
         }
 
+        boolean measure = plugin.getConfig().getBoolean("debug.chunk-generation-metrics.enabled", false);
+        long started = measure ? System.nanoTime() : 0L;
+        int generationOperations = 0;
+
         // Mark first so a failed decoration never duplicates mobs/structures on reload.
         chunk.getPersistentDataContainer().set(decoratedChunkKey, PersistentDataType.BYTE, (byte) 1);
         long seed = chunk.getWorld().getSeed() ^ ((long) chunk.getX() * 341873128712L)
@@ -97,14 +101,23 @@ public final class SiftEcologyManager implements Listener {
         String key = biome.getKey().toString().toLowerCase(Locale.ROOT);
 
         decorateSurface(chunk, key, random);
+        generationOperations += 28; // attempted surface decoration positions
         growBiomeLandmarks(chunk, key, random);
+        generationOperations++;
         generateCharoiteOre(chunk, random);
+        generationOperations++;
         generateSiftResources(chunk, random);
+        generationOperations++;
         generateSiftiteOre(chunk, random);
+        generationOperations++;
         if ((key.contains("overgrown") || key.contains("sift_wastes") || key.contains("siftslate"))
-                && random.nextInt(18) == 0) generateAbandonedPortal(chunk, random);
+                && random.nextInt(18) == 0) {
+            generateAbandonedPortal(chunk, random);
+            generationOperations++;
+        }
         if ((key.contains("overgrown") || key.endsWith("carapace")) && random.nextInt(24) == 0) {
             generateIchorSpring(chunk, random);
+            generationOperations++;
         }
         if (random.nextInt(32) == 0) {
             if (key.contains("deep_dark")) generateSnifferCave(chunk, random);
@@ -114,19 +127,31 @@ public final class SiftEcologyManager implements Listener {
             } else if (key.contains("overgrown")) generateMonolith(chunk, random);
         }
         spawnSiftWildlife(chunk, key, random);
+        generationOperations++;
         if (key.endsWith("pink_meadows") && random.nextInt(22) == 0) {
             summonSinger(chunk, random);
+            generationOperations++;
         } else if (key.endsWith("crystal_spires") && random.nextInt(55) == 0) {
             summonEchoGolem(chunk, random);
+            generationOperations++;
         }
         if (key.endsWith("shattered_peaks") && plugin.getConfig().getBoolean("content.rift-events", true)
                 && random.nextInt(120) == 0) {
             openNaturalRift(chunk);
+            generationOperations++;
         }
         if (key.endsWith("bulb_forest") && random.nextInt(160) == 0) {
             spawnBoss(chunk, EntityType.WARDEN, "Prism Warden", "prism_warden", 180.0, 28.0);
+            generationOperations++;
         } else if (key.endsWith("shattered_peaks") && random.nextInt(120) == 0) {
             spawnBoss(chunk, EntityType.RAVAGER, "The Sifter", "the_sifter", 220.0, 24.0);
+            generationOperations++;
+        }
+        if (measure) {
+            double elapsedMillis = (System.nanoTime() - started) / 1_000_000.0;
+            plugin.getLogger().info("Sift chunk " + chunk.getWorld().getName() + ":" + chunk.getX() + ":"
+                    + chunk.getZ() + " generation=" + String.format(Locale.ROOT, "%.3f", elapsedMillis)
+                    + "ms operation-attempts=" + generationOperations);
         }
     }
 
