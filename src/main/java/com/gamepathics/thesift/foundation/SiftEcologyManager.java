@@ -34,6 +34,9 @@ import java.util.Locale;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BooleanSupplier;
 
 /** Early vanilla-backed approximation of The Sift's world generation and living content. */
 public final class SiftEcologyManager implements Listener {
@@ -51,6 +54,9 @@ public final class SiftEcologyManager implements Listener {
     private final ExternalBlockBridge blockBridge;
     private final SiftiteContent content;
     private final BukkitTask tideTask;
+    private final AtomicLong providerPlacementFailures = new AtomicLong();
+    private final java.util.Map<String, AtomicLong> providerPlacementFailuresById = new ConcurrentHashMap<>();
+    private volatile String lastProviderPlacementFailure = "none";
     private long tideTick;
 
     public SiftEcologyManager(JavaPlugin plugin, ResonanceManager resonanceManager,
@@ -142,6 +148,14 @@ public final class SiftEcologyManager implements Listener {
         Biome biome = chunk.getBlock(8, Math.max(1, chunk.getWorld().getMinHeight()), 8).getBiome();
         String key = biome.getKey().toString().toLowerCase(Locale.ROOT);
 
+        // In strict mode only provider-owned blocks and mobs are content. The
+        // vanilla-backed decorative structures, plants, ores, portal frames,
+        // chest loot and flowing-water stand-in below remain dev/CI behavior.
+        if (plugin.getConfig().getBoolean("providers.strict", true)) {
+            decorateStrictProviderContent(chunk, key, random);
+            return 1;
+        }
+
         decorateSurface(chunk, key, random);
         generationOperations += 28; // attempted surface decoration positions
         growBiomeLandmarks(chunk, key, random);
@@ -190,6 +204,63 @@ public final class SiftEcologyManager implements Listener {
             generationOperations++;
         }
         return generationOperations;
+    }
+
+    private void decorateStrictProviderContent(Chunk chunk, String biome, Random random) {
+        decorateStrictSurface(chunk, biome, random);
+        growStrictProviderLandmark(chunk, biome, random);
+        generateCharoiteOre(chunk, random);
+        generateSiftiteOre(chunk, random);
+        spawnSiftWildlife(chunk, biome, random);
+        if (biome.endsWith("pink_meadows") && random.nextInt(22) == 0) summonSinger(chunk, random);
+        else if (biome.endsWith("crystal_spires") && random.nextInt(55) == 0) summonEchoGolem(chunk, random);
+        if (biome.endsWith("shattered_peaks") && plugin.getConfig().getBoolean("content.rift-events", true)
+                && random.nextInt(120) == 0) openNaturalRift(chunk);
+        if (biome.endsWith("bulb_forest") && random.nextInt(160) == 0)
+            spawnBoss(chunk, EntityType.WARDEN, "Prism Warden", "prism_warden", 180.0, 28.0);
+        else if (biome.endsWith("shattered_peaks") && random.nextInt(120) == 0)
+            spawnBoss(chunk, EntityType.RAVAGER, "The Sifter", "the_sifter", 220.0, 24.0);
+    }
+
+    private void decorateStrictSurface(Chunk chunk, String biome, Random random) {
+        if (!(biome.endsWith("pink_meadows") || biome.endsWith("bulb_forest")
+                || biome.contains("overgrown"))) return;
+        World world = chunk.getWorld();
+        for (int i = 0; i < 28; i++) {
+            int x = chunk.getX() * 16 + 1 + random.nextInt(14);
+            int z = chunk.getZ() * 16 + 1 + random.nextInt(14);
+            int y = world.getHighestBlockYAt(x, z);
+            if (y <= world.getMinHeight() || y >= world.getMaxHeight() - 4) continue;
+            Block ground = world.getBlockAt(x, y, z);
+            if (ground.getType() == Material.GRASS_BLOCK)
+                placeBlock(ground, "sift_grass", Material.MOSS_BLOCK);
+        }
+    }
+
+    private void growStrictProviderLandmark(Chunk chunk, String biome, Random random) {
+        if (random.nextInt(5) != 0) return;
+        World world = chunk.getWorld();
+        int x = chunk.getX() * 16 + 3 + random.nextInt(10);
+        int z = chunk.getZ() * 16 + 3 + random.nextInt(10);
+        int y = world.getHighestBlockYAt(x, z) + 1;
+        if (y <= world.getMinHeight() || y >= world.getMaxHeight() - 12) return;
+        boolean forest = biome.endsWith("bulb_forest") || biome.endsWith("pink_meadows")
+                || biome.contains("overgrown_forest") || biome.contains("overgrown_clearing");
+        if (forest) {
+            int height = 4 + random.nextInt(4);
+            for (int dy = 0; dy < height; dy++)
+                placeBlock(world.getBlockAt(x, y + dy, z), "sift_log", Material.CHERRY_LOG);
+            for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++)
+                if (Math.abs(dx) + Math.abs(dz) < 4)
+                    placeBlock(world.getBlockAt(x + dx, y + height - 1, z + dz),
+                            "sift_leaves", Material.CHERRY_LEAVES);
+        } else {
+            int radius = 2 + random.nextInt(3);
+            for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++)
+                if (random.nextInt(3) == 0)
+                    placeBlock(world.getBlockAt(x + dx, y + random.nextInt(3), z + dz),
+                            "siftstone", Material.TUFF);
+        }
     }
 
     private void decorateSurface(Chunk chunk, String biome, Random random) {
@@ -343,18 +414,21 @@ public final class SiftEcologyManager implements Listener {
         world.getBlockAt(x + 5, y, z + 1).setType(Material.CHEST, false);
         Block chest = world.getBlockAt(x + 5, y, z + 1);
         if (chest.getState() instanceof Container container) {
-            container.getInventory().addItem(content.item(Material.LAPIS_LAZULI, "charoite", "Charoite"));
-            container.getInventory().addItem(content.forId("overgrown_willow"));
-            if (random.nextBoolean()) container.getInventory().addItem(content.forId("rift_disc"));
-            if (random.nextInt(100) < 40) container.getInventory().addItem(content.forId(
-                    "siftite_upgrade_smithing_template"));
-            if (random.nextInt(100) < 12) container.getInventory().addItem(content.forId("siftite_nugget"));
+            addIfPresent(container, content.item(Material.LAPIS_LAZULI, "charoite", "Charoite"));
+            addIfPresent(container, content.forId("overgrown_willow"));
+            if (random.nextBoolean()) addIfPresent(container, content.forId("rift_disc"));
+            if (random.nextInt(100) < 40) addIfPresent(container, content.forId("siftite_upgrade_smithing_template"));
+            if (random.nextInt(100) < 12) addIfPresent(container, content.forId("siftite_nugget"));
             if (random.nextBoolean()) container.getInventory().addItem(new org.bukkit.inventory.ItemStack(
                     Material.EMERALD, 1 + random.nextInt(3)));
             if (random.nextBoolean()) container.getInventory().addItem(new org.bukkit.inventory.ItemStack(
                     Material.DIAMOND, 1 + random.nextInt(2)));
             container.update(true, false);
         }
+    }
+
+    private static void addIfPresent(Container container, org.bukkit.inventory.ItemStack item) {
+        if (item != null) container.getInventory().addItem(item);
     }
 
     private void generateIchorSpring(Chunk chunk, Random random) {
@@ -376,10 +450,40 @@ public final class SiftEcologyManager implements Listener {
                 12, 1, .2, 1, .02);
     }
 
-    private void placeBlock(Block block, String contentId, Material fallback) {
-        if (!blockBridge.place(contentId, block.getLocation())) {
-            block.setType(fallback, false);
+    private boolean placeBlock(Block block, String contentId, Material fallback) {
+        return placeBlock(block, contentId, fallback,
+                plugin.getConfig().getBoolean("providers.strict", true),
+                () -> blockBridge.place(contentId, block.getLocation()), failure -> {
+                    providerPlacementFailures.incrementAndGet();
+                    providerPlacementFailuresById.computeIfAbsent(contentId, ignored -> new AtomicLong())
+                            .incrementAndGet();
+                    lastProviderPlacementFailure = failure;
+                    plugin.getLogger().warning(failure);
+                });
+    }
+
+    static boolean placeBlock(Block block, String contentId, Material fallback, boolean strict,
+                              BooleanSupplier providerPlace, java.util.function.Consumer<String> onStrictFailure) {
+        if (providerPlace.getAsBoolean()) return true;
+        if (strict) {
+            String failure = "Strict provider block placement failed for ID '" + contentId + "' at "
+                    + block.getWorld().getName() + ":" + block.getX() + "," + block.getY() + "," + block.getZ()
+                    + "; chunk decoration will retry after provider definitions are fixed.";
+            onStrictFailure.accept(failure);
+            throw new IllegalStateException(failure);
         }
+        block.setType(fallback, false);
+        return true;
+    }
+
+    long providerPlacementFailureCount() { return providerPlacementFailures.get(); }
+
+    String providerPlacementFailureSummary() {
+        if (providerPlacementFailuresById.isEmpty()) return "0 (last: none)";
+        String ids = providerPlacementFailuresById.entrySet().stream().sorted(java.util.Map.Entry.comparingByKey())
+                .map(entry -> entry.getKey() + "=" + entry.getValue().get())
+                .collect(java.util.stream.Collectors.joining(", "));
+        return providerPlacementFailures.get() + " (" + ids + "; last: " + lastProviderPlacementFailure + ")";
     }
 
     private void generateCharoiteOre(Chunk chunk, Random random) {

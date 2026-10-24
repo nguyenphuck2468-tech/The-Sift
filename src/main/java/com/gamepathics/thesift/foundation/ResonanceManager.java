@@ -195,8 +195,9 @@ public final class ResonanceManager implements Listener {
             bar.setVisible(false);
         }
         if (plugin.getConfig().getBoolean("resonance.singer.drop-charoite", true)) {
-            event.getDrops().add(new SiftiteContent(plugin).item(org.bukkit.Material.AMETHYST_SHARD,
-                    "charoite", "Charoite"));
+            ItemStack drop = new SiftiteContent(plugin).item(org.bukkit.Material.AMETHYST_SHARD,
+                    "charoite", "Charoite");
+            if (drop != null) event.getDrops().add(drop);
         }
     }
 

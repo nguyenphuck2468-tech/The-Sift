@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public final class SiftiteContent implements Listener {
     private static final java.util.Map<String, Boolean> ITEM_MODEL_CACHE = new ConcurrentHashMap<>();
+    private static final java.util.Set<String> MISSING_ITEM_WARNINGS = ConcurrentHashMap.newKeySet();
     private final JavaPlugin plugin;
     private final NamespacedKey idKey;
     private final ExternalItemBridge externalItems;
@@ -43,6 +44,10 @@ public final class SiftiteContent implements Listener {
         for (String key : java.util.List.of("siftite_sword", "siftite_axe", "siftite_pickaxe",
                 "siftite_shovel", "siftite_hoe", "siftite_helmet", "siftite_chestplate",
                 "siftite_leggings", "siftite_boots")) server.removeRecipe(new NamespacedKey(plugin, key));
+        if (plugin.getConfig().getBoolean("providers.strict", true)
+                && !new ProviderReadiness(plugin).itemsReady()) {
+            return;
+        }
         if (enabled("charoite_item", "charoite.enabled")) {
             addShaped("charoite", item(Material.LAPIS_LAZULI, "charoite", "Charoite"),
                     " C ", "CAC", " C ", 'C', Material.AMETHYST_SHARD, 'A', Material.AMETHYST_BLOCK);
@@ -89,6 +94,12 @@ public final class SiftiteContent implements Listener {
     public ItemStack item(Material material, String id, String name) {
         ItemStack result = externalItems.create(id);
         boolean providerItem = result != null;
+        if (result == null && plugin.getConfig().getBoolean("providers.strict", true)) {
+            if (MISSING_ITEM_WARNINGS.add(id)) plugin.getLogger().warning(
+                    "Strict provider mode refused vanilla fallback for item ID '" + id
+                            + "'. Run /sift doctor and install a provider definition.");
+            return null;
+        }
         if (result == null) result = new ItemStack(material);
         ItemMeta meta = result.getItemMeta();
         if (!providerItem) meta.setDisplayName("§d" + name);

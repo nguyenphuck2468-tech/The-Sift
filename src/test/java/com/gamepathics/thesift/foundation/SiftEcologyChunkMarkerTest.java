@@ -6,6 +6,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.bukkit.Material;
 import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 
@@ -47,5 +48,51 @@ class SiftEcologyChunkMarkerTest {
         assertFalse(SiftEcologyManager.decorateChunkOnce(chunk, marker,
                 () -> fail("completed chunks must not run decoration again")));
         assertEquals(2, attempts.get());
+    }
+
+    @Test
+    void strictBlockPlacementDoesNotUseVanillaFallbackAndReportsExactLocation() {
+        var world = server.addSimpleWorld("sift-strict-placement");
+        var block = world.getBlockAt(3, 70, 5);
+        block.setType(Material.AIR);
+        java.util.List<String> failures = new java.util.ArrayList<>();
+
+        assertThrows(IllegalStateException.class, () -> SiftEcologyManager.placeBlock(
+                block, "sift_grass", Material.MOSS_BLOCK, true, () -> false, failures::add));
+        assertEquals(Material.AIR, block.getType());
+        assertEquals(1, failures.size());
+        assertTrue(failures.getFirst().contains("sift_grass"));
+        assertTrue(failures.getFirst().contains("3,70,5"));
+    }
+
+    @Test
+    void nonStrictBlockPlacementKeepsVanillaFallback() {
+        var world = server.addSimpleWorld("sift-dev-placement");
+        var block = world.getBlockAt(3, 70, 5);
+        block.setType(Material.AIR);
+        assertTrue(SiftEcologyManager.placeBlock(block, "sift_grass", Material.MOSS_BLOCK,
+                false, () -> false, ignored -> fail("dev fallback must not count as strict failure")));
+        assertEquals(Material.MOSS_BLOCK, block.getType());
+    }
+
+    @Test
+    void missingStrictProviderClearsChunkMarkerAndRetryCanComplete() {
+        var world = server.addSimpleWorld("sift-strict-retry");
+        var chunk = world.getChunkAt(0, 0);
+        var block = world.getBlockAt(3, 70, 5);
+        NamespacedKey marker = new NamespacedKey(plugin, "sift_ecology_generated");
+        block.setType(Material.AIR);
+
+        assertThrows(IllegalStateException.class, () -> SiftEcologyManager.decorateChunkOnce(chunk, marker,
+                () -> SiftEcologyManager.placeBlock(block, "sift_grass", Material.MOSS_BLOCK,
+                        true, () -> false, ignored -> {})));
+        assertFalse(chunk.getPersistentDataContainer().has(marker, PersistentDataType.BYTE));
+        assertEquals(Material.AIR, block.getType());
+
+        assertTrue(SiftEcologyManager.decorateChunkOnce(chunk, marker,
+                () -> assertTrue(SiftEcologyManager.placeBlock(block, "sift_grass", Material.MOSS_BLOCK,
+                        true, () -> { block.setType(Material.DIAMOND_BLOCK); return true; }, ignored -> {}))));
+        assertEquals((byte) 2, chunk.getPersistentDataContainer().get(marker, PersistentDataType.BYTE));
+        assertEquals(Material.DIAMOND_BLOCK, block.getType());
     }
 }

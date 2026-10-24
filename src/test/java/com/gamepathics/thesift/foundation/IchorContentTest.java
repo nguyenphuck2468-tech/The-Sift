@@ -24,6 +24,7 @@ class IchorContentTest {
     void setUp() {
         MockBukkit.mock();
         mockPlugin = MockBukkit.createMockPlugin("TheSift");
+        mockPlugin.getConfig().set("providers.strict", false);
         contentKey = new NamespacedKey("thesift", "content");
         ichorContent = new IchorContent(mockPlugin);
     }
@@ -48,6 +49,13 @@ class IchorContentTest {
         PersistentDataContainer container = meta.getPersistentDataContainer();
         String storedId = container.get(contentKey, PersistentDataType.STRING);
         assertEquals("ichor_bottle", storedId);
+    }
+
+    @Test
+    void strictModeRefusesVanillaTaggedIchorItemWhenProviderIsMissing() {
+        mockPlugin.getConfig().set("providers.strict", true);
+        mockPlugin.getConfig().set("integrations.items.provider", "missing-provider");
+        assertNull(ichorContent.ichorBottle());
     }
 
     @Test

@@ -48,6 +48,7 @@ class RiftManagerTest {
     void setUp() {
         MockBukkit.mock();
         mockPlugin = MockBukkit.createMockPlugin("TheSift");
+        mockPlugin.getConfig().set("providers.strict", false);
         riftManager = new RiftManager(mockPlugin);
     }
 

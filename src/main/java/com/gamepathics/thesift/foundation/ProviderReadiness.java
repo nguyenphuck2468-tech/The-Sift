@@ -97,11 +97,13 @@ final class ProviderReadiness {
     }
 
     boolean dimensionAllowed() {
-        boolean content = itemBackends().stream().anyMatch(Backend::complete)
+        boolean content = itemsReady()
                 && blockBackends().stream().anyMatch(Backend::complete);
         boolean mobs = mobBackends().stream().anyMatch(Backend::complete);
         return allowed(strict(), content, mobs);
     }
+
+    boolean itemsReady() { return itemBackends().stream().anyMatch(Backend::complete); }
 
     static boolean allowed(boolean strict, boolean contentProvidersComplete, boolean mobProviderComplete) {
         return !strict || contentProvidersComplete && mobProviderComplete;

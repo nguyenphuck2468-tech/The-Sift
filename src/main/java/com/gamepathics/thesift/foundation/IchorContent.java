@@ -13,8 +13,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class IchorContent {
+    private static final Set<String> MISSING_ITEM_WARNINGS = ConcurrentHashMap.newKeySet();
     public static final String ICHOR_BOTTLE_ID = "ichor_bottle";
     public static final String ICHOR_GLASS_ID = "ichor_glass";
     public static final String ICHOR_GLASS_PANE_ID = "ichor_glass_pane";
@@ -40,6 +43,8 @@ public final class IchorContent {
         server.removeRecipe(bottleRecipeKey);
         server.removeRecipe(paneRecipeKey);
         if (!isIchorEnabled()) return;
+        if (plugin.getConfig().getBoolean("providers.strict", true)
+                && !new ProviderReadiness(plugin).itemsReady()) return;
 
         Material glass = configuredMaterial("ichor.glass-material", Material.GLASS);
         Material pane = configuredMaterial("ichor.glass-pane-material", Material.GLASS_PANE);
@@ -84,6 +89,12 @@ public final class IchorContent {
     public ItemStack create(Material material, String id, String name) {
         ItemStack item = externalItems.create(id);
         boolean providerItem = item != null;
+        if (item == null && plugin.getConfig().getBoolean("providers.strict", true)) {
+            if (MISSING_ITEM_WARNINGS.add(id)) plugin.getLogger().warning(
+                    "Strict provider mode refused vanilla fallback for item ID '" + id
+                            + "'. Run /sift doctor and install a provider definition.");
+            return null;
+        }
         if (item == null) item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         if (!providerItem) meta.setDisplayName("§d" + name);

@@ -24,6 +24,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     private SiftEcologyManager siftEcologyManager;
     private SiftAdvancementManager advancementManager;
     private ProviderReadiness providerReadiness;
+    private ProviderApiProbe providerApiProbe;
 
     @Override
     public void onEnable() {
@@ -51,6 +52,8 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         }
         loadContentFlags();
         providerReadiness = new ProviderReadiness(this);
+        providerApiProbe = new ProviderApiProbe(this);
+        providerApiProbe.inspect();
         getServer().getPluginManager().registerEvents(new ProviderAccessGuard(this, providerReadiness), this);
         if (!providerReadiness.strict()) getLogger().warning(
                 "providers.strict is disabled; vanilla fallback is enabled for development/CI.");
@@ -149,6 +152,17 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        var dimension = getServer().getWorld(SiftDimensionManager.DIMENSION_KEY);
+        if (dimension != null) {
+            var safeWorld = getServer().getWorlds().stream()
+                    .filter(world -> !world.getKey().equals(SiftDimensionManager.DIMENSION_KEY))
+                    .findFirst().orElse(null);
+            if (safeWorld == null && !dimension.getPlayers().isEmpty()) {
+                getLogger().severe("Cannot evacuate players from The Sift: no other world is loaded. The world will remain loaded.");
+            } else if (safeWorld != null) {
+                for (Player player : dimension.getPlayers()) player.teleport(safeWorld.getSpawnLocation());
+            }
+        }
         if (ichorState != null) {
             ichorState.shutdown();
         }
@@ -189,6 +203,9 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                         + (entry.getValue() ? "enabled" : "disabled"));
             }
             for (String line : providerReadiness.summary().split("\\n")) sender.sendMessage(line);
+            for (String line : providerApiProbe.inspect()) sender.sendMessage("API: " + line);
+            if (siftEcologyManager != null) sender.sendMessage("Worldgen provider placement failures: "
+                    + siftEcologyManager.providerPlacementFailureSummary());
             for (String warning : providerWarnings()) sender.sendMessage("WARNING: " + warning);
             for (String conflict : pluginConflicts()) sender.sendMessage("ERROR: " + conflict);
             return true;
@@ -231,8 +248,12 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                 sender.sendMessage("Player not found.");
                 return true;
             }
-            giveOrDrop(target, ichorContent.ichorBottle());
-            sender.sendMessage("Gave Ichor Bottle to " + target.getName() + ".");
+            ItemStack bottle = ichorContent.ichorBottle();
+            if (bottle == null) sender.sendMessage("Item ID 'ichor_bottle' is unresolved by the selected provider. Run /sift doctor.");
+            else {
+                giveOrDrop(target, bottle);
+                sender.sendMessage("Gave Ichor Bottle to " + target.getName() + ".");
+            }
             return true;
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("give")
@@ -245,8 +266,12 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             if (target == null) {
                 sender.sendMessage("Player not found.");
             } else {
-                giveOrDrop(target, riftManager.createRiftKey());
-                sender.sendMessage("Gave Rift Key to " + target.getName() + ".");
+                ItemStack key = riftManager.createRiftKey();
+                if (key == null) sender.sendMessage("Item ID 'rift_key' is unavailable in strict provider mode. Run /sift doctor.");
+                else {
+                    giveOrDrop(target, key);
+                    sender.sendMessage("Gave Rift Key to " + target.getName() + ".");
+                }
             }
             return true;
         }
@@ -260,7 +285,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             if (target == null) {
                 sender.sendMessage("Player not found.");
             } else if (item == null) {
-                sender.sendMessage("Unknown Charoite/Siftite item.");
+                sender.sendMessage("Item ID '" + args[1].toLowerCase() + "' is unknown or unresolved by the selected provider. Run /sift doctor.");
             } else {
                 giveOrDrop(target, item);
                 sender.sendMessage("Gave " + args[1] + " to " + target.getName() + ".");
@@ -417,6 +442,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     }
 
     private void giveOrDrop(Player player, ItemStack item) {
+        if (item == null) return;
         player.getInventory().addItem(item).values()
                 .forEach(leftover -> player.getWorld().dropItemNaturally(player.getLocation(), leftover));
     }

@@ -189,7 +189,8 @@ public final class EchoGolemManager implements Listener {
         }
         if (plugin.getConfig().getBoolean("echo-golem.drop-siftite", true)) {
             // Drop Siftite Ingot
-            event.getDrops().add(content.item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot"));
+            ItemStack drop = content.item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot");
+            if (drop != null) event.getDrops().add(drop);
         }
     }
 
@@ -227,8 +228,13 @@ public final class EchoGolemManager implements Listener {
             player.sendMessage("§bThe Echo Golem takes the Soul Block.");
             event.setCancelled(true);
         } else if (carrying && hand.getType().isAir()) {
-            pdc.remove(cargoKey);
             ItemStack soul = content.forId("soul_block");
+            if (soul == null) {
+                player.sendMessage("Soul Block item is unavailable from the configured provider. Run /sift doctor.");
+                event.setCancelled(true);
+                return;
+            }
+            pdc.remove(cargoKey);
             player.getInventory().addItem(soul).values()
                     .forEach(leftover -> player.getWorld().dropItemNaturally(player.getLocation(), leftover));
             player.sendMessage("§bThe Echo Golem returns its Soul Block to you.");

@@ -24,6 +24,7 @@ class SiftiteRecipeTest {
     void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.createMockPlugin("TheSift");
+        plugin.getConfig().set("providers.strict", false);
         content = new SiftiteContent(plugin);
         content.registerRecipes();
     }
@@ -50,5 +51,12 @@ class SiftiteRecipeTest {
 
         assertTrue(acceptsTaggedIngot);
         assertFalse(acceptsPlainNetheriteIngot);
+    }
+
+    @Test
+    void strictModeRefusesVanillaTaggedItemWhenProviderIdIsMissing() {
+        plugin.getConfig().set("providers.strict", true);
+        plugin.getConfig().set("integrations.items.provider", "missing-provider");
+        assertNull(content.item(Material.AMETHYST_SHARD, "charoite", "Charoite"));
     }
 }

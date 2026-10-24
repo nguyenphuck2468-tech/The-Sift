@@ -87,6 +87,7 @@ public final class RiftManager implements Listener {
 
     public ItemStack createRiftKey() {
         ItemStack key = new SiftiteContent(plugin).item(Material.TRIAL_KEY, RIFT_KEY_ID, "Rift Key");
+        if (key == null) return null;
         ItemMeta meta = key.getItemMeta();
         meta.setDisplayName("§5§lRift Key");
         meta.getPersistentDataContainer().set(riftKey, PersistentDataType.STRING, RIFT_KEY_ID);
@@ -360,7 +361,8 @@ public final class RiftManager implements Listener {
             // Rift Key fragment chance
             if (ThreadLocalRandom.current().nextDouble()
                     < plugin.getConfig().getDouble("rift.rift-key-chance", 0.3)) {
-                center.getWorld().dropItemNaturally(center.clone().add(0, 1, 0), createRiftKey());
+                ItemStack key = createRiftKey();
+                if (key != null) center.getWorld().dropItemNaturally(center.clone().add(0, 1, 0), key);
             }
         }
 

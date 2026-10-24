@@ -36,6 +36,7 @@ class SiftAdvancementManagerTest {
     void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.createMockPlugin("TheSift");
+        plugin.getConfig().set("providers.strict", false);
         manager = new SiftAdvancementManager(plugin);
     }
 

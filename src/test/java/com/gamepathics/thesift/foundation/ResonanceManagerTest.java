@@ -27,6 +27,7 @@ class ResonanceManagerTest {
     void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.createMockPlugin("TheSift");
+        plugin.getConfig().set("providers.strict", false);
         plugin.getConfig().set("resonance.singer.pulse-seconds", 1);
         manager = new ResonanceManager(plugin);
     }

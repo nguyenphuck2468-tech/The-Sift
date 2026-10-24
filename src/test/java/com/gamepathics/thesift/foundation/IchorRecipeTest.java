@@ -24,6 +24,7 @@ class IchorRecipeTest {
     void setUp() {
         server = MockBukkit.mock();
         plugin = MockBukkit.createMockPlugin("TheSift");
+        plugin.getConfig().set("providers.strict", false);
         content = new IchorContent(plugin);
         content.registerRecipes();
     }
