@@ -17,7 +17,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -47,11 +46,9 @@ public final class RiftManager implements Listener {
     }
 
     private static final String RIFT_KEY_ID = "rift_key";
-    private static final String RIFT_BLOCK_ID = "rift_block";
 
     private final JavaPlugin plugin;
     private final NamespacedKey riftKey;
-    private final NamespacedKey blockKey;
     private final SiftMobFactory mobFactory;
     private final Map<UUID, RiftInstance> rifts = new HashMap<>();
     private final Set<UUID> travelling = new HashSet<>();
@@ -62,7 +59,6 @@ public final class RiftManager implements Listener {
     public RiftManager(JavaPlugin plugin) {
         this.plugin = plugin;
         this.riftKey = new NamespacedKey(plugin, "rift_key");
-        this.blockKey = new NamespacedKey(plugin, "rift_block");
         this.mobFactory = new SiftMobFactory(plugin);
     }
 
@@ -215,14 +211,6 @@ public final class RiftManager implements Listener {
         }
     }
 
-    @EventHandler
-    public void onRiftBlockBreak(BlockBreakEvent event) {
-        Block block = event.getBlock();
-        if (!block.hasMetadata("rift_block")) return;
-        event.setCancelled(true);
-        event.getPlayer().sendMessage("§cThe rift resists your attempt to break it.");
-    }
-
     public class RiftInstance {
         private final UUID id;
         private final Location center;
@@ -302,7 +290,6 @@ public final class RiftManager implements Listener {
                 
                 // Spawn Enderman-like or custom mob
                 Entity entity = mobFactory.spawn("rift_walker", spawnLoc, EntityType.ENDERMAN);
-                entity.getPersistentDataContainer().set(blockKey, PersistentDataType.STRING, RIFT_BLOCK_ID);
                 entity.setCustomName("§5Rift Walker");
                 entity.setCustomNameVisible(true);
             }
