@@ -135,6 +135,7 @@ tasks.register("generateProviderDefinitions") {
                     .append("    Persistent: true").append(nl).append("    Despawn: false").append(nl)
         }
         write("mythicmobs/TheSift.yml", mythic.toString())
+        write("content-spec.json", file("integrations/content-spec.json").getText("UTF-8"))
         def idSource = new StringBuilder("package com.gamepathics.thesift.foundation;").append(nl).append(nl)
                 .append("import java.util.List;").append(nl).append(nl)
                 .append("/** Generated strict-readiness IDs from integrations/content-spec.json. */").append(nl)

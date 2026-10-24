@@ -27,11 +27,13 @@ class ExternalBlockBridgeTest {
         plugin.getConfig().set("integrations.blocks.provider", "itemsadder");
         plugin.getConfig().set("integrations.blocks.definitions.charoite_ore", "thesift:charoite_ore");
         CustomBlock.setPlacedIdForTest(null);
+        FixtureProvider.ownsNote = false;
     }
 
     @AfterEach
     void tearDown() {
         CustomBlock.setPlacedIdForTest(null);
+        FixtureProvider.ownsNote = false;
         MockBukkit.unmock();
     }
 
@@ -63,14 +65,17 @@ class ExternalBlockBridgeTest {
         plugin.getConfig().set("integrations.blocks.definitions.siftslate", "thesift:siftslate");
         plugin.getServer().getServicesManager().register(SiftBlockProvider.class, new FixtureProvider(), plugin,
                 ServicePriority.Normal);
-        assertFalse(rifts.canHandlePortalSong(note), "provider-owned base blocks must not be intercepted");
-        assertTrue(new ExternalBlockBridge(plugin).isProviderOwned(note), "provider-owned note blocks are never intercepted");
+        assertTrue(rifts.canHandlePortalSong(note), "a tagged provider-supplied Sonorous Deepslate base is a valid station");
+        FixtureProvider.ownsNote = true;
+        assertTrue(new ExternalBlockBridge(plugin).isProviderOwned(note));
+        assertFalse(rifts.canHandlePortalSong(note), "provider-owned note blocks must keep their interaction");
     }
 
     private static final class FixtureProvider implements SiftBlockProvider {
+        private static boolean ownsNote;
         @Override public String getProviderId() { return "fixture"; }
         @Override public boolean placeBlock(String contentId, Location location) { return false; }
         @Override public boolean supports(String contentId) { return true; }
-        @Override public boolean isBlock(String contentId, Block block) { return block.getY() == 63 || block.getY() == 64; }
+        @Override public boolean isBlock(String contentId, Block block) { return block.getY() == 63 || ownsNote && block.getY() == 64; }
     }
 }

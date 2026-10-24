@@ -35,11 +35,11 @@ public final class SiftiteListener implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onSonorousDeepslatePlace(BlockPlaceEvent event) {
-        if (!content.is(event.getItemInHand(), "siftslate")) return;
+        if (!plugin.getConfig().getBoolean("content.sonorous_deepslate", true)) return;
+        if (!content.is(event.getItemInHand(), "siftslate")
+                && !content.is(event.getItemInHand(), "sonorous_deepslate")) return;
         Block placed = event.getBlockPlaced();
-        if (placed.getType() == Material.DEEPSLATE && !blockBridge.isProviderOwned(placed)) {
-            sonorousBlocks.mark(placed);
-        }
+        sonorousBlocks.mark(placed);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)

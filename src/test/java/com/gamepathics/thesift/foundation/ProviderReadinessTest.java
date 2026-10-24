@@ -56,6 +56,21 @@ class ProviderReadinessTest {
         assertTrue(new ProviderReadiness(plugin).dimensionAllowed());
     }
 
+    @Test
+    void strictReportsMissingRequiredIdAndDisabledStrictAllowsFallback() {
+        var services = server.getServicesManager();
+        services.register(SiftItemProvider.class, new Items(), plugin, ServicePriority.Normal);
+        services.register(SiftBlockProvider.class, new MissingSiftslateBlock(), plugin, ServicePriority.Normal);
+        services.register(SiftMobProvider.class, new Mobs(), plugin, ServicePriority.Normal);
+
+        ProviderReadiness readiness = new ProviderReadiness(plugin);
+        assertFalse(readiness.dimensionAllowed());
+        assertTrue(readiness.summary().contains("siftslate"));
+
+        plugin.getConfig().set("providers.strict", false);
+        assertTrue(readiness.dimensionAllowed());
+    }
+
     private static final class Items implements SiftItemProvider {
         @Override public String getProviderId() { return "fixture"; }
         @Override public ItemStack createItem(String contentId) { return null; }
@@ -65,6 +80,13 @@ class ProviderReadinessTest {
         @Override public String getProviderId() { return "fixture"; }
         @Override public boolean placeBlock(String contentId, Location location) { return false; }
         @Override public boolean supports(String contentId) { return ProviderContentIds.BLOCK_IDS.contains(contentId); }
+    }
+    private static final class MissingSiftslateBlock implements SiftBlockProvider {
+        @Override public String getProviderId() { return "fixture"; }
+        @Override public boolean placeBlock(String contentId, Location location) { return false; }
+        @Override public boolean supports(String contentId) {
+            return ProviderContentIds.BLOCK_IDS.contains(contentId) && !contentId.equals("siftslate");
+        }
     }
     private static final class Mobs implements SiftMobProvider {
         @Override public String getProviderId() { return "fixture"; }

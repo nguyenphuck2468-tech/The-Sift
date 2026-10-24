@@ -2,7 +2,7 @@
 
 Updated: 2026-10-24  
 Build baseline: Java 25, Paper API `26.3.build.218-stable`  
-Target: Minecraft 27.1 is planned, not released or verified.
+Project target: Paper 26.3. This fan-made plugin is inspired by a dimension announced at Minecraft Live 2026 and is not affiliated with Mojang or Microsoft.
 
 ## Custom content provider integration (2026-10-24)
 
@@ -82,15 +82,7 @@ Target: Minecraft 27.1 is planned, not released or verified.
 
 ## Reference coverage and remaining work
 
-The reference is a community Fabric mod, not Mojang's planned 27.1 release.
-Its README describes ten reference biomes, Soul Canyons, Sniffer Caves, Ichor
-Lakes/springs, monoliths, cliff arches, sculk formations, abandoned portals,
-custom mobs, Charoite enchanting, Siftite recovery, new wood/plants/ores, music,
-and 20 advancements. Mojang has not confirmed this feature list for Minecraft
-27.1. Here, “vanilla-like” describes the player experience of custom Sift
-content feeling integrated into the game; it does not restrict implementation
-to built-in Minecraft blocks or entities. Paper content plugins are valid
-providers for custom assets and behaviors.
+The reference is a community Fabric mod. Its README describes ten reference biomes, Soul Canyons, Sniffer Caves, Ichor Lakes/springs, monoliths, cliff arches, sculk formations, abandoned portals, custom mobs, Charoite enchanting, Siftite recovery, new wood/plants/ores, music, and 20 advancements. Here, “vanilla-like” describes a cohesive player experience; Paper content plugins are valid providers for custom assets and behaviors. This is a fan-made project, not affiliated with Mojang or Microsoft.
 
 | Area | Current Paper approximation | Still missing or not equivalent |
 |---|---|---|
@@ -120,19 +112,18 @@ providers for custom assets and behaviors.
   setup; 6 pass. No failure points to the newly added gameplay classes. The
   standalone `jar siftResourcePack` tasks succeed.
 - A live-server playthrough was not run in this pass.
-- No Minecraft 27.1 Paper API, datapack schema, or official vanilla content
-  definitions are available in this project. This build therefore only claims
-  a Paper 26.3 prototype.
+- The project builds against Paper API `26.3.build.218-stable`; provider parsing
+  and live Paper-server behavior remain unverified where the parity matrix says so.
 - Mini Rift recovery persists across restarts. Its overflow fallback drops
   items beside the player rather than orbiting them until inventory space opens.
 
 ## Licensing and provenance
 
 The community reference repository is a source for reference research, but its
-license does not automatically license this repository's code or art. Mojang's
-planned 27.1 dimension is also not evidence that a specific community feature
-is official. The table below records the current evidence and uncertainty; it
-is not a provenance certification.
+license does not automatically license this repository's code or art.
+Minecraft Live 2026 is inspiration only and is not evidence that a
+specific community feature is official. The table below records current
+evidence and uncertainty; it is not a provenance certification.
 
 | Group | Evidence and in-repository paths | Source / terms | Confidence |
 |---|---|---|---|
@@ -140,7 +131,7 @@ is not a provenance certification.
 | Models | `src/main/resources/pack/assets/thesift/models/` (block, item, entity JSON) | Files are in the repository history; no per-file author/source/license metadata is recorded. Resource-pack model JSON is not covered merely by a reference project's MIT license. | Low |
 | Textures | `src/main/resources/pack/assets/thesift/textures/`; `src/main/resources/pack/assets/minecraft/textures/entity/` | 63 PNG files were inventoried. Prior SHA-256 comparison against the available Mielon reference asset set found no exact matches; that does not establish authorship or permission. Minecraft namespace overrides need particular provenance review. No Dark Sniffer texture was identified. | Low / unresolved |
 | Sounds | `src/main/resources/pack/` | No OGG, WAV, MP3, or MIDI files were found. Runtime sounds currently use Bukkit/Minecraft sound identifiers rather than bundled recordings. | High for absence of bundled audio in this tree |
-| Names / ideas | README, config, biome IDs, mob/item IDs, and worldgen descriptions across `src/main/resources/` and `src/main/java/` | The Mielon project and the Mojang 27.1 announcement informed research. The reference does not prove that the features are official 27.1 mechanics, nor does it grant ownership of names. | Medium for reference source; low for official 27.1 parity |
+| Names / ideas | README, config, biome IDs, mob/item IDs, and worldgen descriptions across `src/main/resources/` and `src/main/java/` | The Mielon project and public Minecraft Live 2026 material informed research. The reference does not establish ownership of names or affiliation. | Medium for reference source; low for claims of official ownership |
 
 At the time of the original Phase 1 inventory, no repo-wide LICENSE or NOTICE
 had been added. A provenance-only `NOTICE.draft.md` is now present; no LICENSE
@@ -151,12 +142,11 @@ is verified. The embedded
 origin and terms. Do not add the Rift music or Dark Sniffer texture without
 permission evidence.
 
-## Foundation correctness and 27.1-style simulation pass (2026-10-24)
+## Foundation correctness pass (2026-10-24)
 
 “Vanilla-like” in this project means a cohesive survival experience for the
-planned custom dimension, with optional external content providers where Paper
-does not supply planned custom blocks, items, or entities. Minecraft 27.1 is
-still a future target; this pass only builds against Paper 26.3.
+custom dimension, with optional external content providers where Paper does not
+supply custom blocks, items, or entities. The runtime target is Paper 26.3.
 
 - Ichor cauldrons add one charge per bottle, honor extraction cost, and return
   overflow items as world drops. Bottle use no longer cancels unrelated block
@@ -169,9 +159,9 @@ still a future target; this pass only builds against Paper 26.3.
   tagged Siftite ingredients. Mining speed and weapon/armor attributes are
   applied by equipment type.
 - Rift timers/configuration share one scheduler; key use consumes one key;
-  shutdown discards transient Rifts instead of granting a reward. Singer no
-  longer damages players, while Echo Golem has a basic owner bond and Soul
-  Block transfer interaction.
+  shutdown discards transient Rifts instead of granting a reward. Singer
+  pulse damage/slowness is configurable and Charoite-protected; Echo Golem
+  has a basic owner bond and Soul Block transfer interaction.
 - Soul Block placement/break identity is tracked, the existing advancements
   datapack is discovered, and a Bukkit advancement listener awards current
   progression milestones.
@@ -185,6 +175,33 @@ still a future target; this pass only builds against Paper 26.3.
 
 Build verification: `jar siftResourcePack` succeeds on Java 25 / Paper API
 26.3. Three `RecipeChoice.ExactChoice` deprecation-for-removal warnings remain.
+
+## Paper 26.3 scope and parity slices (2026-10-24)
+
+- Removed forward-version wording from README, handoff, report, plugin
+  descriptors and user-facing config/runtime text. The legacy
+  `compatibility.minecraft-target` key remains deprecated for old configs.
+- Added slice 1 IDs and provider YAML generation for Soul Block and the
+  existing Singer/Echo Golem mob entries; added slice 2 Sonorous Deepslate
+  item/block definitions and stable Nexo variant `510`. ItemsAdder entity and
+  EliteMobs complete definitions remain unavailable; MythicMobs mob YAML is
+  generated. Parsing and live-server checks remain unverified (see
+  `docs/parity-matrix.md`).
+- Melody handling requires the tagged Sonorous Deepslate station and refuses
+  provider-owned note blocks; fixture test covers ordinary, tagged-base, and
+  provider-owned-note cases.
+- Added two tests this pass: strict missing-required-ID/fallback-off case
+  (`ProviderReadinessTest`) and generated canonical-ID coverage
+  (`ProviderDefinitionGeneratorTest`). Suite count: 56 before this pass, 58
+  after it. Local `clean test generateProviderDefinitions` passed (58/58);
+  no server test or provider parser test was run.
+- Corrected block readiness probes: Nexo uses `NexoBlocks.isCustomBlock(id)`;
+  Oraxen checks `OraxenBlocks.getBlockIDs()`. These calls follow public API
+  docs, but remain unverified against installed plugin versions.
+- Geyser sources checked 2026-10-24 conflict in practical guidance: official
+  docs list Java 26.3 and imply ViaVersion is needed for an older server;
+  Skilleed's product docs updated 2026-10-09 recommend ViaVersion. No live
+  server result is claimed; test both configurations using `docs/TESTING.md`.
 No live server test was performed. Previously observed Mockito test setup
 failures were not re-run in this pass.
 
@@ -219,8 +236,8 @@ failures were not re-run in this pass.
 - Optional provider APIs remain unverified against live Nexo, ItemsAdder,
   Oraxen, MythicMobs, EliteMobs, or ModelEngine installations. Compile-time and
   configuration presence are not runtime compatibility guarantees.
-- 27.1 is still the planned target. Everything here is built against Paper
-  26.3; there is no claim of compatibility with an unreleased API/schema.
+- This project targets Paper API `26.3.build.218-stable`; the final parity
+  matrix separates local verification from provider parsing and live-server tests.
 
 ### Commits
 
@@ -235,8 +252,8 @@ This report and HANDOFF update are a separate documentation-only commit.
 
 BlockPopulator migration, Rift persistence, note-block behavior, live server
 smoke testing, provider-by-provider server validation, asset provenance proof,
-owner's project-license decision, final asset provenance clearance, and 27.1
-compatibility remain open. `NOTICE.draft.md` is a research note, not a final
+owner's project-license decision, and final asset provenance clearance remain
+open. `NOTICE.draft.md` is a research note, not a final
 license/attribution statement.
 
 ## Step 1 follow-up (2026-10-24)
@@ -274,7 +291,7 @@ explicit decision and a versioned migration plan.
 | `charoite.material` | Not read; current item creation hardcodes its vanilla fallback material. | Recommend wiring or removing with migration after approval. |
 | `siftite.enabled`, `ore-material`, `knockback-resistance`, `weapon-damage-bonus`, `spear-damage`, `mining-speed-bonus`, `mini-rift-recovery` | Used. | Keep. |
 | `siftite.ingot-material`, `nugget-material`, `template-material`, `smithing-only`, `durability-multiplier`, `spear-reach` | Not read by Java. Recipes currently always use smithing and hard-coded vanilla materials; durability and reach are not applied. | Recommend either implement with tests or remove only after approval and config migration. |
-| `compatibility.minecraft-target` | Used in startup and `/sift doctor` output. | Keep. |
+| `compatibility.minecraft-target` | Deprecated legacy key; runtime now reports the Paper 26.3 build target directly. | Keep for old configs; do not use as a runtime switch. |
 | `integrations.blocks.provider`, `integrations.blocks.definitions.*` | Used by external block bridge; definitions are exact IDs. | Keep. |
 | `integrations.items.provider` | Used by external item bridge. | Keep. |
 | `integrations.mobs.provider`, `integrations.mobs.itemsadder.entities.*`, `integrations.mobs.elitemobs.level`, `integrations.mobs.elitemobs.definitions.*`, `integrations.mobs.modelengine.models.*` | Used by reflection/service-provider adapters. | Keep. |
@@ -415,7 +432,7 @@ to identify the portal station. Options:
 |---|---|---|
 | Persist registered note-block coordinates in chunk PDC, with permission-checked register/unregister commands | Precise allowlist; follows the world and chunk; ordinary note blocks remain untouched; no external custom-block dependency. | Requires an operator to register each station; command UX and cleanup on breaking/moving the block must be defined. |
 | Configure a portal volume/region | Simple persistence and administration; no per-block registration. | Every note block in the region is intercepted, including unrelated builds; region overlap and edits need maintenance. |
-| Auto-detect a surrounding block pattern | No command after construction. | No agreed vanilla-27.1 The Sift portal pattern exists in the repository, so any pattern would be invented and risks false positives. |
+| Auto-detect a surrounding block pattern | No command after construction. | No agreed documented The Sift portal pattern exists in the repository, so any pattern would be invented and risks false positives. |
 
 Recommendation: chunk-PDC registration, with a command to register the targeted
 note block and unregister it, and cleanup when the registered block is broken.

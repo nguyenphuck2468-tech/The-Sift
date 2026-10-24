@@ -61,18 +61,31 @@ final class ExternalBlockBridge {
                 Class<?> type = Class.forName("dev.lone.itemsadder.api.CustomBlock");
                 return Boolean.TRUE.equals(type.getMethod("isInRegistry", String.class).invoke(null, externalId));
             }
-            if (backend.equals("Nexo")) return itemDefinitionExists(backend, "com.nexomc.nexo.api.NexoItems", "itemFromId", externalId);
-            if (backend.equals("Oraxen")) return itemDefinitionExists(backend, "io.th0rgal.oraxen.api.OraxenItems", "getItemById", externalId);
+            if (backend.equals("Nexo")) return nexoBlockDefinitionExists(externalId);
+            if (backend.equals("Oraxen")) return oraxenBlockDefinitionExists(externalId);
         } catch (ReflectiveOperationException | LinkageError ignored) { }
         return false;
     }
 
-    private boolean itemDefinitionExists(String pluginName, String className, String methodName, String id) throws ReflectiveOperationException {
-        if (!enabled(pluginName)) return false;
-        Class<?> type = Class.forName(className);
-        Object value = type.getMethod(methodName, String.class).invoke(null, id);
-        if (value == null && !id.contains(":")) value = type.getMethod(methodName, String.class).invoke(null, "thesift:" + id);
-        return value != null;
+    private boolean nexoBlockDefinitionExists(String id) throws ReflectiveOperationException {
+        if (!enabled("Nexo")) return false;
+        Class<?> blocks = Class.forName("com.nexomc.nexo.api.NexoBlocks");
+        Object result = blocks.getMethod("isCustomBlock", String.class).invoke(null, id);
+        if (Boolean.TRUE.equals(result)) return true;
+        return !id.contains(":") && Boolean.TRUE.equals(
+                blocks.getMethod("isCustomBlock", String.class).invoke(null, "thesift:" + id));
+    }
+
+    private boolean oraxenBlockDefinitionExists(String id) throws ReflectiveOperationException {
+        if (!enabled("Oraxen")) return false;
+        Class<?> blocks = Class.forName("io.th0rgal.oraxen.api.OraxenBlocks");
+        Object result = blocks.getMethod("getBlockIDs").invoke(null);
+        if (!(result instanceof Iterable<?> ids)) return false;
+        String namespaced = id.contains(":") ? id : "thesift:" + id;
+        for (Object value : ids) {
+            if (value instanceof String found && (found.equalsIgnoreCase(id) || found.equalsIgnoreCase(namespaced))) return true;
+        }
+        return false;
     }
 
     boolean isBlock(String contentId, Block block) {

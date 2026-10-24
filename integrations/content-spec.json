@@ -432,6 +432,18 @@
       "material": "DEEPSLATE",
       "name": "Siftslate",
       "model": "thesift:item/siftslate"
+    },
+    {
+      "id": "soul_block",
+      "material": "SOUL_SAND",
+      "name": "Soul Block",
+      "model": "thesift:item/soul_block"
+    },
+    {
+      "id": "sonorous_deepslate",
+      "material": "DEEPSLATE",
+      "name": "Sonorous Deepslate",
+      "model": "thesift:item/siftslate"
     }
   ],
   "mobs": [
@@ -638,6 +650,11 @@
     },
     {
       "id": "siftslate",
+      "material": "PAPER",
+      "model": "block/siftslate"
+    },
+    {
+      "id": "sonorous_deepslate",
       "material": "PAPER",
       "model": "block/siftslate"
     }

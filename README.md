@@ -1,13 +1,11 @@
-# The Sift plugin foundation
+# The Sift — fan-made Paper plugin
 
-This project is the single source/build project for the next The Sift plugin
-update. It targets Java 25 and Paper 26.3 for its current build, while preparing
-the Sift dimension integration for the planned Minecraft 27.1 release. Here,
-“vanilla-like 27.1 experience” means custom Sift content should feel built into
-the game; the Paper implementation may use content plugins to supply custom
-blocks, items, mobs, models, and packs. The 27.1 data format and runtime API
-are not available yet, so this is a working 26.3 prototype rather than a
-claim of 27.1 compatibility.
+The Sift is a fan-made implementation inspired by the dimension announced at
+Minecraft Live 2026. It targets **Paper 26.3**, Java 25, and Paper API
+`26.3.build.218-stable`; it is not affiliated with Mojang or Microsoft.
+Custom-content providers supply items, blocks, and mobs where the Paper API
+does not provide those game concepts directly. The current implementation
+status and stand-ins are tracked in [`docs/parity-matrix.md`](docs/parity-matrix.md).
 
 ## Build
 
@@ -28,12 +26,13 @@ gradle build -PpaperApiVersion=<paper-api-version>
 
 The plugin registers its dimension datapack through Paper's datapack-discovery
 lifecycle. This requires Paper's plugin loader and Paper 26.3 or newer. The
-dimension selects among the original five prototype biomes and ten more biome
+dimension selects among five original biomes and ten more biome
 names from the community mod reference: Overgrown Forest/Clearing/Slopes,
 Siftslate biomes, Ichor Snowy Peaks, Sift Wastes, and Sift Deep Dark. It has
-custom sky, fog, and ambient settings. The prototype still uses Overworld
-noise and built-in block/entity fallbacks where no external custom-content
-provider is configured; 27.1 compatibility remains unverified.
+custom sky, fog, and ambient settings. It currently uses Overworld noise and
+built-in stand-ins where the relevant provider or implementation is absent.
+This is a Paper 26.3 implementation; provider parsing and live-server behavior
+remain unverified until recorded in the parity matrix.
 
 ### Configuration keys awaiting implementation
 
@@ -57,7 +56,7 @@ files keep these keys; they have not been removed or migrated.
 - Versioned plugin configuration (`config-version: 3`).
 - Refusal to rewrite configs newer than this build.
 - Registry for Siftslate, Ichor, Charoite, Siftite, Resonance, Rift content,
-  and the planned mobs.
+  and the current mob stand-ins.
 - Ichor v2: persistent cauldron levels, refill/bottle costs, tagged Ichor
   Glass/Panes and Ichor Snow blocks, recipes, particles, and sounds.
 - Charoite and Siftite progression: tagged ore drops, ingot/nugget recipes,
@@ -81,10 +80,11 @@ files keep these keys; they have not been removed or migrated.
   Blub, Bulb, Koi, Thornback, The Sifter, Prism Warden, and Lumen Tulip.
 - A cycling Sift Tide that changes movement/mining effects for players and
   nearby creatures.
-- A reference-mod portal melody prototype: right-click note blocks to cycle
-  eight notes, then left-click notes in order `1, 3, 7, 6, 5, 2, 4, 8` to open
-  a Rift. This experimental interaction currently intercepts normal note-block
-  clicks; restricting it to registered portal blocks is pending.
+- Sonorous Deepslate portal station: place the tagged block, put a vanilla
+  note block above it, right-click to tune, then left-click notes in order
+  `1, 3, 7, 6, 5, 2, 4, 8` to open a Rift. Other note blocks and provider-owned
+  note blocks are not intercepted. Provider parsing and live server behavior
+  remain unverified.
 - Rifts link The Sift and the Overworld in both directions, transport nearby
   entities, and default to a five-minute active window.
 - Ichor weather adds colored rain particles, regeneration/slowness on contact
@@ -252,29 +252,22 @@ definitions are generated from the canonical spec, but API parsing and live
 runtime behavior still need checks with each provider installed. The parity
 matrix records these evidence levels separately.
 
-## The Sift dimension prototype
+## The Sift dimension
 
-The Java datapack model was cross-checked against the Fabric reference mod
-`The Sift 1.1.2` (Minecraft 26.3), the repository's existing biome and asset
-files, the Paper datapack-discovery documentation, and Mojang's announcement.
-The plugin supplies its own datapack; it does not load or require the Fabric
-mod. The announced Java/Bedrock release has not shipped its official worldgen,
-so the current dimension is a Paper simulation of the planned custom-content
-experience. External providers can supply richer content than built-in
-fallbacks, and the plugin connects them where APIs are available.
+The plugin supplies its own datapack and does not load or require the Fabric
+reference mod. Some biome names, the portal melody, Ichor weather, structures,
+and creature behaviors are inspired by the MIT-licensed community project
+[Mielon's The Sift](https://github.com/Arta48/Mielons-The-Sift). Inspiration
+does not imply affiliation with that project, Mojang, or Microsoft. Feature
+comparisons and unverified provider behavior are tracked in
+[`IMPLEMENTATION_REPORT.md`](IMPLEMENTATION_REPORT.md) and
+[`docs/parity-matrix.md`](docs/parity-matrix.md).
 
-The extra biome names, portal melody, Ichor weather, structures, and creature
-behaviors are inspired by the MIT-licensed Mielon's The Sift reference project;
-they are not confirmed descriptions of Mojang's final 27.1 implementation.
-Feature comparisons and deferred problems are tracked in
-[IMPLEMENTATION_REPORT.md](./IMPLEMENTATION_REPORT.md).
-
-On Paper 26.3+, use `/sift dimension` to create/load and enter the dimension.
+On Paper 26.3, use `/sift dimension` to create/load and enter the dimension.
 The console command creates/loads it without a player; players can enter with
 the same command. Use `/sift return` to return to the Overworld spawn.
-`/datapack list enabled` should show `TheSift/dimension`. The prototype uses
-the Meadow biome and Overworld terrain settings. This is the current worldgen
-implementation, not the intended final 27.1-like custom terrain.
+`/datapack list enabled` should show `TheSift/dimension`. Current worldgen
+uses the Meadow biome and Overworld terrain settings.
 
 The dimension is stored in the same world save as the Overworld, Nether, and
 End. Paper's dimension-aware world storage places it under
@@ -282,12 +275,8 @@ End. Paper's dimension-aware world storage places it under
 the `thesift:the_sift` world key. The plugin should not create a separate
 top-level world folder manually.
 
-Mojang has named Meadows and Carapace and described new mobs, hazardous blocks,
-and shifting tides. The Java/Bedrock announcement does not publish final
-27.1 worldgen, item, mob, or API definitions. This prototype's remaining named
-biomes and creatures come from the repository's mod reference and are not
-claims about Mojang's final release. Recheck the pack against 27.1 before
-claiming compatibility.
+The Sift is an independent fan project and does not claim affiliation with or
+endorsement by Mojang or Microsoft.
 
 ## Ichor v2 test flow
 
@@ -331,14 +320,14 @@ Ingot. Material-only vanilla recipes reject tagged Siftite ingredients.
 /sift give charoite <player>
 ```
 
-The Singer prototype is an Allay tagged with The Sift's persistent entity ID.
+The Singer currently uses an Allay tagged with The Sift's persistent entity ID.
 Its pulse emits a sonic cue, deals 1 health point (half a heart) by default,
 and applies Slowness I for 3 seconds. Set `resonance.singer.attack-enabled: false`
 to disable both damage and slowness; tune `damage`, `slowness-seconds`,
 `slowness-amplifier`, and `pulse-seconds` under `resonance.singer`. Charoite
 protection applies while a player carries a tagged Charoite in their personal
 inventory/hotbar, offhand, or armor slots; ender-chest contents do not count.
-Creative and spectator players are unaffected. The Echo Golem prototype is a
-passive Iron Golem: an Echo Shard bonds it to a player, and that player can
-give or retrieve a Soul Block. These are early Paper approximations, not
-claims about Mojang's final 27.1 behavior.
+Creative and spectator players are unaffected. The Echo Golem currently uses
+a passive Iron Golem: an Echo Shard bonds it to a player, and that player can
+give or retrieve a Soul Block. These behaviors have unit-test coverage but
+still need a live Paper 26.3 smoke test with the selected providers.

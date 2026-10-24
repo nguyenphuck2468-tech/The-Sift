@@ -22,7 +22,16 @@ No plugin in this matrix has reached **Live checked** in this repository. `Gener
 
 `Detected` for optional plugins is based on the declared plugin name and reflective/service path in the code, not proof of API compatibility. `ResourcePackManager` is currently detection and doctor reporting only. Its public Java API supports pack registration, but integration is deferred; no API calls or telemetry are used. Geyser, Floodgate, ViaVersion, ViaBackwards, ViaRewind, and ResourcePackManager never gate dimension readiness.
 
-Bedrock level 2 (pack generation, custom mappings, and end-to-end Geyser validation) is estimated **high / roughly 1–3 engineering weeks**, assuming usable asset provenance and a test server with Geyser + ResourcePackManager. This is a planning estimate, not a commitment.
+Bedrock level 2 (pack generation, custom mappings, and end-to-end Geyser validation) is estimated **high / roughly 1–3 engineering weeks**, assuming usable asset provenance and a test server with Geyser + ResourcePackManager. This is a planning estimate, not a commitment. Geyser documentation checked 2026-10-24 lists Java 26.3 support; Skilleed's product page (updated 2026-10-09) advises ViaVersion. This plugin has not been tested on a server with Geyser, either with or without ViaVersion.
+
+## Implemented feature slices
+
+| Slice | In-repository implementation | Generated definitions | Test evidence | Provider parsing / real server |
+|---|---|---|---|---|
+| 1: Soul Block | `soul_block` item + block IDs; placement tracking, drops, and Echo Golem interaction. Singer and Echo Golem remain vanilla entity stand-ins. | Nexo, ItemsAdder, and Oraxen item/block YAML; MythicMobs mob YAML for Singer/Echo Golem. ItemsAdder entity and EliteMobs files are not generated. | Unit test suite; exact generated ID membership test. | Not verified on provider or Paper server. |
+| 2: Sonorous Deepslate Rift | `sonorous_deepslate` item/block ID, placed block tagging, and melody guard. Ordinary note blocks remain untouched; provider-owned note blocks are not intercepted. | Nexo, ItemsAdder, and Oraxen item/block YAML. | Fixture test covers untagged note block, tagged base, and provider-owned note block. | Not verified on provider or Paper server. |
+
+Useful smoke commands: `/sift give soul_block <player>`, `/sift summon singer <player>`, `/sift summon echo_golem <player>`, `/sift give sonorous_deepslate <player>`. Place the last item and a normal note block above it; tune by right-click and play `1, 3, 7, 6, 5, 2, 4, 8` by left-clicking to open a Rift. See `docs/TESTING.md` for the Paper 26.3 and Bedrock procedure.
 
 ## Content source and generation
 
@@ -35,7 +44,7 @@ Bedrock level 2 (pack generation, custom mappings, and end-to-end Geyser validat
 
 ## Strict readiness
 
-With `providers.strict: true`, readiness requires at least one selected backend resolving **every** mandatory item ID, at least one selected backend resolving **every** mandatory block ID, and at least one selected mob backend resolving **every** mandatory mob ID. The canonical lists are in `integrations/content-spec.json`; Gradle generates the runtime lists in `ProviderContentIds`. Some APIs (notably ItemsAdder custom entity and EliteMobs bosses) do not yet have a verified side-effect-free readiness probe, so doctor reports those IDs unresolved rather than spawning test mobs. The dimension and its existing save remain untouched when readiness fails.
+With `providers.strict: true`, readiness requires at least one selected backend resolving **every** mandatory item ID, at least one selected backend resolving **every** mandatory block ID, and at least one selected mob backend resolving **every** mandatory mob ID. The canonical lists are in `integrations/content-spec.json`; Gradle generates the runtime lists in `ProviderContentIds`. ItemsAdder custom entity readiness uses the documented registry probe, while EliteMobs has no verified side-effect-free registry probe and remains unresolved. The dimension and its existing save remain untouched when readiness fails.
 
 With `providers.strict: false`, vanilla fallback remains available for development/CI and a startup warning is logged. Bedrock support is optional and controlled by `providers.bedrock-enabled`.
 

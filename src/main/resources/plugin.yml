@@ -1,7 +1,7 @@
 name: TheSift
 version: '${version}'
 main: com.gamepathics.thesift.foundation.TheSiftFoundationPlugin
-description: Foundation for the next The Sift content update
+description: Fan-made The Sift dimension for Paper 26.3; not affiliated with Mojang or Microsoft
 author: Gamepathics
 api-version: '26.3'
 softdepend: [Nexo, ItemsAdder, Oraxen, MythicMobs, EliteMobs, ModelEngine, Geyser-Spigot, floodgate, ViaVersion, ViaBackwards, ViaRewind, ResourcePackManager]

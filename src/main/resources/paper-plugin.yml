@@ -2,7 +2,7 @@ name: TheSift
 version: '${version}'
 main: com.gamepathics.thesift.foundation.TheSiftFoundationPlugin
 bootstrapper: com.gamepathics.thesift.foundation.TheSiftBootstrap
-description: Foundation for The Sift content and dimension
+description: Fan-made The Sift dimension for Paper 26.3; not affiliated with Mojang or Microsoft
 author: Gamepathics
 api-version: '26.3'
 dependencies:

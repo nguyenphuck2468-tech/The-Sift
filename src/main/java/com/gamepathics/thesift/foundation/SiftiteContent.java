@@ -140,7 +140,7 @@ public final class SiftiteContent implements Listener {
         if (foundationItem != null) return foundationItem;
 
         Material material = switch (id) {
-            case "siftslate" -> Material.DEEPSLATE;
+            case "siftslate", "sonorous_deepslate" -> Material.DEEPSLATE;
             case "soul_block" -> Material.SOUL_SAND;
             case "sift_soil" -> Material.ROOTED_DIRT;
             case "sift_grass", "healthy_sculk" -> id.equals("healthy_sculk") ? Material.SCULK : Material.MOSS_BLOCK;

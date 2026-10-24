@@ -174,7 +174,7 @@ public final class RiftManager implements Listener {
         else item.setAmount(item.getAmount() - 1);
     }
 
-    /** Note-block portal prototype based on the reference mod's eight-note activation song. */
+    /** Sift portal interaction based on the reference mod's eight-note activation song. */
     @EventHandler
     public void onPortalSong(PlayerInteractEvent event) {
         if (!plugin.getConfig().getBoolean("content.rift", true)
@@ -217,10 +217,10 @@ public final class RiftManager implements Listener {
     }
 
     boolean canHandlePortalSong(Block noteBlock) {
+        if (!plugin.getConfig().getBoolean("content.sonorous_deepslate", true)) return false;
         if (noteBlock == null || noteBlock.getType() != Material.NOTE_BLOCK) return false;
         Block base = noteBlock.getRelative(org.bukkit.block.BlockFace.DOWN);
-        return !blockBridge.isProviderOwned(noteBlock) && !blockBridge.isProviderOwned(base)
-                && base.getType() == Material.DEEPSLATE && sonorousBlocks.contains(base);
+        return !blockBridge.isProviderOwned(noteBlock) && sonorousBlocks.contains(base);
     }
 
     public class RiftInstance {

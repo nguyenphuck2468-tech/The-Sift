@@ -6,7 +6,9 @@ content:
   ichor_glass: true
   ichor_glass_pane: true
   # Chưa triển khai: cờ này hiện chỉ xuất hiện trong /sift doctor, chưa điều khiển nội dung.
+  # Deprecated legacy toggle: the Sonorous Deepslate provider identity uses the content ID `siftslate`.
   siftslate: true
+  sonorous_deepslate: true
   soul_block: true
   charoite: true
   charoite_item: true
@@ -130,7 +132,8 @@ siftite:
   mini-rift-recovery: true
 
 compatibility:
-  minecraft-target: "27.1 (planned)"
+  # Deprecated legacy key; runtime target is Paper 26.3. Kept for existing configs.
+  minecraft-target: "26.3"
 
 providers:
   # Strict provider-first mode: dimension access is denied until all mandatory IDs resolve.

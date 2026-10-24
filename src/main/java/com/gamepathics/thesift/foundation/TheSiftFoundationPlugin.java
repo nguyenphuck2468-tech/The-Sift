@@ -100,8 +100,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         getServer().getScheduler().runTaskLater(this, () -> {
             refreshContentRecipes();
         }, 200L);
-        getLogger().info("The Sift foundation enabled for Minecraft "
-                + getConfig().getString("compatibility.minecraft-target", "unknown") + ".");
+        getLogger().info("The Sift fan-made Paper 26.3 plugin enabled; not affiliated with Mojang or Microsoft.");
     }
 
     private void registerContentPluginReloadHooks() {
@@ -170,8 +169,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("doctor")) {
             sender.sendMessage("The Sift foundation: " + getDescription().getVersion());
-            sender.sendMessage("Minecraft target: "
-                    + getConfig().getString("compatibility.minecraft-target", "unknown"));
+            sender.sendMessage("Runtime target: Paper 26.3 / Paper API 26.3.build.218-stable");
             for (Map.Entry<ContentId, Boolean> entry : contentRegistry.snapshot().entrySet()) {
                 sender.sendMessage("- " + entry.getKey().key() + ": "
                         + (entry.getValue() ? "enabled" : "disabled"));

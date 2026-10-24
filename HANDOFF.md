@@ -29,8 +29,9 @@ Package plugin cũ dạng `.class`, bản mod Fabric reference và file ZIP lớ
 - Java 25.
 - Gradle 9.x.
 - Paper API mặc định: `26.3.build.218-stable`.
-- Target kế hoạch: Minecraft `27.1` (bản tương lai; schema/API chưa công bố).
-- Dimension The Sift hiện là prototype đóng gói theo data format 26.3.
+- Mục tiêu chạy hiện tại: Paper 26.3; `api-version` là `26.3`.
+- Đây là plugin fan-made lấy cảm hứng từ dimension được giới thiệu tại
+  Minecraft Live 2026; không liên kết với Mojang hay Microsoft.
 - Project chuyển sang Paper plugin loader để đăng ký datapack trước khi world
   được nạp; plugin.yml vẫn có để giữ metadata/permission cho Bukkit tooling.
 
@@ -200,8 +201,8 @@ Các lệnh yêu cầu permission `thesift.foundation.admin`, mặc định là 
   vanilla Overworld noise, biome color, procedural surface decoration, mob
   proxies, Singer/Echo Golem/Prism Warden/The Sifter encounters, natural Rift
   events, and a cycling Sift Tide.
-  Terrain and entities use vanilla substitutes and are an intentionally rough
-  prototype, not 27.1 parity.
+  Terrain and entities use vanilla substitutes where noted in the parity
+  matrix. Live behavior still needs server validation.
 - Resource pack assets are bundled under `src/main/resources/pack`; use
   `gradle siftResourcePack` to produce
   `build/distributions/TheSift-resource-pack.zip`. Players need the pack
@@ -211,17 +212,15 @@ Các lệnh yêu cầu permission `thesift.foundation.admin`, mặc định là 
   kết quả kiểm chứng hiện tại.
 - `/sift reload` reload config và công thức; cần restart để bật/tắt module vì
   listener và scheduler được khởi tạo theo content flags lúc enable.
-- Config target `27.1 (planned)` là kế hoạch, không khẳng định tương thích
-  trước khi Paper/Minecraft 27.1 được phát hành và kiểm tra.
 
-## 7.1 Dimension prototype
+## 7.1 Dimension implementation
 
 Dimension and biome files live at `src/main/resources/sift_dimension_datapack/`.
 `TheSiftBootstrap` registers this isolated bundled datapack as
 `TheSift/dimension`; `/sift dimension` creates/loads the world using the
 `thesift:the_sift` key. This follows Paper's datapack-discovery lifecycle and
-Paper 26.1+ `WorldCreator.ofKey` world keys. It is an implementation prototype
-for planned Minecraft 27.1, not a tested 27.1 implementation.
+Paper 26.1+ `WorldCreator.ofKey` world keys. It targets Paper 26.3; server
+validation status is recorded separately in the parity matrix.
 
 Reference material reviewed:
 
@@ -235,8 +234,9 @@ Reference material reviewed:
   https://docs.papermc.io/paper/dev/lifecycle/datapacks/
 - Paper world creation API:
   https://jd.papermc.io/paper/26.3/org/bukkit/WorldCreator.html
-- Mojang's September 2026 announcement:
-  https://www.minecraft.net/en-us/article/mclive_sept2026_recap
+- The MIT-licensed Fabric reference project is used for parity research; its
+  code/assets are not copied. This plugin is fan-made and unaffiliated with
+  Mojang or Microsoft.
 
 ## 7. Thứ tự công việc đề xuất
 
