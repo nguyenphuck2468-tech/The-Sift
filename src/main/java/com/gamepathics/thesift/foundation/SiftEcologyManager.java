@@ -379,9 +379,6 @@ public final class SiftEcologyManager implements Listener {
     private void placeBlock(Block block, String contentId, Material fallback) {
         if (!blockBridge.place(contentId, block.getLocation())) {
             block.setType(fallback, false);
-            if (contentId.equals("siftslate") && fallback == Material.DEEPSLATE) {
-                new SonorousBlockRegistry(plugin).mark(block);
-            }
         }
     }
 

@@ -6,7 +6,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockBurnEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
+import org.bukkit.event.entity.EntityChangeBlockEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.NamespacedKey;
 import org.bukkit.persistence.PersistentDataType;
@@ -23,6 +29,7 @@ public final class SiftiteListener implements Listener {
     private final NamespacedKey siftiteOreMarker;
     private final ExternalBlockBridge blockBridge;
     private final SonorousBlockRegistry sonorousBlocks;
+    private final ExternalItemBridge externalItems;
 
     public SiftiteListener(JavaPlugin plugin, SiftiteContent content) {
         this.plugin = plugin;
@@ -31,15 +38,51 @@ public final class SiftiteListener implements Listener {
         this.siftiteOreMarker = new NamespacedKey(plugin, "siftite_ore_positions");
         this.blockBridge = new ExternalBlockBridge(plugin);
         this.sonorousBlocks = new SonorousBlockRegistry(plugin);
+        this.externalItems = new ExternalItemBridge(plugin);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onSonorousDeepslatePlace(BlockPlaceEvent event) {
         if (!plugin.getConfig().getBoolean("content.sonorous_deepslate", true)) return;
-        if (!content.is(event.getItemInHand(), "siftslate")
-                && !content.is(event.getItemInHand(), "sonorous_deepslate")) return;
+        if (!content.is(event.getItemInHand(), "sonorous_deepslate")
+                && !externalItems.isItem("sonorous_deepslate", event.getItemInHand())) return;
         Block placed = event.getBlockPlaced();
         sonorousBlocks.mark(placed);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onSonorousDeepslateBreak(BlockBreakEvent event) {
+        sonorousBlocks.remove(event.getBlock());
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onSonorousBlockExplode(BlockExplodeEvent event) {
+        event.blockList().forEach(sonorousBlocks::remove);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onSonorousEntityExplode(EntityExplodeEvent event) {
+        event.blockList().forEach(sonorousBlocks::remove);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onSonorousBlockBurn(BlockBurnEvent event) {
+        sonorousBlocks.remove(event.getBlock());
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onSonorousEntityChange(EntityChangeBlockEvent event) {
+        sonorousBlocks.remove(event.getBlock());
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onSonorousPistonExtend(BlockPistonExtendEvent event) {
+        event.getBlocks().forEach(sonorousBlocks::remove);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onSonorousPistonRetract(BlockPistonRetractEvent event) {
+        event.getBlocks().forEach(sonorousBlocks::remove);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)

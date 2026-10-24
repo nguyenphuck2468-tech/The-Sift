@@ -39,6 +39,62 @@ final class ExternalItemBridge {
         return null;
     }
 
+    boolean isItem(String contentId, ItemStack stack) {
+        if (stack == null || stack.getType().isAir()) return false;
+        String configured = plugin.getConfig().getString("integrations.items.provider", "auto")
+                .toLowerCase(Locale.ROOT);
+        for (RegisteredServiceProvider<SiftItemProvider> registration : plugin.getServer()
+                .getServicesManager().getRegistrations(SiftItemProvider.class)) {
+            SiftItemProvider provider = registration.getProvider();
+            if (provider == null || (!configured.equals("auto")
+                    && !configured.equalsIgnoreCase(provider.getProviderId()))) continue;
+            try {
+                ItemStack expected = provider.createItem(contentId);
+                if (expected != null && stack.isSimilar(expected)) return true;
+            } catch (RuntimeException exception) {
+                plugin.getLogger().fine("Sift item provider could not identify " + contentId + ": "
+                        + exception.getMessage());
+            }
+        }
+        if ((configured.equals("auto") || configured.equals("nexo")) && matchesNexo(contentId, stack)) return true;
+        if ((configured.equals("auto") || configured.equals("itemsadder")) && matchesItemsAdder(contentId, stack)) return true;
+        return (configured.equals("auto") || configured.equals("oraxen")) && matchesOraxen(contentId, stack);
+    }
+
+    private boolean matchesNexo(String id, ItemStack stack) {
+        if (!enabled("Nexo")) return false;
+        try {
+            Object found = Class.forName("com.nexomc.nexo.api.NexoItems")
+                    .getMethod("idFromItem", ItemStack.class).invoke(null, stack);
+            return found instanceof String actual && matchesId(id, actual);
+        } catch (ReflectiveOperationException | LinkageError exception) { return false; }
+    }
+
+    private boolean matchesItemsAdder(String id, ItemStack stack) {
+        if (!enabled("ItemsAdder")) return false;
+        try {
+            Object custom = Class.forName("dev.lone.itemsadder.api.CustomStack")
+                    .getMethod("byItemStack", ItemStack.class).invoke(null, stack);
+            if (custom == null) return false;
+            Object found = custom.getClass().getMethod("getNamespacedID").invoke(custom);
+            return found instanceof String actual && matchesId(id, actual);
+        } catch (ReflectiveOperationException | LinkageError exception) { return false; }
+    }
+
+    private boolean matchesOraxen(String id, ItemStack stack) {
+        if (!enabled("Oraxen")) return false;
+        try {
+            Object found = Class.forName("io.th0rgal.oraxen.api.OraxenItems")
+                    .getMethod("getIdByItem", ItemStack.class).invoke(null, stack);
+            return found instanceof String actual && matchesId(id, actual);
+        } catch (ReflectiveOperationException | LinkageError exception) { return false; }
+    }
+
+    private boolean matchesId(String expected, String actual) {
+        if (expected.contains(":")) return expected.equalsIgnoreCase(actual);
+        return expected.equalsIgnoreCase(actual) || ("thesift:" + expected).equalsIgnoreCase(actual);
+    }
+
     boolean resolves(String backend, String id) {
         try {
             return switch (backend) {

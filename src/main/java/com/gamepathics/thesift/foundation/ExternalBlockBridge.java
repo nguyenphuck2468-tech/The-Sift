@@ -106,13 +106,13 @@ final class ExternalBlockBridge {
             }
         }
         if (provider.equals("auto") || provider.equals("nexo")) {
-            if (reflectiveBlockCheck("Nexo", "com.nexomc.nexo.api.NexoBlocks", "isCustomBlock", block)) return true;
+            if (nexoBlockCheck(block, externalId)) return true;
         }
         if (provider.equals("auto") || provider.equals("itemsadder")) {
             if (itemsAdderBlockCheck(block, externalId)) return true;
         }
         if (provider.equals("auto") || provider.equals("oraxen")) {
-            if (reflectiveBlockCheck("Oraxen", "io.th0rgal.oraxen.api.OraxenBlocks", "isOraxenBlock", block)) return true;
+            if (oraxenBlockCheck(block, externalId)) return true;
         }
         return false;
     }
@@ -147,6 +147,48 @@ final class ExternalBlockBridge {
             plugin.getLogger().fine(pluginName + " block detection unavailable: " + exception.getMessage());
             return false;
         }
+    }
+
+    private boolean nexoBlockCheck(Block block, String expectedId) {
+        if (!enabled("Nexo")) return false;
+        try {
+            Class<?> api = Class.forName("com.nexomc.nexo.api.NexoBlocks");
+            Object mechanic = api.getMethod("customBlockMechanic", Block.class).invoke(null, block);
+            if (mechanic == null) return false;
+            Object found = mechanic.getClass().getMethod("getItemID").invoke(mechanic);
+            return found instanceof String id && sameProviderId(expectedId, id);
+        } catch (ReflectiveOperationException | LinkageError exception) {
+            plugin.getLogger().fine("Nexo block ID lookup unavailable: " + exception.getMessage());
+            return false;
+        }
+    }
+
+    private boolean oraxenBlockCheck(Block block, String expectedId) {
+        if (!enabled("Oraxen")) return false;
+        try {
+            Class<?> api = Class.forName("io.th0rgal.oraxen.api.OraxenBlocks");
+            for (String methodName : new String[]{"getNoteBlockMechanic", "getStringMechanic",
+                    "getChorusMechanic", "getShapedMechanic"}) {
+                try {
+                    Object mechanic = api.getMethod(methodName, Block.class).invoke(null, block);
+                    if (mechanic == null) continue;
+                    for (String idMethod : new String[]{"getItemID", "getItemId"}) {
+                        try {
+                            Object found = mechanic.getClass().getMethod(idMethod).invoke(mechanic);
+                            if (found instanceof String id && sameProviderId(expectedId, id)) return true;
+                        } catch (NoSuchMethodException ignored) { }
+                    }
+                } catch (NoSuchMethodException ignored) { }
+            }
+        } catch (ReflectiveOperationException | LinkageError exception) {
+            plugin.getLogger().fine("Oraxen block ID lookup unavailable: " + exception.getMessage());
+        }
+        return false;
+    }
+
+    private boolean sameProviderId(String expected, String actual) {
+        if (expected.contains(":")) return expected.equalsIgnoreCase(actual);
+        return expected.equalsIgnoreCase(actual) || ("thesift:" + expected).equalsIgnoreCase(actual);
     }
 
     private boolean itemsAdderBlockCheck(Block block, String expectedId) {
