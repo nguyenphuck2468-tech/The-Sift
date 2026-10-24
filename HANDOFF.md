@@ -339,8 +339,12 @@ git status
 - Config audit is in `IMPLEMENTATION_REPORT.md`. No keys were deleted; any
   cleanup requires owner approval and a versioned migration plan.
 - `NOTICE.draft.md` records only the current source investigation. No LICENSE
-  was created. Live server, external-provider validation, and Bước 2 tasks are
-  still pending; do not start Bước 2 before owner confirmation.
+  was created. Step 1 follow-up added config no-effect comments, archive
+  reproducibility, current stable CI actions, and a Paper 26.3 run-paper task.
+  The note-block/Rift implementation is paused until the owner chooses how
+  portal stations are registered; see the design options in
+  `IMPLEMENTATION_REPORT.md`. Server testing, external-provider validation,
+  and the rest of Step 2 remain pending.
 git log --oneline -5
 ```
 

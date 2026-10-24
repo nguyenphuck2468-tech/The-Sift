@@ -296,11 +296,10 @@ without an agreed migration would surprise existing servers. The embedded
 Geyser binary is excluded from the Paper artifact, but repository deletion is
 still a maintainer decision because it may have an undocumented separate use.
 
-CI version note: `actions/setup-java@v5` follows the explicitly requested
-version. At report time upstream already lists v6 as the latest stable major;
-checkout v7, setup-gradle v6, and upload-artifact v7 are on their latest stable
-major lines. If “latest stable” was intended to override the requested setup-
-java v5, change that step to v6 in a separate CI-only commit.
+CI version note (superseded by the follow-up below): the earlier report kept
+`actions/setup-java@v5`. The owner later explicitly requested latest stable
+versions, so the workflow now pins the latest verified releases for all
+actions, including setup-java v6.1.0.
 
 ### Commits and verification state
 
@@ -383,3 +382,124 @@ passed 35/35. This verifies the Mockito fix and test server setup, but is not a
 live Paper server smoke test. Gradle still reports deprecations for Gradle 10,
 and Byte Buddy emits a JDK Unsafe terminal deprecation warning; these do not
 fail the build.
+
+## Follow-up: reproducible build and Bước 2 preparation
+
+### Completed in this follow-up
+
+| Item | Result | Verification |
+|---|---|---|
+| Inactive configuration keys | Kept all keys and config-version 3. Added `chưa triển khai / chưa có tác dụng` comments beside the audited no-effect keys in `src/main/resources/config.yml`; README now lists them. | Source review and `clean build`; no server test. |
+| Resource-pack release warning | README warns that `siftResourcePack` includes PNG files whose provenance is not verified and says not to distribute the ZIP yet. | Source review. |
+| Reproducible archives | `AbstractArchiveTask` now disables timestamps and fixes entry order for both JAR and ZIP. | Consecutive `clean build siftResourcePack` runs, including after configuring the dev server, succeeded with matching SHA-256: JAR `1D8AAA8063A378F7BD14B6E883C507E7C3F8947F7A523CC1B6610358E7C6B2B6`; resource pack `9795C548941762918393D14FD87DF32B41B549F82761876C89E48327FA09A8AF`. |
+| CI action updates | Workflow uses checkout v7.0.1, setup-java v6.1.0, Gradle Actions v6.4.0, and upload-artifact v7.0.2, on pinned `ubuntu-24.04`. | YAML/source review; hosted CI has not run for these changes yet. |
+| Paper dev server | Added run-paper 3.1.0 and a `runServer` task configured for Minecraft/Paper 26.3 in `run/paper-26.3`. | Gradle task listing and `runServer --dry-run` succeeded. Server itself was not launched. |
+| Geyser embedded jar | Prepared commit `bab35db` removing `src/main/resources/bedrock/TheSiftGeyser.jar.embedded` on `pending/remove-geyser-embedded`. Not merged or pushed; `main` still contains the file pending owner confirmation. | Commit diff reviewed; binary was not executed. |
+
+Follow-up commits on `main` (pushed after approval):
+
+- `f127e91c4826d8e3ea6e273976aa6706e952211b` — document inactive config keys
+  and resource-pack provenance warning.
+- `e6aeb4918380c2a52f1cee4e6175fc97bd6184f7` — reproducible archives and
+  Paper 26.3 dev-server task.
+- `e72920757b0467ee7ddb4b008fe0292125d8814e` — pin current stable GitHub
+  Actions releases.
+
+### Step 2.1 note-block design decision required before code
+
+`RiftManager.onPortalSong` currently handles every note block and cancels normal
+click interactions. A strict vanilla-behavior boundary needs an explicit way
+to identify the portal station. Options:
+
+| Approach | Benefits | Trade-offs |
+|---|---|---|
+| Persist registered note-block coordinates in chunk PDC, with permission-checked register/unregister commands | Precise allowlist; follows the world and chunk; ordinary note blocks remain untouched; no external custom-block dependency. | Requires an operator to register each station; command UX and cleanup on breaking/moving the block must be defined. |
+| Configure a portal volume/region | Simple persistence and administration; no per-block registration. | Every note block in the region is intercepted, including unrelated builds; region overlap and edits need maintenance. |
+| Auto-detect a surrounding block pattern | No command after construction. | No agreed vanilla-27.1 The Sift portal pattern exists in the repository, so any pattern would be invented and risks false positives. |
+
+Recommendation: chunk-PDC registration, with a command to register the targeted
+note block and unregister it, and cleanup when the registered block is broken.
+This is the strongest guarantee that normal note blocks preserve vanilla
+behavior. Do not implement the note-block or Rift work until the owner chooses
+the registration policy.
+
+### Step 2.3 measurement preparation (mechanism unchanged)
+
+`build.gradle` applies `xyz.jpenilla.run-paper` 3.1.0. Run
+`./gradlew runServer` (Windows: `.\\gradlew.bat runServer`) from the repository
+root. The task targets Paper/Minecraft 26.3 and uses `run/paper-26.3`; first
+launch needs network access to obtain Paper. If that download is blocked, run
+the same plugin JAR on a disposable Paper 26.3 server. The current environment
+has not launched a server.
+
+1. First launch once, accept the EULA in `run/paper-26.3/eula.txt`, then stop.
+2. In `run/paper-26.3/plugins/TheSift/config.yml`, set
+   `debug.chunk-generation-metrics.enabled: true`.
+3. Start again. Use a fresh test world/run directory each trial so the chunk
+   PDC completion marker does not suppress the measured decoration.
+4. Enter The Sift. Starting at chunk `(0,0)`, move east through 20 target chunk
+   centers `(x*16+8, z=8)`, `x=0..19`, pausing two seconds at each target.
+   Keep view distance and simulation distance fixed at 3/2; note that the
+   server can decorate adjacent chunks in its load radius, so record their
+   emitted lines too and distinguish route targets from preloaded neighbors.
+5. Collect the `Sift chunk ... generation=...ms operation-attempts=...` lines
+   from `run/paper-26.3/logs/latest.log`. Repeat on a new world with the same
+   settings before comparing.
+
+Record each trial here; do not switch to `BlockPopulator` based on guesswork.
+
+| Trial / server build | World seed | Route chunk | New chunk? | Generation ms | Operation attempts | Failure/retry notes |
+|---|---|---:|---|---:|---:|---|
+| Pending owner-run | Paper 26.3 | (0,0) | | | | |
+| Pending owner-run | Paper 26.3 | (1,0) | | | | |
+| Pending owner-run | Paper 26.3 | … (continue to 19,0) | | | | |
+
+Paper API 26.3 `ChunkLoadEvent` Javadoc explicitly warns under
+`isNewChunk()`: “Do not use this to generated blocks in a newly generated
+chunk. Use a BlockPopulator instead.” This is high-confidence evidence that
+Paper discourages block generation from this event for newly generated chunks;
+it is not an API prohibition and does not itself document entity spawning.
+The Javadoc only says `ChunkLoadEvent` is called when a chunk loads. Therefore
+whether the current entity spawning causes practical issues on Paper 26.3
+remains unverified until server testing. Source: Paper 26.3 API Javadoc,
+`ChunkLoadEvent.isNewChunk()`.
+
+Static failure-path review: `SiftEcologyManager.decorateChunkOnce` removes the
+completion marker after a `RuntimeException`, so a later load retries. Block
+changes are not rolled back. Decoration uses a seed derived from world seed and
+chunk coordinates, and writes to deterministic positions; most retry writes
+overwrite the same locations rather than adding a second structure. New
+non-player entities are removed by the failure handler. Partial tile-state or
+other side effects have no transaction guarantee. The existing unit test
+`SiftEcologyChunkMarkerTest.failedDecorationLeavesNoCompletionMarkerAndCanRetry`
+verifies marker/retry state only; it does not prove server block rollback or
+duplicate-free real-world behavior. The metrics logger currently records only
+successful decoration, so failed attempts must be inspected in logs separately.
+
+### Step 2.4 datapack definition audit
+
+Confirmed repeated biome IDs across separately registered datapack roots:
+`thesift:bulb_forest`, `thesift:crystal_spires`, `thesift:pink_meadows`, and
+`thesift:shattered_peaks` exist under both `src/main/resources/datapack` and
+`src/main/resources/sift_dimension_datapack`. In each case, the 26.3 overlay
+JSON is byte-identical to the corresponding dimension-pack JSON, while the
+progression pack's default JSON is different. These four roots are registered
+as `progression` and `dimension` in `TheSiftBootstrap`. Duplicate registration
+is therefore confirmed; which definition wins or whether Paper reports a
+conflict is unconfirmed without the server's enabled-pack order and logs.
+Confidence: high for duplicated source IDs and file comparisons; low for
+runtime precedence.
+
+### Server checks still required
+
+On a disposable Paper 26.3 server, run `/sift summon singer <player>` and
+verify one low damage pulse and Slowness, then carry tagged Charoite in the
+player inventory/hotbar, offhand, or armor and verify both effects are blocked.
+For ItemsAdder, configure `integrations.blocks.definitions` with the exact
+configured namespaced block ID, generate/place that block, and verify only an
+exact ID match is recognized; the unit fixture covers matching and mismatch,
+but no live ItemsAdder API server test has run. For the Step 2 server checks,
+follow the fresh-world chunk runbook above; additionally inspect datapack
+startup/reload logs for duplicate biome warnings and compare the active biome
+definition. Record Paper build, plugin versions, seed, route, logs, and results
+in the tables before drawing a runtime conclusion.
