@@ -128,13 +128,26 @@ providers for custom assets and behaviors.
 
 ## Licensing and provenance
 
-The additional biome names, portal melody, Ichor weather, and gameplay ideas
-were checked against the MIT-licensed community reference project
-[Mielon's The Sift](https://github.com/Arta48/Mielons-The-Sift). New biome JSON
-files in this plugin strip the reference mod's custom feature references and
-use vanilla-compatible decoration. Mojang's announcement of The Sift does not
-confirm these exact details; do not describe them as finalized 27.1 vanilla
-mechanics.
+The community reference repository is a source for reference research, but its
+license does not automatically license this repository's code or art. Mojang's
+planned 27.1 dimension is also not evidence that a specific community feature
+is official. The table below records the current evidence and uncertainty; it
+is not a provenance certification.
+
+| Group | Evidence and in-repository paths | Source / terms | Confidence |
+|---|---|---|---|
+| Biome JSON | `src/main/resources/datapack/data/thesift/worldgen/biome/`; `src/main/resources/sift_dimension_datapack/`; additions described in this report | Some biome names/feature concepts were researched in the community reference [Mielon's The Sift](https://github.com/Arta48/Mielons-The-Sift). Plugin JSON uses its own vanilla-backed feature definitions; no per-file authorship record is present. | Medium for reference influence; low for exact per-file provenance |
+| Models | `src/main/resources/pack/assets/thesift/models/` (block, item, entity JSON) | Files are in the repository history; no per-file author/source/license metadata is recorded. Resource-pack model JSON is not covered merely by a reference project's MIT license. | Low |
+| Textures | `src/main/resources/pack/assets/thesift/textures/`; `src/main/resources/pack/assets/minecraft/textures/entity/` | 63 PNG files were inventoried. Prior SHA-256 comparison against the available Mielon reference asset set found no exact matches; that does not establish authorship or permission. Minecraft namespace overrides need particular provenance review. No Dark Sniffer texture was identified. | Low / unresolved |
+| Sounds | `src/main/resources/pack/` | No OGG, WAV, MP3, or MIDI files were found. Runtime sounds currently use Bukkit/Minecraft sound identifiers rather than bundled recordings. | High for absence of bundled audio in this tree |
+| Names / ideas | README, config, biome IDs, mob/item IDs, and worldgen descriptions across `src/main/resources/` and `src/main/java/` | The Mielon project and the Mojang 27.1 announcement informed research. The reference does not prove that the features are official 27.1 mechanics, nor does it grant ownership of names. | Medium for reference source; low for official 27.1 parity |
+
+No repo-wide LICENSE or NOTICE was added. Recommendation: add a license only
+for original code the owner confirms they control, and create a NOTICE after
+asset and code provenance is verified. The embedded
+`src/main/resources/bedrock/TheSiftGeyser.jar.embedded` also has unresolved
+origin and terms. Do not add the Rift music or Dark Sniffer texture without
+permission evidence.
 
 ## Foundation correctness and 27.1-style simulation pass (2026-10-24)
 
@@ -172,6 +185,56 @@ Build verification: `jar siftResourcePack` succeeds on Java 25 / Paper API
 26.3. Three `RecipeChoice.ExactChoice` deprecation-for-removal warnings remain.
 No live server test was performed. Previously observed Mockito test setup
 failures were not re-run in this pass.
+
+## Phase 1 completion report (2026-10-24)
+
+### Changes and verification
+
+| Work | Result | Verification |
+|---|---|---|
+| P0 Ichor migration | Reads `runtime.ichor-cauldrons` and `runtime.ichor-blocks`, backs up config, preserves existing state on coordinate collision, writes `ichor-state.yml` before removing old keys, and is idempotent. Config version is 3. | Unit tests: migration cases pass, including two runs, missing keys, backup, collision, and failed write. No server test. |
+| Gradle wrapper / CI | Gradle wrapper pinned to 9.7.1; workflow runs the wrapper and executes test once through `build`. `gradlew` executable bit was added after Linux CI reported `Permission denied`. | GitHub Actions passed for commit `87241ed`. The latest regression-test commit will trigger the same workflow. Local full build below. |
+| Mockito / Java 25 | Recorded pre-fix root exception above; upgraded Mockito and replaced incomplete plugin mocks with MockBukkit fixture. | Full local build: 43 tests, 0 failures/errors/skips. No live server test. |
+| RecipeChoice | Replaced deprecated `ExactChoice(ItemStack)` construction while keeping exact tagged-item matching. | Unit tests verify tagged Ichor glass/Siftite ingot accepted and plain materials rejected. |
+| Advancement regressions | Fixed template being treated as gear, The Sifter granting Tyrant/Matriarch advancements, and Ichor custom drink not granting `storm`. Rift Key pickup test passes without a production fix: the generated key already has the expected content tag. | Tests were run red before relevant fixes (two advancement tests failed; then Ichor test failed because advancement lookup was never called), then focused suite passed 4/4. Full suite passed 43/43. |
+| `rift_block` / Singer–Charoite review | No block producer exists: `rift_block` PDC is attached to Rift Walker entities, while break protection checks Bukkit block metadata. Singer pulse only emits effects visually/audibly; `protectedByCharoite` is not called. | `RiftBlockMetadataTest` verifies a normal block is not cancelled. `ResonanceManagerTest` drives a tagged Singer pulse and verifies player health is unchanged. Source inspection confirms no block marker producer and no active damage/debuff call. The suspected protection bugs are not present in current behavior; no gameplay behavior was added. |
+| Provenance | Inventory and uncertainty table above. No global license added. | Repository resource inventory and reference comparison recorded; individual authorship is not proven. |
+| Chunk benchmark | Added opt-in `debug.chunk-generation-metrics.enabled` timer and stage/surface-attempt count in `SiftEcologyManager.populate`. | Compiles in full build. Disabled by default. No server timing calibration. |
+
+### Regression detail and risks
+
+- The Rift Key advancement suspicion was false: `createRiftKey()` creates the
+  tagged Siftite item with ID `rift_key`; the pickup hook requests that
+  advancement. Test: `src/test/java/com/gamepathics/thesift/foundation/SiftAdvancementManagerTest.java`.
+- `rift_block` currently has no producing Bukkit block. The Rift Walker's PDC
+  marker cannot satisfy `Block.hasMetadata("rift_block")`; the break handler
+  is not active for the current particle-only portal implementation.
+- The Singer's `damage`, slowness, and Charoite-protection config values are
+  not implemented in the active pulse. The unused helper should be wired only
+  alongside a defined damage/debuff behavior.
+- Benchmark `operation-attempts` is an approximate generation-stage count plus
+  28 surface sample attempts, not a count of individual placed blocks/entities.
+  It exists for comparative future profiling and should be refined in Phase 2.
+- Optional provider APIs remain unverified against live Nexo, ItemsAdder,
+  Oraxen, MythicMobs, EliteMobs, or ModelEngine installations. Compile-time and
+  configuration presence are not runtime compatibility guarantees.
+- 27.1 is still the planned target. Everything here is built against Paper
+  26.3; there is no claim of compatibility with an unreleased API/schema.
+
+### Commits
+
+Pushed to `main` during this phase: `213dead` (Ichor migration), `594d682`
+(Gradle wrapper/CI), `baa1fd7` (Rift Key formatting), `e6db80c`
+(Mockito/test fixtures), `3da3e21` (exact recipe choices), `618548a`
+(advancement regressions), `35d72c8` (optional chunk metrics), `87241ed`
+(executable wrapper bit), and `30f6f41` (negative-case verification tests).
+This report and HANDOFF update are a separate documentation-only commit.
+
+### Deferred items
+
+BlockPopulator migration, Rift persistence, note-block behavior, live server
+smoke testing, provider-by-provider server validation, asset provenance proof,
+LICENSE/NOTICE creation, and 27.1 compatibility remain open.
 
 ## Gradle/Mockito root-cause capture (2026-10-24, before remediation)
 

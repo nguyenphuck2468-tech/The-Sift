@@ -1,7 +1,8 @@
 # The Sift - tài liệu bàn giao
 
-Tài liệu này dành cho người tiếp nhận phát triển plugin The Sift sau commit
-`7b1e0f0`.
+Tài liệu này dành cho người tiếp nhận phát triển plugin The Sift. Cập nhật mới
+nhất ở cuối tài liệu ghi commit và trạng thái hiện hành; các ghi chú cũ bên dưới
+được giữ để làm lịch sử khi cần.
 
 ## 1. Mục tiêu của repository
 
@@ -21,7 +22,7 @@ README.md                         Tổng quan và test flow
 
 Package plugin cũ dạng `.class`, bản mod Fabric reference và file ZIP lớn đã
 được loại khỏi repository để tránh có nhiều nguồn sự thật. Commit cleanup hiện
-đang ở local branch `main`; nếu chưa push được thì cần xác thực GitHub trước.
+đã được đẩy lên GitHub branch `main`.
 
 ## 2. Công nghệ và target
 
@@ -33,10 +34,10 @@ Package plugin cũ dạng `.class`, bản mod Fabric reference và file ZIP lớ
 - Project chuyển sang Paper plugin loader để đăng ký datapack trước khi world
   được nạp; plugin.yml vẫn có để giữ metadata/permission cho Bukkit tooling.
 
-Build:
+Build bằng wrapper đã ghim Gradle 9.7.1:
 
 ```bash
-gradle --no-daemon clean build
+./gradlew --no-daemon clean build
 ```
 
 JAR tạo tại:
@@ -183,7 +184,8 @@ Các lệnh yêu cầu permission `thesift.foundation.admin`, mặc định là 
 - Custom block vẫn dùng vanilla material khi không cấu hình provider.
 - Siftite spear hiện dùng Netherite Sword làm base material.
 - Singer và Echo Golem vẫn là vanilla entity proxy.
-- Singer đang dùng Allay prototype.
+- Singer đang dùng Allay prototype. Pulse hiện chỉ phát particle/âm thanh;
+  `resonance.singer.charoite-protection` chưa được gọi và chưa có hiệu lực.
 - Echo Golem mới có thao tác bond và cất/lấy Soul Block cơ bản; chưa có AI tự
   tìm Soul Canyon/Soul Block như mô tả trong mod cộng đồng.
 - Cầu nối custom block nhận `SiftBlockProvider` qua Bukkit ServicesManager và
@@ -201,8 +203,9 @@ Các lệnh yêu cầu permission `thesift.foundation.admin`, mặc định là 
   `gradle siftResourcePack` to produce
   `build/distributions/TheSift-resource-pack.zip`. Players need the pack
   installed/served for custom item models to render.
-- Unit tests có trong source nhưng 25/31 hiện fail trong môi trường test do lỗi
-  khởi tạo Mockito; build JAR và Paper server smoke test chạy được.
+- Trạng thái cũ “25/31 test fail do Mockito” đã được khắc phục: Mockito được
+  nâng cấp và fixture dùng MockBukkit. Xem IMPLEMENTATION_REPORT.md để biết
+  kết quả kiểm chứng hiện tại.
 - `/sift reload` reload config và công thức; cần restart để bật/tắt module vì
   listener và scheduler được khởi tạo theo content flags lúc enable.
 - Config target `27.1 (planned)` là kế hoạch, không khẳng định tương thích
@@ -269,9 +272,41 @@ Reference material reviewed:
 - Build trước khi commit:
 
 ```bash
-gradle --no-daemon clean build
+./gradlew --no-daemon clean build
 git diff --check
 ```
+
+## 10. Trạng thái Giai đoạn 1 (2026-10-24)
+
+- Các commit đã đẩy lên `main`: `213dead` (Ichor migration), `594d682`
+  (wrapper/CI), `baa1fd7` (Rift Key formatting), `e6db80c` (Mockito/fixtures),
+  `3da3e21` (ExactChoice), `618548a` (advancement fixes), `35d72c8` (chunk
+  metrics), `87241ed` (Linux executable bit), `30f6f41` (Rift/Singer regression
+  checks). Giai đoạn 1 report commit bổ sung được ghi trong report.
+- Ichor legacy keys migrate idempotently sang `ichor-state.yml`; config cũ
+  được backup trước và key chỉ bị xóa sau khi state save thành công.
+- CI chạy `./gradlew --no-daemon clean build`; test được thực thi một lần qua
+  lifecycle `build`.
+- Regression hiện xác nhận: Rift Key advancement được gọi; template không bị
+  tính là gear; The Sifter chỉ cấp advancement của chính nó; uống Ichor qua
+  custom interaction cấp advancement `storm`. Full local build: 43/43.
+- `rift_block`: hiện chỉ có metadata/PDC marker trên Rift Walker entity, không
+  có producer nào gắn Bukkit block metadata. Handler hiện tại không che chắn
+  block Rift thực tế; chưa tồn tại block Rift đặt được để kiểm thử phá/hủy.
+- Singer/Charoite: Singer pulse không gây damage/debuff; helper Charoite
+  protection không được gọi. Đây là config/helper chưa nối vào gameplay, không
+  phải lỗi bảo vệ của một đòn đánh đang hoạt động.
+- Chunk benchmark tạm có thể bật bằng
+  `debug.chunk-generation-metrics.enabled: true`; log đo thời gian tạo chunk và
+  số operation attempts. Mặc định tắt. Đây là phép đo thô ở cấp generation
+  stage/điểm thử bề mặt, chưa phải bộ profiler BlockPopulator.
+- Kiểm chứng live Paper server và các provider Nexo/ItemsAdder/Oraxen/MythicMobs/
+  EliteMobs/ModelEngine còn cần thực hiện trên server cài các plugin đó.
+- GitHub Actions từng fail do `gradlew` thiếu executable bit trên Linux runner;
+  sau commit `87241ed`, run CI đã xanh. Các commit mới sau đó cũng tự kích hoạt
+  workflow; kiểm tra trạng thái run mới nhất trong GitHub trước khi release.
+- Tài liệu provenance/giấy phép đang được rà soát trong IMPLEMENTATION_REPORT.md;
+  không thêm LICENSE toàn repo khi chưa có xác nhận của chủ sở hữu.
 
 ## 9. Git và release
 

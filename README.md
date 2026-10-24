@@ -43,7 +43,8 @@ provider is configured; 27.1 compatibility remains unverified.
 - Charoite and Siftite progression: tagged ore drops, ingot/nugget recipes,
   smithing upgrades for armor/tools, and Siftite item diagnostics.
 - Singer resonance slice: persistent Singer-tagged Allay prototype, timed
-  sonic pulses, Charoite protection, boss bars, drops, and summon diagnostics.
+  cosmetic sonic pulses, boss bars, drops, and summon diagnostics. Charoite
+  protection is not active while the pulse has no damage/debuff effect.
 - `/sift doctor` to inspect enabled content flags.
 - `/sift reload` with migration validation.
 - The Sift dimension with five custom biomes, entered with `/sift dimension`
