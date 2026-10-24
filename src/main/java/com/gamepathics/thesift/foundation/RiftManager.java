@@ -74,6 +74,7 @@ public final class RiftManager implements Listener {
         ItemMeta meta = key.getItemMeta();
         meta.setDisplayName("§5§lRift Key");
         meta.setCustomModelData(1);
+        meta.setItemModel(NamespacedKey.fromString("thesift:rift_key"));
         meta.getPersistentDataContainer().set(riftKey, PersistentDataType.STRING, RIFT_KEY_ID);
         key.setItemMeta(meta);
         return key;
@@ -151,7 +152,7 @@ public final class RiftManager implements Listener {
             phase = 0;
             center.getWorld().playSound(center, Sound.BLOCK_PORTAL_AMBIENT, 1.0f, 0.5f);
             center.getWorld().spawnParticle(Particle.PORTAL, center.clone().add(0, 1, 0), 50, 2, 2, 2, 0.1);
-            opener.sendMessage("§5The rift begins to tear open...");
+            notifyOpener("§5The rift begins to tear open...");
             
             // Schedule opening progression
             new BukkitRunnable() {
@@ -178,7 +179,7 @@ public final class RiftManager implements Listener {
             center.getWorld().playSound(center, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.5f, 0.7f);
             center.getWorld().spawnParticle(Particle.EXPLOSION, center.clone().add(0, 1, 0), 5);
             center.getWorld().spawnParticle(Particle.DRAGON_BREATH, center.clone().add(0, 1, 0), 100, 3, 3, 3, 0.2);
-            opener.sendMessage("§5§lTHE RIFT HAS OPENED! §r§5Something stirs within...");
+            notifyOpener("§5§lTHE RIFT HAS OPENED! §r§5Something stirs within...");
 
             // Spawn initial mobs
             spawnRiftMobs(3);
@@ -234,7 +235,7 @@ public final class RiftManager implements Listener {
             stateTimer = 0;
             center.getWorld().playSound(center, Sound.BLOCK_PORTAL_AMBIENT, 1.0f, 0.8f);
             center.getWorld().spawnParticle(Particle.REVERSE_PORTAL, center.clone().add(0, 1, 0), 100, 3, 3, 3, 0.2);
-            opener.sendMessage("§5The rift begins to seal...");
+            notifyOpener("§5The rift begins to seal...");
 
             new BukkitRunnable() {
                 @Override
@@ -257,7 +258,7 @@ public final class RiftManager implements Listener {
             center.getWorld().playSound(center, Sound.ENTITY_ENDER_DRAGON_DEATH, 1.0f, 0.5f);
             center.getWorld().spawnParticle(Particle.EXPLOSION, center.clone().add(0, 1, 0), 3);
             center.getWorld().spawnParticle(Particle.SMOKE, center.clone().add(0, 1, 0), 50, 2, 2, 2, 0.1);
-            opener.sendMessage("§5The rift has sealed. §7Rewards await the brave...");
+            notifyOpener("§5The rift has sealed. §7Rewards await the brave...");
 
             // Drop rewards
             dropRewards();
@@ -292,6 +293,10 @@ public final class RiftManager implements Listener {
             if (state == RiftState.ACTIVE && ThreadLocalRandom.current().nextDouble() < 0.1) {
                 center.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, center.clone().add(0, 1, 0), 5, 1, 1, 1, 0.02);
             }
+        }
+
+        private void notifyOpener(String message) {
+            if (opener != null && opener.isOnline()) opener.sendMessage(message);
         }
     }
 }

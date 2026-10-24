@@ -19,12 +19,12 @@ it when validating another Paper API version:
 gradle build -PpaperApiVersion=<paper-api-version>
 ```
 
-The plugin packages a small dimension datapack and registers it through
-Paper's datapack-discovery lifecycle. This requires Paper's plugin loader and
-Paper 26.3 or newer. The prototype uses the vanilla Meadow biome and Overworld
-terrain with custom Sift dimension visuals; the larger, unfinished biome pack
-is kept separate so its missing worldgen features do not prevent the server
-from loading.
+The plugin registers its dimension datapack through Paper's datapack-discovery
+lifecycle. This requires Paper's plugin loader and Paper 26.3 or newer. The
+dimension now selects among Pink Meadows, Bulb Forest, Carapace, Crystal Spires,
+and Shattered Peaks, and has its own sky, fog, and ambient settings. The first
+prototype uses vanilla Overworld noise and vanilla block/entity substitutes;
+27.1 compatibility remains unverified until Mojang publishes that release.
 
 ## Current foundation scope
 
@@ -41,8 +41,22 @@ from loading.
   sonic pulses, Charoite protection, boss bars, drops, and summon diagnostics.
 - `/sift doctor` to inspect enabled content flags.
 - `/sift reload` with migration validation.
-- The Sift custom dimension prototype, entered with `/sift dimension` and left
-  with `/sift return`.
+- The Sift dimension with five custom biomes, entered with `/sift dimension`
+  and left with `/sift return`.
+- First-load biome decoration: cherry groves, mossy bulb forests, crystal
+  spires, shattered stone fields, and Carapace shell landmarks.
+- Vanilla-entity stand-ins for mod creatures, with named Loomers, Wisps,
+  Glimmerwings, Sunspores, Hollow Bulbs, Prismites, Shardlings, Thornbacks,
+  Blubs, Frost Stalkers, and Drifters. Singer, Echo Golem, Prism Warden, and
+  The Sifter encounters can also appear naturally in selected biomes.
+- Rare natural Rift events in Shattered Peaks, using the existing opening,
+  wave, resonance-pulse, closing, and reward flow.
+- A cycling Sift Tide that changes movement/mining effects for players and
+  nearby creatures.
+- The bundled Java item/block model assets can be built into
+  `build/distributions/TheSift-resource-pack.zip` with
+  `gradle siftResourcePack`; players must install or be served the pack to see
+  those custom models.
 
 Portal, mob, Ichor, and Rift behavior are being migrated into the source
 registry in vertical slices. Do not install an older TheSift jar alongside
@@ -51,9 +65,12 @@ this build because both use the `TheSift` plugin identity.
 ## The Sift dimension prototype
 
 The Java datapack model was cross-checked against the Fabric reference mod
-`The Sift 1.1.2` (Minecraft 26.3), recovered from this repository's initial
-history, and the Paper datapack-discovery documentation. The plugin supplies
-the dimension data itself; it does not load or require the Fabric mod.
+`The Sift 1.1.2` (Minecraft 26.3), the repository's existing biome and asset
+files, the Paper datapack-discovery documentation, and Mojang's announcement.
+The plugin supplies its own datapack; it does not load or require the Fabric
+mod. The announced Java/Bedrock release has not shipped its official worldgen,
+so current terrain and creatures are gameplay approximations built from
+vanilla blocks and entities.
 
 On Paper 26.3+, use `/sift dimension` to create/load and enter the dimension.
 The console command creates/loads it without a player; players can enter with
@@ -62,10 +79,12 @@ the same command. Use `/sift return` to return to the Overworld spawn.
 the vanilla Meadow biome and Overworld terrain settings, so custom Sift blocks
 and the Fabric mod's bespoke terrain noise are not required.
 
-Minecraft's September 2026 announcement says The Sift is planned for Java and
-Bedrock next year, but does not publish a 27.1 datapack schema or Paper API.
-Recheck the dimension data against the official 27.1 release before claiming
-compatibility with that version.
+Mojang has named Meadows and Carapace and described new mobs, hazardous blocks,
+and shifting tides. The Java/Bedrock announcement does not publish final
+27.1 worldgen, item, mob, or API definitions. This prototype's remaining named
+biomes and creatures come from the repository's mod reference and are not
+claims about Mojang's final release. Recheck the pack against 27.1 before
+claiming compatibility.
 
 ## Ichor v2 test flow
 

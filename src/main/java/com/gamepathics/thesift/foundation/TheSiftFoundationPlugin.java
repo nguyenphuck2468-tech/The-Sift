@@ -19,6 +19,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     private EchoGolemManager echoGolemManager;
     private RiftManager riftManager;
     private SiftDimensionManager siftDimensionManager;
+    private SiftEcologyManager siftEcologyManager;
 
     @Override
     public void onEnable() {
@@ -68,6 +69,9 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         }
         if (contentRegistry.isEnabled(ContentId.SIFT_DIMENSION)) {
             siftDimensionManager = new SiftDimensionManager(this);
+            siftEcologyManager = new SiftEcologyManager(this, resonanceManager, echoGolemManager, riftManager);
+            getServer().getPluginManager().registerEvents(siftEcologyManager, this);
+            siftEcologyManager.populateLoadedSpawnChunks();
         }
         getLogger().info("The Sift foundation enabled for Minecraft "
                 + getConfig().getString("compatibility.minecraft-target", "unknown") + ".");
@@ -86,6 +90,9 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         }
         if (riftManager != null) {
             riftManager.shutdown();
+        }
+        if (siftEcologyManager != null) {
+            siftEcologyManager.shutdown();
         }
     }
 
@@ -173,6 +180,21 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             sender.sendMessage("Gave Ichor Bottle to " + target.getName() + ".");
             return true;
         }
+        if (args.length == 3 && args[0].equalsIgnoreCase("give")
+                && args[1].equalsIgnoreCase("rift_key")) {
+            if (riftManager == null) {
+                sender.sendMessage("Rift content is disabled.");
+                return true;
+            }
+            Player target = getServer().getPlayerExact(args[2]);
+            if (target == null) {
+                sender.sendMessage("Player not found.");
+            } else {
+                target.getInventory().addItem(riftManager.createRiftKey());
+                sender.sendMessage("Gave Rift Key to " + target.getName() + ".");
+            }
+            return true;
+        }
         if (args.length == 3 && args[0].equalsIgnoreCase("give")) {
             if (siftiteContent == null) {
                 sender.sendMessage("Charoite/Siftite content is disabled.");
@@ -236,21 +258,6 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                 riftManager.openRift(target.getLocation().add(0, 1, 0), target);
                 sender.sendMessage("Opened a Rift near " + target.getName() + ".");
             }
-            return true;
-        }
-        if (args.length == 2 && args[0].equalsIgnoreCase("give")
-                && args[1].equalsIgnoreCase("rift_key")) {
-            if (riftManager == null) {
-                sender.sendMessage("Rift content is disabled.");
-                return true;
-            }
-            Player target = getServer().getPlayerExact(args[2]);
-            if (target == null) {
-                sender.sendMessage("Player not found.");
-                return true;
-            }
-            target.getInventory().addItem(riftManager.createRiftKey());
-            sender.sendMessage("Gave Rift Key to " + target.getName() + ".");
             return true;
         }
         sender.sendMessage("Usage: /sift <doctor|reload|dimension|return|give|summon singer|summon echo_golem|summon rift|give rift_key>");

@@ -40,6 +40,14 @@ jar {
     archiveBaseName = "TheSift-foundation"
 }
 
+tasks.register("siftResourcePack", Zip) {
+    group = "distribution"
+    description = "Builds the Java resource pack for the Sift item and block models."
+    archiveFileName = "TheSift-resource-pack.zip"
+    destinationDirectory = layout.buildDirectory.dir("distributions")
+    from("src/main/resources/pack")
+}
+
 test {
     useJUnitPlatform()
     testLogging {

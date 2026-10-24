@@ -59,6 +59,11 @@ public final class SiftiteContent {
         ItemMeta meta = result.getItemMeta();
         meta.setDisplayName("§d" + name);
         meta.getPersistentDataContainer().set(idKey, PersistentDataType.STRING, id);
+        try (var modelFile = plugin.getResource("pack/assets/thesift/items/" + id + ".json")) {
+            if (modelFile != null) meta.setItemModel(NamespacedKey.fromString("thesift:" + id));
+        } catch (java.io.IOException exception) {
+            plugin.getLogger().fine("Could not inspect item model for " + id + ": " + exception.getMessage());
+        }
         if (id.startsWith("siftite_") && !id.equals("siftite_upgrade_smithing_template")) {
             addAttributes(meta, id);
         }
@@ -73,7 +78,7 @@ public final class SiftiteContent {
     }
 
     public ItemStack forId(String id) {
-        return switch (id) {
+        ItemStack foundationItem = switch (id) {
             case "charoite" -> item(Material.AMETHYST_SHARD, id, "Charoite");
             case "charoite_ore" -> item(Material.AMETHYST_BLOCK, id, "Charoite Ore");
             case "siftite_nugget" -> item(Material.IRON_NUGGET, id, "Siftite Nugget");
@@ -92,6 +97,77 @@ public final class SiftiteContent {
             case "siftite_boots" -> item(Material.NETHERITE_BOOTS, id, "Siftite Boots");
             default -> null;
         };
+        if (foundationItem != null) return foundationItem;
+
+        Material material = switch (id) {
+            case "siftslate" -> Material.DEEPSLATE;
+            case "sift_soil" -> Material.ROOTED_DIRT;
+            case "sift_grass", "healthy_sculk" -> id.equals("healthy_sculk") ? Material.SCULK : Material.MOSS_BLOCK;
+            case "sift_log", "overgrown_willow" -> Material.CHERRY_LOG;
+            case "sift_leaves" -> Material.CHERRY_LEAVES;
+            case "sift_planks" -> Material.CHERRY_PLANKS;
+            case "siftstone" -> Material.TUFF;
+            case "siftstone_bricks" -> Material.TUFF_BRICKS;
+            case "chiseled_siftstone", "sift_altar" -> Material.CHISELED_DEEPSLATE;
+            case "shard_ore", "charoite_ore" -> Material.AMETHYST_BLOCK;
+            case "rift_gate" -> Material.CRYING_OBSIDIAN;
+            case "sift_shard", "spire_fragment", "charoite" -> Material.AMETHYST_SHARD;
+            case "sky_fragment" -> Material.PHANTOM_MEMBRANE;
+            case "frost_fragment" -> Material.PRISMARINE_SHARD;
+            case "sift_core", "heart_of_the_sift" -> Material.ECHO_SHARD;
+            case "sift_catalyst" -> Material.BLAZE_POWDER;
+            case "sift_crown" -> Material.GOLDEN_HELMET;
+            case "raw_loomer" -> Material.RABBIT;
+            case "cooked_loomer" -> Material.COOKED_RABBIT;
+            case "bulb_glow" -> Material.GLOWSTONE_DUST;
+            case "shard_sword", "prism_blade" -> Material.NETHERITE_SWORD;
+            case "shard_pickaxe" -> Material.NETHERITE_PICKAXE;
+            case "shard_axe" -> Material.NETHERITE_AXE;
+            case "prism_helmet" -> Material.NETHERITE_HELMET;
+            case "prism_chestplate" -> Material.NETHERITE_CHESTPLATE;
+            case "prism_leggings" -> Material.NETHERITE_LEGGINGS;
+            case "prism_boots" -> Material.NETHERITE_BOOTS;
+            case "phase_boots" -> Material.DIAMOND_BOOTS;
+            case "rift_key" -> Material.TRIAL_KEY;
+            case "bulb" -> Material.SLIME_BALL;
+            case "wisp", "violet_wisp" -> Material.ALLAY_SPAWN_EGG;
+            case "koi" -> Material.TROPICAL_FISH_SPAWN_EGG;
+            case "hollow_bulb" -> Material.ZOMBIE_SPAWN_EGG;
+            case "glowbell" -> Material.BAT_SPAWN_EGG;
+            case "thornback" -> Material.TURTLE_SPAWN_EGG;
+            case "glimmerwing" -> Material.BEE_SPAWN_EGG;
+            case "the_sifter" -> Material.RAVAGER_SPAWN_EGG;
+            case "frost_stalker" -> Material.STRAY_SPAWN_EGG;
+            case "sunspore" -> Material.MOOSHROOM_SPAWN_EGG;
+            case "drifter" -> Material.ENDERMAN_SPAWN_EGG;
+            case "shardling" -> Material.ENDERMITE_SPAWN_EGG;
+            case "prism_warden" -> Material.WARDEN_SPAWN_EGG;
+            case "lumen_tulip" -> Material.TORCHFLOWER_SEEDS;
+            case "prismite" -> Material.SILVERFISH_SPAWN_EGG;
+            case "loomer" -> Material.RABBIT_SPAWN_EGG;
+            default -> null;
+        };
+        if (material == null) return null;
+        String displayName = switch (id) {
+            case "sift_grass" -> "Sift Grass";
+            case "sift_log" -> "Sift Log";
+            case "sift_leaves" -> "Sift Leaves";
+            case "sift_planks" -> "Sift Planks";
+            case "sift_core" -> "Heart of the Sift";
+            case "prism_warden" -> "Prism Warden Spawn Egg";
+            case "lumen_tulip" -> "Lumen Tulip Seeds";
+            default -> title(id);
+        };
+        return item(material, id, displayName);
+    }
+
+    private String title(String id) {
+        StringBuilder title = new StringBuilder();
+        for (String word : id.split("_")) {
+            if (!title.isEmpty()) title.append(' ');
+            title.append(word.substring(0, 1).toUpperCase(Locale.ROOT)).append(word.substring(1));
+        }
+        return title.toString();
     }
 
     private void registerSmithing(Server server, String key, Material base, Material outputBase,

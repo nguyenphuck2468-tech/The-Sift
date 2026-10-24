@@ -93,3 +93,6 @@ siftite:
 
 compatibility:
   minecraft-target: "27.1 (planned)"
+
+sift-world:
+  tide-period-seconds: 120

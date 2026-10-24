@@ -179,10 +179,17 @@ Các lệnh yêu cầu permission `thesift.foundation.admin`, mặc định là 
 - Singer đang dùng Allay prototype.
 - Chưa có Echo Golem.
 - Chưa có Rift event/persistence/reward.
-- Dimension The Sift prototype dùng Meadow biome và Overworld terrain
-  generator; chưa có noise settings, block custom hay portal block của Fabric
-  mod. Biome pack đầy đủ vẫn được giữ riêng vì các worldgen feature tham chiếu
-  chưa được đăng ký và hiện khiến registry load lỗi.
+- Dimension The Sift hiện có năm custom biome (Pink Meadows, Bulb Forest,
+  Carapace, Crystal Spires, Shattered Peaks), multi-noise biome selection,
+  vanilla Overworld noise, biome color, procedural surface decoration, mob
+  proxies, Singer/Echo Golem/Prism Warden/The Sifter encounters, natural Rift
+  events, and a cycling Sift Tide.
+  Terrain and entities use vanilla substitutes and are an intentionally rough
+  prototype, not 27.1 parity.
+- Resource pack assets are bundled under `src/main/resources/pack`; use
+  `gradle siftResourcePack` to produce
+  `build/distributions/TheSift-resource-pack.zip`. Players need the pack
+  installed/served for custom item models to render.
 - Unit tests có trong source nhưng 25/31 hiện fail trong môi trường test do lỗi
   khởi tạo Mockito; build JAR và Paper server smoke test chạy được.
 - `reload` hiện reload config/flags nhưng không teardown và đăng ký lại toàn bộ
@@ -192,7 +199,7 @@ Các lệnh yêu cầu permission `thesift.foundation.admin`, mặc định là 
 
 ## 7.1 Dimension prototype
 
-Dimension files live at `src/main/resources/sift_dimension_datapack/`.
+Dimension and biome files live at `src/main/resources/sift_dimension_datapack/`.
 `TheSiftBootstrap` registers this isolated bundled datapack as
 `TheSift/dimension`; `/sift dimension` creates/loads the world using the
 `thesift:the_sift` key. This follows Paper's datapack-discovery lifecycle and
@@ -204,6 +211,9 @@ Reference material reviewed:
 - The repository's historical Fabric reference archive `The Sift 1.1.2`
   (26.3), including its `dimension/the_sift.json` and
   `dimension_type/the_sift.json` definitions.
+- Existing plugin resources under `src/main/resources/datapack` and
+  `src/main/resources/pack` for biome colors, worldgen ideas, item models, and
+  mob model assets.
 - Paper datapack discovery docs:
   https://docs.papermc.io/paper/dev/lifecycle/datapacks/
 - Paper world creation API:
