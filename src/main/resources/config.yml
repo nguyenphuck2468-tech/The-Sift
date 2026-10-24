@@ -100,8 +100,14 @@ integrations:
     # auto discovers API services, then tries Nexo, ItemsAdder, and Oraxen.
     provider: auto
   mobs:
-    # auto discovers SiftMobProvider services, then uses MythicMobs if available.
+    # auto discovers API services, then tries MythicMobs and configured EliteMobs bosses.
     provider: auto
+    elitemobs:
+      level: 1
+      definitions: {}
+    modelengine:
+      # Map Sift IDs to installed ModelEngine model IDs, for example prism_warden: sift:prism_warden.
+      models: {}
 
 sift-world:
   tide-period-seconds: 120

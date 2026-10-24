@@ -43,6 +43,7 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey decoratedChunkKey;
     private final NamespacedKey creatureKey;
     private final MythicMobBridge mythicMobs;
+    private final ModelEngineBridge modelEngine;
     private final BukkitTask tideTask;
     private long tideTick;
 
@@ -55,6 +56,7 @@ public final class SiftEcologyManager implements Listener {
         this.decoratedChunkKey = new NamespacedKey(plugin, "sift_ecology_generated");
         this.creatureKey = new NamespacedKey(plugin, "sift_creature");
         this.mythicMobs = new MythicMobBridge(plugin);
+        this.modelEngine = new ModelEngineBridge(plugin);
         this.tideTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             tickTide();
             tickIchorWeather();
@@ -440,6 +442,7 @@ public final class SiftEcologyManager implements Listener {
             entity.setCustomName("§d" + name);
             entity.setCustomNameVisible(random.nextInt(4) == 0);
             entity.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING, mobId);
+            modelEngine.attach(entity, mobId);
             if (entity instanceof LivingEntity living && (type == EntityType.ZOMBIE || type == EntityType.VEX
                     || type == EntityType.SILVERFISH || type == EntityType.ENDERMITE)) {
                 living.setRemoveWhenFarAway(false);
@@ -492,6 +495,7 @@ public final class SiftEcologyManager implements Listener {
         entity.setCustomName("§5§l" + name);
         entity.setCustomNameVisible(true);
         entity.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING, id);
+        modelEngine.attach(entity, id);
         if (entity instanceof LivingEntity living) {
             living.setRemoveWhenFarAway(false);
             if (living.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH) != null) {
@@ -556,6 +560,7 @@ public final class SiftEcologyManager implements Listener {
         entity.setCustomName((boss ? "§5§l" : "§d") + display);
         entity.setCustomNameVisible(true);
         entity.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING, id);
+        modelEngine.attach(entity, id);
         if (entity instanceof LivingEntity living) {
             living.setRemoveWhenFarAway(false);
             if (boss) {

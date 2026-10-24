@@ -37,7 +37,17 @@ final class MythicMobBridge {
                 }
             }
         }
-        if (!configured.equals("auto") && !configured.equals("mythicmobs")) return null;
+        if (configured.equals("auto") || configured.equals("mythicmobs")) {
+            Entity mythic = spawnMythic(id, location);
+            if (mythic != null) return mythic;
+        }
+        if (configured.equals("auto") || configured.equals("elitemobs")) {
+            return spawnEliteBoss(id, location);
+        }
+        return null;
+    }
+
+    private Entity spawnMythic(String id, Location location) {
         if (!plugin.getServer().getPluginManager().isPluginEnabled("MythicMobs")) return null;
         try {
             Class<?> mythicBukkit = Class.forName("io.lumine.mythic.bukkit.MythicBukkit");
@@ -65,6 +75,26 @@ final class MythicMobBridge {
             return bukkitEntity instanceof Entity entity ? entity : null;
         } catch (ReflectiveOperationException | LinkageError exception) {
             plugin.getLogger().warning("MythicMobs could not spawn " + id + "; using vanilla fallback: "
+                    + exception.getMessage());
+            return null;
+        }
+    }
+
+    private Entity spawnEliteBoss(String id, Location location) {
+        if (!plugin.getServer().getPluginManager().isPluginEnabled("EliteMobs")) return null;
+        String file = plugin.getConfig().getString("integrations.mobs.elitemobs.definitions." + id, "");
+        if (file.isBlank()) return null;
+        try {
+            Class<?> bossType = Class.forName(
+                    "com.magmaguy.elitemobs.mobconstructor.custombosses.CustomBossEntity");
+            Object boss = bossType.getMethod("createCustomBossEntity", String.class).invoke(null, file);
+            if (boss == null) return null;
+            bossType.getMethod("spawn", Location.class, int.class, boolean.class).invoke(boss, location,
+                    plugin.getConfig().getInt("integrations.mobs.elitemobs.level", 1), true);
+            Object livingEntity = bossType.getMethod("getLivingEntity").invoke(boss);
+            return livingEntity instanceof Entity entity ? entity : null;
+        } catch (ReflectiveOperationException | LinkageError exception) {
+            plugin.getLogger().warning("EliteMobs could not spawn configured Sift boss " + id + ": "
                     + exception.getMessage());
             return null;
         }

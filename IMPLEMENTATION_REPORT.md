@@ -18,9 +18,13 @@ Target: Minecraft 27.1 is planned, not released or verified.
 - Added a reflection-based MythicMobs spawn bridge. Configured IDs are used for
   natural Sift wildlife and summon commands; missing IDs retain the Bukkit
   entity fallback. Added starter definitions for the named creatures.
-- ModelEngine is documented as an optional future rendering integration. The
-  current entity JSON assets are not ModelEngine/Blockbench models and are not
-  claimed to render as animated custom entities.
+- Added an EliteMobs custom-boss API bridge configured by Sift ID and a
+  ModelEngine API bridge that attaches server-provided model IDs to spawned
+  entities. Both remain optional and require user-provided plugin configs or
+  compatible model assets.
+- Added `SiftMobProvider` so other mob plugins can provide entities without a
+  direct dependency. The current entity JSON assets are not ModelEngine or
+  Blockbench model files and are not claimed to render as animated mobs.
 - Deferred: provider item configs cover the bundled custom item models and key
   progression/Ichor items; provider-specific custom block mechanics are not
   wired into the current Bukkit block-placement handlers. Provider runtime

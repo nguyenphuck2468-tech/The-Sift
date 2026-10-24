@@ -19,3 +19,9 @@ dependencies:
     MythicMobs:
       load: AFTER
       required: false
+    EliteMobs:
+      load: AFTER
+      required: false
+    ModelEngine:
+      load: AFTER
+      required: false

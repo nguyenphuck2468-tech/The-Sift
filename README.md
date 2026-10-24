@@ -137,12 +137,35 @@ Install **MythicMobs** if you want editable mob definitions and stats. Copy
 `integrations/mythicmobs/Mobs/TheSift.yml` into `plugins/MythicMobs/Mobs/` and
 run `/mm reload`. The bridge spawns a configured Mythic mob by its lowercase
 Sift ID; missing definitions automatically fall back to the Bukkit entity
-prototype. Nexo/ItemsAdder/Oraxen handle items and resource packs; MythicMobs handles
-mob configuration. **ModelEngine is not a required dependency currently**:
-the repository's entity JSON files are not ModelEngine/Blockbench model files,
-so they cannot be attached as animated custom mobs without conversion and
-ModelEngine-specific assets. The available config and API integration do not
-claim those mob models are already rendered in game.
+prototype.
+
+**EliteMobs** is also supported for bosses. Put a custom boss file in
+`plugins/EliteMobs/custombosses/`, then map its filename in The Sift config.
+For example:
+
+```yaml
+integrations:
+  mobs:
+    provider: elitemobs
+    elitemobs:
+      definitions:
+        prism_warden: sift_prism_warden.yml
+```
+
+With `auto`, MythicMobs gets first chance and EliteMobs is tried for configured
+IDs afterward.
+
+**ModelEngine** can attach models to spawned Sift entities. Install/import your
+ModelEngine model pack, then map IDs such as
+`sift:prism_warden` to `integrations.mobs.modelengine.models.prism_warden`.
+ModelEngine only supplies rendering; MythicMobs, EliteMobs, or a registered
+`SiftMobProvider` supplies the entity and behavior. The repository's current
+entity JSON files are not ModelEngine model assets, so they need conversion or
+replacement before ModelEngine can display them.
+
+Nexo/ItemsAdder/Oraxen handle items and resource packs; MythicMobs and
+EliteMobs handle custom mobs/bosses; ModelEngine adds custom mob rendering.
+These are optional integrations, each with its own supported role.
 
 ## The Sift dimension prototype
 
