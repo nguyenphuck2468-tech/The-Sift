@@ -74,7 +74,7 @@ ichor:
 
 charoite:
   enabled: true
-  material: AMETHYST_SHARD
+  material: LAPIS_LAZULI
   ore-material: AMETHYST_BLOCK
   drop-min: 1
   drop-max: 2
