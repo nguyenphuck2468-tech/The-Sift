@@ -251,7 +251,7 @@ license/attribution statement.
 | ItemsAdder block ID | Detection now compares `CustomBlock.byAlreadyPlaced(block).getNamespacedID()` to `integrations.blocks.definitions.<contentId>`; unrelated ItemsAdder blocks no longer match. | Fixture tests exact match and mismatch. Full local build passed. No ItemsAdder server installed/tested. |
 | Chunk decoration marker | PDC state is now `in progress` while decorating and `complete` only after success. Runtime failure removes marker, removes entities created during the attempt, logs, and allows retry. Singer/Echo Golem/Rift spawns now execute in the synchronous chunk-load path, so a failed attempt cannot leave those spawns queued for a later tick. An abrupt process stop with in-progress state retries on next chunk load. Partial block placements from an exception are not transactionally rolled back; deterministic placement makes retry possible but is not a full rollback guarantee. | Unit test injects failure, checks marker cleared, retries, then checks completion and idempotent skip. Full local build passed. No server crash/restart simulation. |
 | Config audit | Completed; see table below. No config keys were deleted. | Source/config inspection. No dedicated config-audit unit test. |
-| CI / artifact | Runner pinned to `ubuntu-24.04`; actions updated to checkout v7, setup-java v5, setup-gradle v6, upload-artifact v7. Wrapper performs one `clean build`. Paper JAR contains 558 entries: 33 classes, 401 JSON, 63 PNG, and 61 other files. Complete entry list: [`docs/step1-paper-jar-inventory.txt`](docs/step1-paper-jar-inventory.txt). Neither `TheSiftGeyser.jar.embedded` nor any `.jar`/`.embedded` entry is present. JAR SHA-256: `4eb863bae881b9ba4aa15578df072a9ce49263f735ae572bd7e3e9e3fb9ec476`. | Full local `clean build` passed (52/52 tests); JAR entry listing inspected. GitHub CI is pending for the follow-up commits. No server test. |
+| CI / artifact | Runner pinned to `ubuntu-24.04`; actions updated to checkout v7, setup-java v5, setup-gradle v6, upload-artifact v7. Wrapper performs one `clean build`. Paper JAR contains 558 entries: 33 classes, 401 JSON, 63 PNG, and 61 other files. Complete entry list: [`docs/step1-paper-jar-inventory.txt`](docs/step1-paper-jar-inventory.txt). Neither `TheSiftGeyser.jar.embedded` nor any `.jar`/`.embedded` entry is present. JAR SHA-256: `4eb863bae881b9ba4aa15578df072a9ce49263f735ae572bd7e3e9e3fb9ec476`. | Full local `clean build` passed (52/52 tests); GitHub Actions run `40086207489` passed for source/report commit `0140842`. No server test. |
 | NOTICE / license | Added [`NOTICE.draft.md`](NOTICE.draft.md) as a provenance note only; it makes no project-wide license claim. No `LICENSE` was created. | Manual review against available repo history and source notes. |
 
 ### Config key audit
@@ -304,10 +304,15 @@ java v5, change that step to v6 in a separate CI-only commit.
 
 ### Commits and verification state
 
-Commit hashes and GitHub workflow URL are recorded in the final phase response
-after pushing. Current local verification: `clean build` passed, including all
-unit tests; GitHub CI and server-real verification are not yet established for
-these changes.
+Pushed follow-up commits: `1199aba31f2875f3a633aabd3f33ff3ebb7d06cc`
+(Singer combat), `73d05eee5306cebf318ad37fda6c74939080c2fc` (remove unused
+Rift block handler), `40a332b3252da92e95c4a3487ebf4b9ccc1c8e45` (ItemsAdder
+ID check), `fe832c57ef3782caab567ce6e32e5c01544a0acc` (chunk completion
+state), `d7dd35479e469315ebcf6a19c7ccfd43cbd20872` (exclude Geyser binary and
+inventory Paper JAR), `648276bf57ddb7300a69ccef259a63d68b6bc685` (CI actions and
+runner), and `0140842b8e71dfeeae6c9dbb0beadff65a10db8c` (report, handoff,
+NOTICE draft). Local clean build passed all 52 tests; GitHub Actions run
+`40086207489` passed for `0140842`. No live server verification was performed.
 
 ## Gradle/Mockito root-cause capture (2026-10-24, before remediation)
 
