@@ -20,11 +20,13 @@ final class SonorousBlockRegistry {
 
     private final NamespacedKey chunkKey;
     private final NamespacedKey legacyWorldKey;
+    private final NamespacedKey migrationCompleteKey;
     private final ExternalBlockBridge blockBridge;
 
     SonorousBlockRegistry(JavaPlugin plugin) {
         chunkKey = new NamespacedKey(plugin, "sonorous_deepslate_positions_v2");
         legacyWorldKey = new NamespacedKey(plugin, "sonorous_deepslate_positions");
+        migrationCompleteKey = new NamespacedKey(plugin, "sonorous_deepslate_migration_complete_v2");
         blockBridge = new ExternalBlockBridge(plugin);
     }
 
@@ -90,6 +92,8 @@ final class SonorousBlockRegistry {
      */
     private void migrateLegacyChunk(Chunk chunk) {
         World world = chunk.getWorld();
+        if (world.getPersistentDataContainer().getOrDefault(migrationCompleteKey,
+                PersistentDataType.BYTE, (byte) 0) == (byte) 1) return;
         UUID worldId = world.getUID();
         LegacyIndex index;
         synchronized (LEGACY_INDICES) {
@@ -113,6 +117,7 @@ final class SonorousBlockRegistry {
         }
         if (complete) {
             world.getPersistentDataContainer().remove(legacyWorldKey);
+            world.getPersistentDataContainer().set(migrationCompleteKey, PersistentDataType.BYTE, (byte) 1);
             synchronized (LEGACY_INDICES) {
                 LEGACY_INDICES.remove(worldId, index);
             }

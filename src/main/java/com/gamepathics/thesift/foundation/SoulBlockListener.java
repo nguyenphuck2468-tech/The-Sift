@@ -12,6 +12,7 @@ import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
+import org.bukkit.block.BlockFace;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.inventory.ItemStack;
@@ -66,10 +67,15 @@ public final class SoulBlockListener implements Listener {
         Block block = event.getBlock();
         if (!isMarked(block) || block.getType() != Material.SOUL_SAND
                 && !blockBridge.isBlock(ID, block)) return;
+        ItemStack drop = content.forId(ID);
+        if (drop == null) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage("Soul Block item is unavailable from the configured provider. Run /sift doctor.");
+            return;
+        }
         remove(block);
         event.setDropItems(false);
-        block.getWorld().dropItemNaturally(block.getLocation(),
-                content.forId(ID));
+        block.getWorld().dropItemNaturally(block.getLocation(), drop);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
@@ -85,12 +91,35 @@ public final class SoulBlockListener implements Listener {
     public void onEntityChangeBlock(EntityChangeBlockEvent event) { remove(event.getBlock()); }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-    public void onPistonExtend(BlockPistonExtendEvent event) { event.getBlocks().forEach(this::remove); }
+    public void onPistonExtend(BlockPistonExtendEvent event) {
+        transferPistonMarkers(event.getBlocks(), event.getDirection(), false);
+    }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
-    public void onPistonRetract(BlockPistonRetractEvent event) { event.getBlocks().forEach(this::remove); }
+    public void onPistonRetract(BlockPistonRetractEvent event) {
+        transferPistonMarkers(event.getBlocks(), event.getDirection(), true);
+    }
 
-    private boolean isMarked(Block block) {
+    private void transferPistonMarkers(java.util.List<Block> blocks, BlockFace direction, boolean retract) {
+        BlockFace movement = movementDirection(direction, retract);
+        for (Block source : blocks) {
+            if (!isMarked(source)) continue;
+            Block destination = source.getRelative(movement);
+            Material expectedMaterial = source.getType();
+            remove(source);
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                if (destination.getType() == expectedMaterial || blockBridge.isBlock(ID, destination)) {
+                    mark(destination);
+                }
+            });
+        }
+    }
+
+    static BlockFace movementDirection(BlockFace direction, boolean retract) {
+        return retract ? direction.getOppositeFace() : direction;
+    }
+
+    boolean isMarked(Block block) {
         String value = block.getChunk().getPersistentDataContainer().get(positionsKey, PersistentDataType.STRING);
         return value != null && Arrays.asList(value.split(";")).contains(key(block));
     }

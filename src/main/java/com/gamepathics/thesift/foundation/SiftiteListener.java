@@ -11,6 +11,7 @@ import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
+import org.bukkit.block.BlockFace;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.inventory.ItemStack;
@@ -77,12 +78,27 @@ public final class SiftiteListener implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onSonorousPistonExtend(BlockPistonExtendEvent event) {
-        event.getBlocks().forEach(sonorousBlocks::remove);
+        transferSonorousMarkers(event.getBlocks(), event.getDirection(), false);
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
     public void onSonorousPistonRetract(BlockPistonRetractEvent event) {
-        event.getBlocks().forEach(sonorousBlocks::remove);
+        transferSonorousMarkers(event.getBlocks(), event.getDirection(), true);
+    }
+
+    private void transferSonorousMarkers(java.util.List<Block> blocks, BlockFace direction, boolean retract) {
+        BlockFace movement = SoulBlockListener.movementDirection(direction, retract);
+        for (Block source : blocks) {
+            if (!sonorousBlocks.contains(source)) continue;
+            Block destination = source.getRelative(movement);
+            Material expectedMaterial = source.getType();
+            sonorousBlocks.remove(source);
+            plugin.getServer().getScheduler().runTask(plugin, () -> {
+                if (destination.getType() == expectedMaterial
+                        || blockBridge.isBlock("sonorous_deepslate", destination)
+                        || blockBridge.isBlock("siftslate", destination)) sonorousBlocks.mark(destination);
+            });
+        }
     }
 
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
@@ -101,6 +117,7 @@ public final class SiftiteListener implements Listener {
             removeMarked(block, siftiteOreMarker);
             int amount = ThreadLocalRandom.current().nextInt(1, 3);
             ItemStack drop = content.item(Material.IRON_NUGGET, "siftite_nugget", "Siftite Nugget");
+            if (drop == null) return;
             drop.setAmount(amount);
             block.getWorld().dropItemNaturally(block.getLocation(), drop);
             return;
@@ -125,6 +142,7 @@ public final class SiftiteListener implements Listener {
         int amount = ThreadLocalRandom.current().nextInt(min, max + 1);
         if (amount == 0) return;
         ItemStack drop = content.item(Material.LAPIS_LAZULI, "charoite", "Charoite");
+        if (drop == null) return;
         drop.setAmount(amount);
         block.getWorld().dropItemNaturally(block.getLocation(), drop);
     }

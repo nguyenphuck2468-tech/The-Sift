@@ -119,7 +119,28 @@ class ExternalBlockBridgeTest {
         assertTrue(tags.contains(providerBlock));
         assertFalse(tags.contains(vanillaFallback));
         assertNull(world.getPersistentDataContainer().get(legacy, PersistentDataType.STRING));
+        assertEquals((byte) 1, world.getPersistentDataContainer().get(
+                new NamespacedKey(plugin, "sonorous_deepslate_migration_complete_v2"), PersistentDataType.BYTE));
         assertFalse(tags.contains(world.getBlockAt(0, 63, 1)), "lookup stays scoped to the tagged coordinate");
+    }
+
+    @Test
+    void pistonTransfersSonorousStationMarkerWithTheBlock() {
+        var world = server.addSimpleWorld("sonorous-piston-transfer");
+        Block source = world.getBlockAt(1, 64, 1);
+        Block destination = world.getBlockAt(2, 64, 1);
+        source.setType(Material.DEEPSLATE);
+        destination.setType(Material.DEEPSLATE); // Represents the post-move state.
+        SonorousBlockRegistry registry = new SonorousBlockRegistry(plugin);
+        registry.mark(source);
+        SiftiteListener listener = new SiftiteListener(plugin, new SiftiteContent(plugin));
+
+        listener.onSonorousPistonExtend(new org.bukkit.event.block.BlockPistonExtendEvent(
+                world.getBlockAt(0, 64, 1), java.util.List.of(source), org.bukkit.block.BlockFace.EAST));
+        server.getScheduler().performOneTick();
+
+        assertFalse(registry.contains(source));
+        assertTrue(registry.contains(destination));
     }
 
     @Test

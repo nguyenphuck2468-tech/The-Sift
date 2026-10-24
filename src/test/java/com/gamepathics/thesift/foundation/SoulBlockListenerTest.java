@@ -4,9 +4,11 @@ import com.gamepathics.thesift.foundation.api.SiftItemProvider;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.ServicePriority;
@@ -57,6 +59,23 @@ class SoulBlockListenerTest {
         BlockBreakEvent vanillaBreak = new BlockBreakEvent(placed, player);
         listener.onBreak(vanillaBreak);
         assertTrue(vanillaBreak.isDropItems(), "ordinary Soul Sand must keep its normal drops");
+    }
+
+    @Test
+    void pistonTransfersSoulBlockIdentityToMovedBlockPosition() {
+        var world = server.addSimpleWorld("soul-block-piston");
+        Block source = world.getBlockAt(1, 64, 1);
+        Block destination = world.getBlockAt(2, 64, 1);
+        source.setType(Material.SOUL_SAND);
+        destination.setType(Material.SOUL_SAND); // Represents Paper's post-move block state.
+        SoulBlockListener.markGenerated(plugin, source);
+
+        listener.onPistonExtend(new BlockPistonExtendEvent(world.getBlockAt(0, 64, 1),
+                java.util.List.of(source), BlockFace.EAST));
+        server.getScheduler().performOneTick();
+
+        assertTrue(!listener.isMarked(source));
+        assertTrue(listener.isMarked(destination));
     }
 
     private BlockPlaceEvent placeEvent(Block placed, ItemStack item) {
