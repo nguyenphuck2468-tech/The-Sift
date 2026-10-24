@@ -333,8 +333,9 @@ git status
   back.
 - `TheSiftGeyser.jar.embedded` has unknown source/terms and no code references.
   It remains in the source tree pending owner direction, but the build excludes
-  it from the Paper plugin JAR. See `IMPLEMENTATION_REPORT.md` and
-  `docs/step1-paper-jar-inventory.txt`.
+  it from the Paper plugin JAR. All 63 unverified PNGs are also excluded from
+  that JAR; the separate resource-pack ZIP still reads its source PNG files.
+  See `IMPLEMENTATION_REPORT.md` and `docs/step1-paper-jar-inventory.txt`.
 - Config audit is in `IMPLEMENTATION_REPORT.md`. No keys were deleted; any
   cleanup requires owner approval and a versioned migration plan.
 - `NOTICE.draft.md` records only the current source investigation. No LICENSE
