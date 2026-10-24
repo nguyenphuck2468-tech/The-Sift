@@ -122,8 +122,7 @@ class IchorContentTest {
 
     @Test
     void registerRecipes_doesNotThrow() {
-        // This test verifies the method runs without exception
-        // Actual recipe registration requires a full server mock
+        // The dedicated recipe test verifies the exact ingredient behavior.
         assertDoesNotThrow(() -> ichorContent.registerRecipes());
     }
 }

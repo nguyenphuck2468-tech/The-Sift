@@ -222,7 +222,8 @@ public final class SiftiteContent implements Listener {
                 exact(item(Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE,
                         "siftite_upgrade_smithing_template", "Siftite Upgrade Template")),
                 new org.bukkit.inventory.RecipeChoice.MaterialChoice(base),
-                new org.bukkit.inventory.RecipeChoice.ExactChoice(item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot")));
+                org.bukkit.inventory.RecipeChoice.exactChoice(
+                        item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot")));
         server.addRecipe(recipe);
     }
 
@@ -297,7 +298,7 @@ public final class SiftiteContent implements Listener {
     }
 
     private org.bukkit.inventory.RecipeChoice exact(ItemStack item) {
-        return new org.bukkit.inventory.RecipeChoice.ExactChoice(item);
+        return org.bukkit.inventory.RecipeChoice.exactChoice(item);
     }
 
     private void addAttributes(ItemMeta meta, String id) {

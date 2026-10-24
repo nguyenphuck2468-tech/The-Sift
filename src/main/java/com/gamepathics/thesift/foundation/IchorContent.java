@@ -56,7 +56,7 @@ public final class IchorContent {
             ShapedRecipe paneRecipe = new ShapedRecipe(paneRecipeKey,
                     create(pane, ICHOR_GLASS_PANE_ID, "Ichor Glass Pane"));
             paneRecipe.shape("GGG", "GGG");
-            paneRecipe.setIngredient('G', new RecipeChoice.ExactChoice(ichorGlass()));
+            paneRecipe.setIngredient('G', RecipeChoice.exactChoice(ichorGlass()));
             server.addRecipe(paneRecipe);
         }
     }
