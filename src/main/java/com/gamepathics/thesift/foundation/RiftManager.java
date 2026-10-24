@@ -82,6 +82,7 @@ public final class RiftManager implements Listener {
     public ItemStack createRiftKey() {
         ItemStack key = new SiftiteContent(plugin).item(Material.TRIAL_KEY, RIFT_KEY_ID, "Rift Key");
         ItemMeta meta = key.getItemMeta();
+        meta.setDisplayName("§5§lRift Key");
         meta.getPersistentDataContainer().set(riftKey, PersistentDataType.STRING, RIFT_KEY_ID);
         key.setItemMeta(meta);
         return key;
