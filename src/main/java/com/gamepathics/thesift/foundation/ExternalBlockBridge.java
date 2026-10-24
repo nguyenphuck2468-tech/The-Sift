@@ -71,7 +71,7 @@ final class ExternalBlockBridge {
             if (reflectiveBlockCheck("Nexo", "com.nexomc.nexo.api.NexoBlocks", "isCustomBlock", block)) return true;
         }
         if (provider.equals("auto") || provider.equals("itemsadder")) {
-            if (itemsAdderBlockCheck(block)) return true;
+            if (itemsAdderBlockCheck(block, externalId)) return true;
         }
         if (provider.equals("auto") || provider.equals("oraxen")) {
             if (reflectiveBlockCheck("Oraxen", "io.th0rgal.oraxen.api.OraxenBlocks", "isOraxenBlock", block)) return true;
@@ -90,12 +90,15 @@ final class ExternalBlockBridge {
         }
     }
 
-    private boolean itemsAdderBlockCheck(Block block) {
+    private boolean itemsAdderBlockCheck(Block block, String expectedId) {
         if (!enabled("ItemsAdder")) return false;
         try {
-            Object result = Class.forName("dev.lone.itemsadder.api.CustomBlock")
+            Class<?> customBlock = Class.forName("dev.lone.itemsadder.api.CustomBlock");
+            Object result = customBlock
                     .getMethod("byAlreadyPlaced", Block.class).invoke(null, block);
-            return result != null;
+            if (result == null) return false;
+            Object actualId = customBlock.getMethod("getNamespacedID").invoke(result);
+            return actualId instanceof String id && id.equalsIgnoreCase(expectedId);
         } catch (ReflectiveOperationException | LinkageError exception) {
             plugin.getLogger().fine("ItemsAdder block detection unavailable: " + exception.getMessage());
             return false;
