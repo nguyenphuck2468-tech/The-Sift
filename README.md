@@ -12,8 +12,12 @@ claim of 27.1 compatibility.
 ## Build
 
 ```bash
-gradle clean build
+./gradlew clean build
 ```
+
+The `siftResourcePack` task packages PNG files whose provenance has not been
+verified. Do not publish or redistribute `TheSift-resource-pack.zip` until the
+asset sources and usage rights are confirmed.
 
 The default compile dependency is Paper API `26.3.build.218-stable`. Override
 it when validating another Paper API version:
@@ -30,6 +34,22 @@ Siftslate biomes, Ichor Snowy Peaks, Sift Wastes, and Sift Deep Dark. It has
 custom sky, fog, and ambient settings. The prototype still uses Overworld
 noise and built-in block/entity fallbacks where no external custom-content
 provider is configured; 27.1 compatibility remains unverified.
+
+### Configuration keys awaiting implementation
+
+These keys are retained for compatibility. The comments beside them in
+`src/main/resources/config.yml` mark the exact keys that are presently
+informational or have no gameplay effect; do not treat those values as working
+controls. This includes `content.siftslate`, `content.healthy_sculk`,
+`content.overgrown_willow`, `content.siftite_spear`, `content.blub`,
+`content.sifter`, `echo-golem.resonance-damage`,
+`echo-golem.slowness-seconds`, `echo-golem.slowness-amplifier`,
+`echo-golem.mining-fatigue-seconds`,
+`echo-golem.mining-fatigue-amplifier`, `echo-golem.charoite-protection`,
+`charoite.material`, `siftite.ingot-material`, `siftite.nugget-material`,
+`siftite.template-material`, `siftite.smithing-only`,
+`siftite.durability-multiplier`, and `siftite.spear-reach`. Existing config
+files keep these keys; they have not been removed or migrated.
 
 ## Current foundation scope
 
@@ -63,7 +83,8 @@ provider is configured; 27.1 compatibility remains unverified.
   nearby creatures.
 - A reference-mod portal melody prototype: right-click note blocks to cycle
   eight notes, then left-click notes in order `1, 3, 7, 6, 5, 2, 4, 8` to open
-  a Rift. This experimental interaction intercepts normal note-block clicks.
+  a Rift. This experimental interaction currently intercepts normal note-block
+  clicks; restricting it to registered portal blocks is pending.
 - Rifts link The Sift and the Overworld in both directions, transport nearby
   entities, and default to a five-minute active window.
 - Ichor weather adds colored rain particles, regeneration/slowness on contact

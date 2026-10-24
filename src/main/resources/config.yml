@@ -5,6 +5,7 @@ content:
   ichor_bottle: true
   ichor_glass: true
   ichor_glass_pane: true
+  # Chưa triển khai: cờ này hiện chỉ xuất hiện trong /sift doctor, chưa điều khiển nội dung.
   siftslate: true
   soul_block: true
   charoite: true
@@ -20,18 +21,22 @@ content:
   siftite_pickaxe: true
   siftite_shovel: true
   siftite_hoe: true
+  # Chưa triển khai: cờ này hiện chỉ xuất hiện trong /sift doctor, chưa điều khiển nội dung.
   siftite_spear: true
   siftite_helmet: true
   siftite_chestplate: true
   siftite_leggings: true
   siftite_boots: true
+  # Chưa triển khai: các cờ dưới đây hiện chỉ xuất hiện trong /sift doctor, chưa điều khiển nội dung.
   healthy_sculk: true
   overgrown_willow: true
   resonance: true
   rift-events: true
   singer: true
   echo_golem: true
+  # Chưa triển khai: cờ này hiện chỉ xuất hiện trong /sift doctor, chưa điều khiển nội dung.
   blub: true
+  # Chưa triển khai: cờ này hiện chỉ xuất hiện trong /sift doctor, chưa điều khiển nội dung.
   sifter: true
   rift: true
   sift_dimension: true
@@ -55,12 +60,14 @@ echo-golem:
   attack-damage: 12.0
   resonance-period: 8
   resonance-range: 20.0
+  # Chưa triển khai: các giá trị resonance/debuff bên dưới chưa được áp dụng trong gameplay.
   resonance-damage: 6.0
   slowness-seconds: 4
   slowness-amplifier: 1
   mining-fatigue-seconds: 6
   mining-fatigue-amplifier: 2
   heal-amount: 4.0
+  # Chưa triển khai: helper đọc khóa này không được gọi; hiện không có hiệu ứng.
   charoite-protection: true
   drop-siftite: true
 
@@ -95,6 +102,7 @@ ichor:
 charoite:
   enabled: true
   world: thesift:the_sift
+  # Chưa triển khai: item Charoite hiện dùng vật liệu fallback cố định.
   material: LAPIS_LAZULI
   ore-material: AMETHYST_BLOCK
   drop-min: 1
@@ -102,15 +110,21 @@ charoite:
 
 siftite:
   enabled: true
+  # Chưa triển khai: recipe đang dùng vật liệu vanilla cố định.
   ingot-material: NETHERITE_INGOT
   ore-material: ANCIENT_DEBRIS
+  # Chưa triển khai: recipe đang dùng vật liệu vanilla cố định.
   nugget-material: IRON_NUGGET
+  # Chưa triển khai: recipe đang dùng vật liệu vanilla cố định.
   template-material: NETHERITE_UPGRADE_SMITHING_TEMPLATE
+  # Chưa triển khai: hiện không thay đổi loại recipe.
   smithing-only: true
+  # Chưa triển khai: durability hiện không được nhân theo cấu hình.
   durability-multiplier: 1.2
   knockback-resistance: 0.1
   weapon-damage-bonus: 1.0
   spear-damage: 9.0
+  # Chưa triển khai: tầm đánh hiện chưa được áp dụng.
   spear-reach: 4.5
   mining-speed-bonus: 0.2
   mini-rift-recovery: true
