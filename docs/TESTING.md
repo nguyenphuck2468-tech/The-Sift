@@ -38,11 +38,27 @@ Official references: [Geyser setup](https://geysermc.org/wiki/geyser/setup/), [s
 ```
 
 `runServer` is configured by run-paper 3.1.0 for Minecraft/Paper 26.3 and uses
-`run/paper-26.3`. It has not yet been verified with an interactive operator,
-third-party providers, or a Bedrock client. Do not accept the Minecraft server
-EULA automatically on behalf of the server owner; if Gradle stops at the EULA
-step, review `run/paper-26.3/eula.txt` and start the disposable server yourself
-after accepting it.
+`run/paper-26.3`. Paper 26.3 build 222 has reached `Done` locally and accepted
+`/datapack list enabled` plus `/sift doctor`; third-party providers and a
+Bedrock client have not been tested. Do not accept the Minecraft server EULA
+automatically. The CI boot script is gated by the repository Actions variable
+`MINECRAFT_EULA_ACCEPTED=true`; set it only after the repository owner accepts
+the EULA. It starts Paper, waits for `Done`, checks the server logs for
+datapack registry errors, then sends `stop`.
+
+To run the equivalent local smoke check after accepting the EULA yourself:
+
+```powershell
+./gradlew.bat runServer --no-daemon --console=plain
+datapack list enabled
+sift doctor
+stop
+```
+
+The progression pack contains advancements only. The dimension pack is the
+sole biome owner. Legacy progression worldgen was removed after Paper 26.3
+failed registry loading; each removed feature is tracked as **chưa làm** in
+`docs/parity-matrix.md`.
 
 Local automated evidence for the provider bridge and strict gate is recorded
 in `IMPLEMENTATION_REPORT.md`; it does not establish that a third-party
@@ -52,7 +68,7 @@ On the test server, run `/sift give soul_block <player>`, `/sift summon singer <
 
 When upgrading from a release that used vanilla fallback for Sonorous Deepslate, existing vanilla blocks that were only indexed by the legacy world-level scan are intentionally not migrated: their identity is ambiguous. Re-place them using the provider-defined Sonorous Deepslate item to create new persistent station markers. Provider-defined blocks found in the legacy index are migrated when their chunks are loaded; the migration-complete flag is persisted at world scope.
 
-Disabling The Sift while players are in its world attempts to teleport them to the first loaded non-Sift world spawn. The plugin does not unload the dimension. This has unit/build coverage only; an actual Paper plugin disable/re-enable was not run because the disposable server EULA remains unaccepted.
+Disabling The Sift while players are in its world attempts to teleport them to the first loaded non-Sift world spawn. The plugin does not unload the dimension. This has unit/build coverage only; an actual Paper plugin disable/re-enable was not tested (the live smoke test was a full server start/stop).
 
 Do not publish a resource-pack ZIP yet: the repository contains PNG assets of unresolved provenance. The embedded `TheSiftGeyser.jar.embedded` also has unknown provenance; it remains excluded from plugin artifacts and must not be released pending owner confirmation.
 

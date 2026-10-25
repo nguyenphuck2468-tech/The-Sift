@@ -643,10 +643,10 @@ The generated MythicMobs YAML defines a Bukkit base `Type`, display name, health
 
 | Check | Finding | Evidence level / next action |
 |---|---|---|
-| Paper 26.3 / EULA | `run/paper-26.3/eula.txt` was already `eula=true` when checked on 2026-10-25. Paper 26.3 build 222 launched but aborted before world creation due to unbound `minecraft:worldgen/feature` IDs; plugin enable, `/sift doctor`, and gameplay checks did not run. The Gradle task still ended with `BUILD SUCCESSFUL`, so use the Paper log, not that task summary, as the server result. | **ĐÃ CHẠY THẬT** (launch attempt only); log: `run/paper-26.3/logs/latest.log`. |
+| Paper 26.3 / EULA (historical first attempt) | `run/paper-26.3/eula.txt` was already `eula=true`. The first Paper 26.3 build 222 attempt failed before world creation because of unbound progression-pack `worldgen/feature` IDs. This was resolved by removing the progression worldgen tree below; do not read this historical row as current boot status. | **ĐÃ CHẠY THẬT** (failed launch, superseded by successful boot below); log path: `run/paper-26.3/logs/latest.log`. |
 | Crafter conversion | The plugin filters craft and smithing prepare events, but not `CrafterCraftEvent`. Paper 26.3 Javadocs confirm the cancellable event exists; no in-game nine-ingot test was possible. | **CHỈ ĐỌC TÀI LIỆU HOẶC SUY LUẬN**; no behavior change until the server reproduction determines whether Siftite is consumed and produces a vanilla Netherite Block. |
 | Singer / Echo Golem bossbars | Their bossbar maps were populated only by summon paths and lost across chunk unload. Added `EntityAddToWorldEvent` handlers to recreate bars for persistent PDC-tagged entities. | **ĐÃ TEST TỰ ĐỘNG**; `EntityAddToWorldEvent` Javadocs state it fires when entities are added, including chunk load. Actual chunk unload/reload remains untested on Paper. |
-| Biome worldgen | All 15 biome JSON files in `sift_dimension_datapack` have empty `features` and `carvers`. Paper 26.3 boot also failed registry validation: seven referenced `thesift:*` features were unbound. `pink_meadows_geode` is referenced by a placed feature but has no matching configured-feature definition; six other configured-feature files exist but did not bind. | Static audit + **ĐÃ CHẠY THẬT** (Paper launch attempt, before world creation); exact log at `run/paper-26.3/logs/latest.log`. No generated-chunk observation. |
+| Biome worldgen | All 15 biome JSON files in `sift_dimension_datapack` have empty `features` and `carvers`. The duplicate biome and broken feature graph were removed from the progression pack. Paper 26.3 build 222 subsequently reached `Done`; no generated-chunk observation was made. | Static audit + **ĐÃ CHẠY THẬT** (Paper boot and `/datapack list enabled`); see current evidence below. |
 | Strict worldgen gaps | Strict decoration omits abandoned portals/chests/loot, sculk and Soul Canyon, and Ichor springs. `ichor_water` is only a non-strict simulated block and is not a flowing fluid. | **CHỈ ĐỌC TÀI LIỆU HOẶC SUY LUẬN**; retained as explicit parity gaps/STAND-IN, not claimed as implemented. |
 | Provider placement retries | Failed chunk decoration now persists exponential retry timing in chunk PDC (60s base, capped at 6h; reaches the cap on the 10th failure), reports deferred retries in `/sift doctor`, and skips provider blocks already identifiable at the target location. Previously successful placements are not rolled back; adapters that cannot identify their placed block may still repeat effects. | **ĐÃ TEST TỰ ĐỘNG** for retry schedule, cleanup, and idempotent skip policy; server/provider idempotency remains unverified. |
 | Assets and embedded JAR | 63 PNGs have unresolved provenance. `TheSiftGeyser.jar.embedded`: 6,928 bytes; SHA-256 `3093BA847F63022869DC17B353F1CC0DC6AF208087D6DBAEF778BECD1BF89319`; first appears in repo commit `7b1e0f0ee93dec57cef775f1e4668e9eb0f4bd44` (2026-10-22). `git log` proves repository introduction only, not authorship or license. It remains excluded from the built plugin jar. | **CHỈ ĐỌC TÀI LIỆU HOẶC SUY LUẬN**; no binary execution, deletion, or license decision. |
@@ -660,4 +660,120 @@ Stage 0 implementation verification: clean build siftResourcePack --no-daemon pa
 
 ## Live Paper launch attempt (2026-10-25)
 
-The local EULA file was already `eula=true`; no edit was needed. `gradlew.bat runServer --no-daemon --console=plain` used Paper 26.3 build 222 and discovered TheSift. Before plugin enable or world creation, Paper aborted datapack registry loading with seven unbound features: `thesift:bulb_forest_geode`, `thesift:bulb_forest_healthy_sculk`, `thesift:bulb_forest_sculk_patch`, `thesift:crystal_spires_geode`, `thesift:echo_golem_spawn`, `thesift:pink_meadows_geode`, and `thesift:resonance_crystal`. Source references are in `src/main/resources/datapack/data/thesift/worldgen/placed_feature/` and biome overlay JSON. Only six configured-feature JSON files exist, so `pink_meadows_geode` has no definition. The remaining six decode/bind failure cause is not established by this log. Paper emitted `Failed to load datapacks, can't proceed with server load`; Gradle nevertheless printed `BUILD SUCCESSFUL`. `/sift doctor`, provider checks, manual Crafter, piston, Bedrock, and gameplay checks did not run. Windows OSHI registry warnings were logged separately from the fatal datapack registry failure.
+Historical first launch (2026-10-25): Paper 26.3 build 222 failed registry loading with seven unbound progression feature IDs. This explains why the owner selected removal of `worldgen/` from both progression-pack roots. The failure was resolved by that removal; the next launch reached `Done`. The exact removed feature references and parity status are in `docs/parity-matrix.md`.
+
+## Progression datapack cleanup and Paper 26.3 verification (2026-10-25)
+
+Removed 22 worldgen JSON files from both `src/main/resources/datapack/data/` and `src/main/resources/datapack/overlay_26_3/`, preserving the progression advancement JSON. Removed the now-empty overlay declaration and updated `pack.mcmeta`. This leaves `src/main/resources/sift_dimension_datapack/` as the sole owner of the four overlapping biome IDs. The removed generation features remain **chưa làm**, not implemented; see `docs/parity-matrix.md`.
+
+### Live Paper evidence
+
+- **ĐÃ CHẠY THẬT:** Paper 26.3 build 222 (`26.3-222-main@e3ba7b1`), Java 25.0.4, `gradlew.bat runServer --no-daemon --console=plain`; second launch reached `Done (39.324s)` after cached world startup. The first launch after cleanup also reached `Done (157.412s)`.
+- **ĐÃ CHẠY THẬT:** after `Done`, `datapack list enabled` returned four enabled packs: vanilla, `TheSift/dimension`, `TheSift/progression`, and paper.
+- **ĐÃ CHẠY THẬT:** after `Done`, `/sift doctor` reported both Sift datapacks enabled; strict true; `dimension allowed: false`; no external item/block/mob provider plugins or service providers installed; 0/74 mandatory item IDs, 0/11 block IDs, and 0/22 mob IDs resolved in each listed backend; worldgen provider placement failures 0. This expectedly keeps the dimension inaccessible and reports missing IDs rather than creating vanilla content. No provider YAML parsing or gameplay is claimed.
+- Paper emitted unrelated Windows OSHI performance-counter/system-info warnings during both starts; those are distinct from datapack registry validation. No `Unbound`, `Failed to parse`, or `Registry loading errors` appeared after cleanup.
+
+#### Captured command output
+
+`datapack list enabled`:
+
+```text
+There are 4 data pack(s) enabled: [vanilla (built-in)], [TheSift/dimension (plugin)], [TheSift/progression (plugin)], [paper (built-in)]
+```
+
+`/sift doctor` (captured from the server log after the command; long missing-ID lists retained verbatim):
+
+```text
+The Sift foundation: 2.0.0-foundation
+Runtime target: Paper 26.3 / Paper API 26.3.build.218-stable
+Datapack packs: [TheSift/dimension, TheSift/progression]; enabled: [TheSift/dimension, TheSift/progression]; server resource pack: not configured; required: false
+- sift_dimension: enabled
+- healthy_sculk: enabled
+- siftite: enabled
+- siftite_spear: enabled
+- sifter: enabled
+- siftite_leggings: enabled
+- siftite_upgrade_smithing_template: enabled
+- blub: enabled
+- siftite_sword: enabled
+- charoite_ore: enabled
+- siftite_helmet: enabled
+- siftslate: enabled
+- siftite_axe: enabled
+- siftite_chestplate: enabled
+- rift-events: enabled
+- siftite_pickaxe: enabled
+- charoite_item: enabled
+- ichor_glass_pane: enabled
+- ichor: enabled
+- siftite_shovel: enabled
+- siftite_ore: enabled
+- siftite_boots: enabled
+- echo_golem: enabled
+- ichor_bottle: enabled
+- siftite_nugget: enabled
+- soul_block: enabled
+- resonance: enabled
+- overgrown_willow: enabled
+- siftite_hoe: enabled
+- charoite: enabled
+- siftite_ingot: enabled
+- singer: enabled
+- rift: enabled
+- ichor_glass: enabled
+Provider strict: true; dimension allowed: false
+Items provider selected: auto
+- SiftItemProvider: not installed; version registered service; version unavailable; resolved 0/74; missing IDs: charoite, siftite_nugget, siftite_ingot, sift_shard, spire_fragment, sky_fragment, frost_fragment, sift_core, sift_catalyst, sift_crown, rift_key, raw_loomer, cooked_loomer, bulb_glow, prism_blade, prism_helmet, prism_chestplate, prism_leggings, prism_boots, phase_boots, ichor_bottle, ichor_glass, ichor_glass_pane, ichor_snow, ichor_snow_block, bulb, chiseled_siftstone, drifter, frost_stalker, glimmerwing, glowbell, heart_of_the_sift, hollow_bulb, koi, loomer, lumen_tulip, prism_warden, prismite, rift_gate, shard_axe, shard_ore, shard_pickaxe, shard_sword, shardling, sift_altar, sift_grass, sift_leaves, sift_log, sift_planks, sift_soil, siftstone, siftstone_bricks, sunspore, the_sifter, thornback, violet_wisp, wisp, siftite_sword, siftite_axe, siftite_pickaxe, siftite_shovel, siftite_hoe, siftite_helmet, siftite_chestplate, siftite_leggings, siftite_boots, charoite_ore, siftite_upgrade_smithing_template, siftite_spear, healthy_sculk, overgrown_willow, siftslate, soul_block, sonorous_deepslate; fix: register a SiftItemProvider service whose provider ID matches integrations.items.provider and whose supports(id) returns true for every missing ID
+- Nexo: not installed; version missing; resolved 0/74; missing IDs: charoite, siftite_nugget, siftite_ingot, sift_shard, spire_fragment, sky_fragment, frost_fragment, sift_core, sift_catalyst, sift_crown, rift_key, raw_loomer, cooked_loomer, bulb_glow, prism_blade, prism_helmet, prism_chestplate, prism_leggings, prism_boots, phase_boots, ichor_bottle, ichor_glass, ichor_glass_pane, ichor_snow, ichor_snow_block, bulb, chiseled_siftstone, drifter, frost_stalker, glimmerwing, glowbell, heart_of_the_sift, hollow_bulb, koi, loomer, lumen_tulip, prism_warden, prismite, rift_gate, shard_axe, shard_ore, shard_pickaxe, shard_sword, shardling, sift_altar, sift_grass, sift_leaves, sift_log, sift_planks, sift_soil, siftstone, siftstone_bricks, sunspore, the_sifter, thornback, violet_wisp, wisp, siftite_sword, siftite_axe, siftite_pickaxe, siftite_shovel, siftite_hoe, siftite_helmet, siftite_chestplate, siftite_leggings, siftite_boots, charoite_ore, siftite_upgrade_smithing_template, siftite_spear, healthy_sculk, overgrown_willow, siftslate, soul_block, sonorous_deepslate; fix: install/enable Nexo; copy build/generated/provider-definitions/nexo/items.yml into plugins/Nexo/items/; keep integrations/nexo/block-variants.yml stable; reload Nexo or restart
+- ItemsAdder: not installed; version missing; resolved 0/74; missing IDs: charoite, siftite_nugget, siftite_ingot, sift_shard, spire_fragment, sky_fragment, frost_fragment, sift_core, sift_catalyst, sift_crown, rift_key, raw_loomer, cooked_loomer, bulb_glow, prism_blade, prism_helmet, prism_chestplate, prism_leggings, prism_boots, phase_boots, ichor_bottle, ichor_glass, ichor_glass_pane, ichor_snow, ichor_snow_block, bulb, chiseled_siftstone, drifter, frost_stalker, glimmerwing, glowbell, heart_of_the_sift, hollow_bulb, koi, loomer, lumen_tulip, prism_warden, prismite, rift_gate, shard_axe, shard_ore, shard_pickaxe, shard_sword, shardling, sift_altar, sift_grass, sift_leaves, sift_log, sift_planks, sift_soil, siftstone, siftstone_bricks, sunspore, the_sifter, thornback, violet_wisp, wisp, siftite_sword, siftite_axe, siftite_pickaxe, siftite_shovel, siftite_hoe, siftite_helmet, siftite_chestplate, siftite_leggings, siftite_boots, charoite_ore, siftite_upgrade_smithing_template, siftite_spear, healthy_sculk, overgrown_willow, siftslate, soul_block, sonorous_deepslate; fix: install/enable ItemsAdder; copy build/generated/provider-definitions/itemsadder/items.yml into plugins/ItemsAdder/contents/thesift/configs/; run /iazip or the installed version's documented reload
+- Oraxen: not installed; version missing; resolved 0/74; missing IDs: charoite, siftite_nugget, siftite_ingot, sift_shard, spire_fragment, sky_fragment, frost_fragment, sift_core, sift_catalyst, sift_crown, rift_key, raw_loomer, cooked_loomer, bulb_glow, prism_blade, prism_helmet, prism_chestplate, prism_leggings, prism_boots, phase_boots, ichor_bottle, ichor_glass, ichor_glass_pane, ichor_snow, ichor_snow_block, bulb, chiseled_siftstone, drifter, frost_stalker, glimmerwing, glowbell, heart_of_the_sift, hollow_bulb, koi, loomer, lumen_tulip, prism_warden, prismite, rift_gate, shard_axe, shard_ore, shard_pickaxe, shard_sword, shardling, sift_altar, sift_grass, sift_leaves, sift_log, sift_planks, sift_soil, siftstone, siftstone_bricks, sunspore, the_sifter, thornback, violet_wisp, wisp, siftite_sword, siftite_axe, siftite_pickaxe, siftite_shovel, siftite_hoe, siftite_helmet, siftite_chestplate, siftite_leggings, siftite_boots, charoite_ore, siftite_upgrade_smithing_template, siftite_spear, healthy_sculk, overgrown_willow, siftslate, soul_block, sonorous_deepslate; fix: install/enable Oraxen; copy build/generated/provider-definitions/oraxen/items.yml into plugins/Oraxen/items/; reload Oraxen or restart
+Blocks provider selected: auto
+- SiftBlockProvider: not installed; version registered service; version unavailable; resolved 0/11; missing IDs: charoite_ore, siftite_ore, sift_grass, sift_leaves, sift_log, siftstone, siftstone_bricks, ichor_water, soul_block, siftslate, sonorous_deepslate; fix: register a SiftBlockProvider service whose provider ID matches integrations.blocks.provider and whose supports(id) returns true for every missing ID
+- Nexo: not installed; version missing; resolved 0/11; missing IDs: charoite_ore, siftite_ore, sift_grass, sift_leaves, sift_log, siftstone, siftstone_bricks, ichor_water, soul_block, siftslate, sonorous_deepslate; fix: install/enable Nexo; copy build/generated/provider-definitions/nexo/items.yml into plugins/Nexo/items/; keep integrations/nexo/block-variants.yml stable; reload Nexo or restart
+- ItemsAdder: not installed; version missing; resolved 0/11; missing IDs: charoite_ore, siftite_ore, sift_grass, sift_leaves, sift_log, siftstone, siftstone_bricks, ichor_water, soul_block, siftslate, sonorous_deepslate; fix: install/enable ItemsAdder; copy build/generated/provider-definitions/itemsadder/items.yml into plugins/ItemsAdder/contents/thesift/configs/; run /iazip or the installed version's documented reload
+- Oraxen: not installed; version missing; resolved 0/11; missing IDs: charoite_ore, siftite_ore, sift_grass, sift_leaves, sift_log, siftstone, siftstone_bricks, ichor_water, soul_block, siftslate, sonorous_deepslate; fix: install/enable Oraxen; copy build/generated/provider-definitions/oraxen/items.yml into plugins/Oraxen/items/; reload Oraxen or restart
+Mobs provider selected: auto
+- SiftMobProvider: not installed; version registered service; version unavailable; resolved 0/22; missing IDs: wisp, blub, loomer, koi, bulb, violet_wisp, hollow_bulb, frost_stalker, thornback, glimmerwing, sunspore, drifter, dark_sniffer, prismite, shardling, prism_warden, the_sifter, glowbell, sift_wastes_stalker, singer, echo_golem, rift_walker; fix: register a SiftMobProvider service whose provider ID matches integrations.mobs.provider and whose supports(id) returns true for every missing ID
+- ItemsAdder: not installed; version missing; resolved 0/22; missing IDs: wisp, blub, loomer, koi, bulb, violet_wisp, hollow_bulb, frost_stalker, thornback, glimmerwing, sunspore, drifter, dark_sniffer, prismite, shardling, prism_warden, the_sifter, glowbell, sift_wastes_stalker, singer, echo_golem, rift_walker; fix: install/enable ItemsAdder and define every missing custom entity; no generated entity definitions exist yet
+- MythicMobs: not installed; version missing; resolved 0/22; missing IDs: wisp, blub, loomer, koi, bulb, violet_wisp, hollow_bulb, frost_stalker, thornback, glimmerwing, sunspore, drifter, dark_sniffer, prismite, shardling, prism_warden, the_sifter, glowbell, sift_wastes_stalker, singer, echo_golem, rift_walker; fix: install/enable MythicMobs; copy build/generated/provider-definitions/mythicmobs/TheSift.yml into plugins/MythicMobs/Mobs/; run /mm reload
+- EliteMobs: not installed; version missing; resolved 0/22; missing IDs: wisp, blub, loomer, koi, bulb, violet_wisp, hollow_bulb, frost_stalker, thornback, glimmerwing, sunspore, drifter, dark_sniffer, prismite, shardling, prism_warden, the_sifter, glowbell, sift_wastes_stalker, singer, echo_golem, rift_walker; fix: install/enable EliteMobs and configure existing boss definition files; current integration cannot validate all required IDs
+- Nexo: missing
+- ItemsAdder: missing
+- Oraxen: missing
+- MythicMobs: missing
+- EliteMobs: missing
+- ModelEngine: missing
+- Geyser-Spigot: missing
+- floodgate: missing
+- ViaVersion: missing
+- ViaBackwards: missing
+- ViaRewind: missing
+- ResourcePackManager: missing
+Worldgen provider placement failures: 0 (deferred chunk retries: 0; last: none)
+WARNING: ModelEngine is absent; custom mob rendering will use provider defaults.
+WARNING: ResourcePackManager is absent; only plugin detection is implemented.
+```
+
+`/sift doctor` concluded:
+
+```text
+Provider strict: true; dimension allowed: false
+Items provider selected: auto
+Blocks provider selected: auto
+Mobs provider selected: auto
+Nexo / ItemsAdder / Oraxen / MythicMobs / EliteMobs: not installed; each listed mandatory IDs are unresolved
+ModelEngine / Geyser-Spigot / floodgate / ViaVersion / ViaBackwards / ViaRewind / ResourcePackManager: missing
+Worldgen provider placement failures: 0 (deferred chunk retries: 0; last: none)
+WARNING: ModelEngine is absent; custom mob rendering will use provider defaults.
+WARNING: ResourcePackManager is absent; only plugin detection is implemented.
+```
+
+The complete per-backend missing-ID output appears in the preceding verbatim capture. Command logs are also retained in `run/paper-26.3/logs/latest.log` locally (the server run directory is not a release artifact).
+
+### Automated regression and CI boot gate
+
+Added three JUnit tests (80 → 83): JSON validity across both packs; one owner per biome ID while progression advancement data remains; and biome feature references resolving to placed features and their configured `worldgen/feature` targets. Verification: **ĐÃ TEST TỰ ĐỘNG** when the clean test suite completes. The cross-reference test is designed to check any non-empty biome feature arrays added later.
+
+Added `scripts/verify-paper-boot.sh` to CI. It requires Actions repository variable `MINECRAFT_EULA_ACCEPTED=true`, waits up to five minutes for Paper's `Done` marker, sends `stop`, and fails if either console/server log contains `Unbound`, `Failed to parse`, or `Registry loading errors`. It uploads both Paper logs. The variable is configured on the repository because the owner had already accepted the EULA for this project; without that setting, the CI boot gate intentionally fails before launching Paper.
+
+Paper boot, datapack list, and doctor are **ĐÃ CHẠY THẬT**. Provider-file parsing and real third-party plugin behavior remain **CHƯA CHẠY**. The `clean build siftResourcePack` run on Java 25.0.4 / Gradle 9.7.1 passed with 83/83 tests (80 before → 83 after); CI and commit hashes are updated after the workflow run.

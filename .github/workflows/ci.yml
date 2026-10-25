@@ -30,6 +30,11 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew --no-daemon clean build
 
+      - name: Verify Paper 26.3 datapack boot
+        env:
+          MINECRAFT_EULA_ACCEPTED: ${{ vars.MINECRAFT_EULA_ACCEPTED }}
+        run: bash scripts/verify-paper-boot.sh
+
       - name: Publish test results
         uses: actions/upload-artifact@v7.0.2
         if: always()
@@ -43,4 +48,15 @@ jobs:
         with:
           name: TheSift-foundation.jar
           path: build/libs/TheSift-foundation-*.jar
+          retention-days: 7
+
+      - name: Upload Paper boot logs
+        uses: actions/upload-artifact@v7.0.2
+        if: always()
+        with:
+          name: paper-26.3-boot-logs
+          path: |
+            build/paper-boot-console.log
+            run/paper-26.3/logs/latest.log
+          if-no-files-found: ignore
           retention-days: 7
