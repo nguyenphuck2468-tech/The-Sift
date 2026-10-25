@@ -55,3 +55,12 @@ When upgrading from a release that used vanilla fallback for Sonorous Deepslate,
 Disabling The Sift while players are in its world attempts to teleport them to the first loaded non-Sift world spawn. The plugin does not unload the dimension. This has unit/build coverage only; an actual Paper plugin disable/re-enable was not run because the disposable server EULA remains unaccepted.
 
 Do not publish a resource-pack ZIP yet: the repository contains PNG assets of unresolved provenance. The embedded `TheSiftGeyser.jar.embedded` also has unknown provenance; it remains excluded from plugin artifacts and must not be released pending owner confirmation.
+
+The note melody currently opens the temporary Rift feature, not the mod-style
+Ancient City dimension portal. Successful melodies share the configured
+server-wide cooldown (`rift.portal-song-cooldown-seconds`, default 1800);
+unfinished melodies expire after `rift.portal-song-timeout-seconds` (default
+60) and are also cleared when a player quits. The cooldown is runtime-only and
+resets on a full server restart. With strict providers unresolved, an Overworld
+Rift is rejected so it cannot activate and award items without a usable Sift
+destination.

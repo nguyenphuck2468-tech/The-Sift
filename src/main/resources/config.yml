@@ -85,6 +85,10 @@ rift:
   resonance-range: 20.0
   reward-drops: 3
   rift-key-chance: 0.3
+  # A server-wide recovery period limits free Rift creation through the melody.
+  portal-song-cooldown-seconds: 1800
+  # Incomplete melodies expire after this many seconds without a note.
+  portal-song-timeout-seconds: 60
 
 ichor:
   enabled: true

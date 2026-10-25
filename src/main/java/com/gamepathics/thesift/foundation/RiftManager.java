@@ -19,6 +19,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -33,8 +34,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.concurrent.ThreadLocalRandom;
 
 public final class RiftManager implements Listener {
@@ -56,8 +55,8 @@ public final class RiftManager implements Listener {
     private final Map<UUID, RiftInstance> rifts = new HashMap<>();
     private final Set<UUID> travelling = new HashSet<>();
     private BukkitTask updateTask;
-    private final Map<UUID, List<Integer>> portalSongProgress = new HashMap<>();
-    private static final List<Integer> PORTAL_SONG = List.of(1, 3, 7, 6, 5, 2, 4, 8);
+    private final PortalSongTracker portalSongTracker = new PortalSongTracker();
+    private final SiftDimensionManager dimensionManager;
 
     public RiftManager(JavaPlugin plugin) {
         this(plugin, new ProviderReadiness(plugin));
@@ -66,6 +65,7 @@ public final class RiftManager implements Listener {
     RiftManager(JavaPlugin plugin, ProviderReadiness providerReadiness) {
         this.plugin = plugin;
         this.providerReadiness = providerReadiness;
+        this.dimensionManager = new SiftDimensionManager(plugin, providerReadiness);
         this.riftKey = new NamespacedKey(plugin, "rift_key");
         this.mobFactory = new SiftMobFactory(plugin);
         this.blockBridge = new ExternalBlockBridge(plugin);
@@ -82,7 +82,7 @@ public final class RiftManager implements Listener {
         rifts.values().forEach(RiftInstance::discard);
         rifts.clear();
         travelling.clear();
-        portalSongProgress.clear();
+        for (Player player : Bukkit.getOnlinePlayers()) portalSongTracker.remove(player.getUniqueId());
     }
 
     public ItemStack createRiftKey() {
@@ -105,6 +105,23 @@ public final class RiftManager implements Listener {
         if (!plugin.getConfig().getBoolean("rift.enabled", true)
                 || !plugin.getConfig().getBoolean("content.rift", true)
                 || location == null || location.getWorld() == null) return false;
+        if (providerReadiness.strict() && !providerReadiness.dimensionAllowed()
+                && !location.getWorld().getKey().equals(SiftDimensionManager.DIMENSION_KEY)) {
+            String message = "Rift blocked: required providers for The Sift are unavailable. Run /sift doctor.";
+            plugin.getLogger().severe(message + " Existing dimension save was left untouched.");
+            if (opener != null && opener.isOnline()) opener.sendMessage(message);
+            return false;
+        }
+        World destinationWorld = location.getWorld().getKey().equals(SiftDimensionManager.DIMENSION_KEY)
+                ? Bukkit.getWorlds().stream().filter(world -> world.getEnvironment() == World.Environment.NORMAL)
+                    .findFirst().orElse(null)
+                : dimensionManager.getOrCreateWorld();
+        if (destinationWorld == null) {
+            String message = "Rift blocked: its destination world could not be loaded. Check the server log and /sift doctor.";
+            plugin.getLogger().severe(message);
+            if (opener != null && opener.isOnline()) opener.sendMessage(message);
+            return false;
+        }
         UUID id = UUID.randomUUID();
         RiftInstance rift = new RiftInstance(id, location, opener);
         rifts.put(id, rift);
@@ -113,6 +130,8 @@ public final class RiftManager implements Listener {
     }
 
     private void updateRifts() {
+        long timeoutMillis = Math.max(1L, plugin.getConfig().getLong("rift.portal-song-timeout-seconds", 60)) * 1000L;
+        portalSongTracker.expire(System.currentTimeMillis(), timeoutMillis);
         if (!plugin.getConfig().getBoolean("rift.enabled", true)) return;
 
         rifts.entrySet().removeIf(entry -> {
@@ -202,25 +221,36 @@ public final class RiftManager implements Listener {
         if (event.getAction() != Action.LEFT_CLICK_BLOCK) return;
         event.setCancelled(true);
         int played = noteBlock.getNote().getId() + 1;
-        List<Integer> progress = portalSongProgress.computeIfAbsent(event.getPlayer().getUniqueId(),
-                ignored -> new ArrayList<>());
-        int expectedIndex = progress.size();
-        if (played == PORTAL_SONG.get(expectedIndex)) {
-            progress.add(played);
+        long now = System.currentTimeMillis();
+        long timeoutMillis = Math.max(1L, plugin.getConfig().getLong("rift.portal-song-timeout-seconds", 60)) * 1000L;
+        long cooldownMillis = Math.max(0L, plugin.getConfig().getLong("rift.portal-song-cooldown-seconds", 1800)) * 1000L;
+        PortalSongTracker.Result result = portalSongTracker.play(event.getPlayer().getUniqueId(), played,
+                now, timeoutMillis, cooldownMillis);
+        if (result == PortalSongTracker.Result.COOLDOWN) {
+            event.setCancelled(true);
+            event.getPlayer().sendActionBar("§cThe Sonorous song is still recovering.");
+            return;
+        }
+        if (result == PortalSongTracker.Result.INCOMPLETE || result == PortalSongTracker.Result.COMPLETE) {
             event.getPlayer().playSound(block.getLocation(), "minecraft:block.note_block.harp", 0.8f,
                     (float) Math.pow(2.0, (played - 1) / 12.0));
-            event.getPlayer().sendActionBar("§bSift portal song: " + progress.size() + "/8");
-            if (progress.size() == PORTAL_SONG.size()) {
-                portalSongProgress.remove(event.getPlayer().getUniqueId());
-                event.getPlayer().sendMessage("§5The Sonorous song awakens a Rift!");
-                openRift(block.getLocation().add(0.5, 1, 0.5), event.getPlayer());
-            }
+            if (result == PortalSongTracker.Result.COMPLETE) {
+                if (openRift(block.getLocation().add(0.5, 1, 0.5), event.getPlayer())) {
+                    portalSongTracker.startCooldown(now, cooldownMillis);
+                    event.getPlayer().sendMessage("§5The Sonorous song awakens a Rift!");
+                    event.getPlayer().sendActionBar("§bThe Sonorous song is complete.");
+                } else event.getPlayer().sendActionBar("§cThe Rift could not open; check provider readiness.");
+            } else event.getPlayer().sendActionBar("§bSift portal song: "
+                    + portalSongTracker.progress(event.getPlayer().getUniqueId()) + "/8");
         } else {
-            progress.clear();
-            if (played == PORTAL_SONG.getFirst()) progress.add(played);
             event.getPlayer().playSound(block.getLocation(), "minecraft:block.note_block.bass", 0.8f, 0.6f);
             event.getPlayer().sendActionBar("§cWrong note; the Sift song resets.");
         }
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        portalSongTracker.remove(event.getPlayer().getUniqueId());
     }
 
     boolean canHandlePortalSong(Block noteBlock) {
@@ -272,10 +302,10 @@ public final class RiftManager implements Listener {
 
         private void createExit() {
             World sourceWorld = center.getWorld();
-            World targetWorld = sourceWorld.getKey().toString().equals("thesift:the_sift")
+            World targetWorld = sourceWorld.getKey().equals(SiftDimensionManager.DIMENSION_KEY)
                     ? Bukkit.getWorlds().stream().filter(w -> w.getEnvironment() == World.Environment.NORMAL)
                         .findFirst().orElse(null)
-                    : Bukkit.getWorld(NamespacedKey.fromString("thesift:the_sift"));
+                    : dimensionManager.getOrCreateWorld();
             if (targetWorld != null && targetWorld.getKey().equals(SiftDimensionManager.DIMENSION_KEY)) {
                 if (providerReadiness.strict() && !providerReadiness.dimensionAllowed()) {
                     plugin.getLogger().severe("Blocked Rift destination into The Sift: required providers are unavailable. Run /sift doctor. Existing world data is preserved.");
@@ -349,14 +379,14 @@ public final class RiftManager implements Listener {
             // Drop Siftite, Charoite, etc.
             int rewardCount = Math.max(0, plugin.getConfig().getInt("rift.reward-drops", 3));
             SiftiteContent content = new SiftiteContent(plugin);
-            for (int i = 0; i < rewardCount; i++) {
-                Location dropLoc = center.clone().add(
-                    ThreadLocalRandom.current().nextDouble(-2, 2),
-                    1,
-                    ThreadLocalRandom.current().nextDouble(-2, 2)
-                );
-                dropLoc.getWorld().dropItemNaturally(dropLoc, 
-                    content.item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot"));
+            ItemStack reward = rewardCount == 0 ? null
+                    : content.item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot");
+            if (rewardCount > 0 && reward == null) {
+                plugin.getLogger().warning("Skipped Rift Siftite rewards because item ID 'siftite_ingot' did not resolve.");
+            } else for (int i = 0; i < rewardCount; i++) {
+                Location dropLoc = center.clone().add(ThreadLocalRandom.current().nextDouble(-2, 2), 1,
+                        ThreadLocalRandom.current().nextDouble(-2, 2));
+                dropLoc.getWorld().dropItemNaturally(dropLoc, reward.clone());
             }
             // Rift Key fragment chance
             if (ThreadLocalRandom.current().nextDouble()
