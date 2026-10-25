@@ -50,6 +50,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
+        enforceDependencyMode();
         loadContentFlags();
         providerReadiness = new ProviderReadiness(this);
         providerApiProbe = new ProviderApiProbe(this);
@@ -109,7 +110,40 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             refreshContentRecipes();
             reportProviderReadiness();
         }, 200L);
+        // Runs on the first tick, after every plugin (including ones that depend on The Sift) has enabled.
+        getServer().getScheduler().runTask(this, this::verifyRequiredPlugins);
         getLogger().info("The Sift fan-made Paper 26.3 plugin enabled; not affiliated with Mojang or Microsoft.");
+    }
+
+    /** The Sift depends fully on provider plugins: vanilla fallback mode is not available. */
+    private void enforceDependencyMode() {
+        if (!getConfig().getBoolean("providers.strict", true)) {
+            getLogger().warning("providers.strict: false is ignored; The Sift depends fully on provider plugins.");
+        }
+        getConfig().set("providers.strict", true);
+    }
+
+    private void verifyRequiredPlugins() {
+        if (!isEnabled() || !getConfig().getBoolean("requirements.enabled", true)) return;
+        java.util.List<String> missing = RequiredPlugins.missing(getConfig(), this::requirementPresent);
+        if (missing.isEmpty()) return;
+        getLogger().severe("The Sift is disabled because required plugins are missing:");
+        for (String line : missing) getLogger().severe(" - " + line);
+        getLogger().severe("Install them (or edit the 'requirements' section of config.yml) and restart the server.");
+        getServer().getPluginManager().disablePlugin(this);
+    }
+
+    private boolean requirementPresent(String token) {
+        if (token.regionMatches(true, 0, "service:", 0, 8)) {
+            var services = getServer().getServicesManager();
+            return switch (token.substring(8).toLowerCase(java.util.Locale.ROOT)) {
+                case "item" -> !services.getRegistrations(com.gamepathics.thesift.foundation.api.SiftItemProvider.class).isEmpty();
+                case "block" -> !services.getRegistrations(com.gamepathics.thesift.foundation.api.SiftBlockProvider.class).isEmpty();
+                case "mob" -> !services.getRegistrations(com.gamepathics.thesift.foundation.api.SiftMobProvider.class).isEmpty();
+                default -> false;
+            };
+        }
+        return getServer().getPluginManager().isPluginEnabled(token);
     }
 
     private void registerContentPluginReloadHooks() {
@@ -188,9 +222,11 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                 sender.sendMessage("The Sift config is newer than this build; reload was rejected.");
                 return true;
             }
+            enforceDependencyMode();
             loadContentFlags();
             providerReadiness.invalidate();
             refreshContentRecipes();
+            verifyRequiredPlugins();
             reportProviderReadiness();
             sender.sendMessage("The Sift config was reloaded. Restart the server to apply content flag changes.");
             return true;

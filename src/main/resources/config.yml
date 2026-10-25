@@ -139,8 +139,20 @@ compatibility:
   # Deprecated legacy key; runtime target is Paper 26.3. Kept for existing configs.
   minecraft-target: "26.3"
 
+requirements:
+  # The Sift depends fully on provider plugins. If a rule below is unmet on the first server tick the
+  # plugin disables itself and logs what is missing. Tokens are plugin names, or service:item,
+  # service:block, service:mob for plugins that register SiftItemProvider/SiftBlockProvider/SiftMobProvider.
+  enabled: true
+  all-of:
+    - ModelEngine
+  any-of:
+    items: [Nexo, ItemsAdder, Oraxen, "service:item"]
+    blocks: [Nexo, ItemsAdder, Oraxen, "service:block"]
+    mobs: [MythicMobs, ItemsAdder, EliteMobs, "service:mob"]
+
 providers:
-  # Strict provider-first mode: dimension access is denied until all mandatory IDs resolve.
+  # Always enforced: dimension access is denied until all mandatory IDs resolve. Setting false is ignored.
   strict: true
   bedrock-enabled: false
 
