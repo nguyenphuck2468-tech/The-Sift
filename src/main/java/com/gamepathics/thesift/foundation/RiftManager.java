@@ -102,6 +102,11 @@ public final class RiftManager implements Listener {
     }
 
     public boolean openRift(Location location, Player opener) {
+        return openRift(location, opener, false);
+    }
+
+    /** portal=true opens a long-lived passage (no mob waves, no rewards) as in the reference mod. */
+    public boolean openRift(Location location, Player opener, boolean portal) {
         if (!plugin.getConfig().getBoolean("rift.enabled", true)
                 || !plugin.getConfig().getBoolean("content.rift", true)
                 || location == null || location.getWorld() == null) return false;
@@ -123,7 +128,7 @@ public final class RiftManager implements Listener {
             return false;
         }
         UUID id = UUID.randomUUID();
-        RiftInstance rift = new RiftInstance(id, location, opener);
+        RiftInstance rift = new RiftInstance(id, location, opener, portal);
         rifts.put(id, rift);
         rift.beginOpening();
         return true;
@@ -235,7 +240,8 @@ public final class RiftManager implements Listener {
             event.getPlayer().playSound(block.getLocation(), "minecraft:block.note_block.harp", 0.8f,
                     (float) Math.pow(2.0, (played - 1) / 12.0));
             if (result == PortalSongTracker.Result.COMPLETE) {
-                if (openRift(block.getLocation().add(0.5, 1, 0.5), event.getPlayer())) {
+                boolean asPortal = plugin.getConfig().getBoolean("rift.portal-song-opens-portal", true);
+                if (openRift(block.getLocation().add(0.5, 1, 0.5), event.getPlayer(), asPortal)) {
                     portalSongTracker.startCooldown(now, cooldownMillis);
                     event.getPlayer().sendMessage("§5The Sonorous song awakens a Rift!");
                     event.getPlayer().sendActionBar("§bThe Sonorous song is complete.");
@@ -264,15 +270,21 @@ public final class RiftManager implements Listener {
         private final UUID id;
         private final Location center;
         private final Player opener;
+        private final boolean portal;
         private Location exitCenter;
         private RiftState state = RiftState.DORMANT;
         private int stateTimer = 0;
         private int phase = 0;
 
         public RiftInstance(UUID id, Location center, Player opener) {
+            this(id, center, opener, false);
+        }
+
+        public RiftInstance(UUID id, Location center, Player opener, boolean portal) {
             this.id = id;
             this.center = center;
             this.opener = opener;
+            this.portal = portal;
         }
 
         public void beginOpening() {
@@ -297,7 +309,7 @@ public final class RiftManager implements Listener {
             createExit();
 
             // Spawn initial mobs from the configured value.
-            spawnRiftMobs(Math.max(0, plugin.getConfig().getInt("rift.initial-mobs", 3)));
+            if (!portal) spawnRiftMobs(Math.max(0, plugin.getConfig().getInt("rift.initial-mobs", 3)));
         }
 
         private void createExit() {
@@ -368,7 +380,7 @@ public final class RiftManager implements Listener {
             notifyOpener("§5The rift has sealed. §7Rewards await the brave...");
 
             // Drop rewards
-            dropRewards();
+            if (!portal) dropRewards();
             if (exitCenter != null) {
                 exitCenter.getWorld().spawnParticle(Particle.SMOKE, exitCenter, 30, 1, 1, 1, 0.03);
                 exitCenter.getWorld().playSound(exitCenter, Sound.BLOCK_PORTAL_AMBIENT, 0.5f, 0.5f);
@@ -415,16 +427,18 @@ public final class RiftManager implements Listener {
                         center.clone().add(0, 1, 0), 20 + stateTimer * 4, 1, 1, 1, 0.05);
             } else if (state == RiftState.ACTIVE) {
                 stateTimer++;
-                int duration = Math.max(1, plugin.getConfig().getInt("rift.active-duration-seconds", 300));
+                int duration = portal
+                        ? Math.max(1, plugin.getConfig().getInt("rift.portal-active-seconds", 900))
+                        : Math.max(1, plugin.getConfig().getInt("rift.active-duration-seconds", 300));
                 int interval = Math.max(1, plugin.getConfig().getInt("rift.mob-spawn-interval-seconds", 60));
                 int pulseInterval = Math.max(1,
                         plugin.getConfig().getInt("rift.resonance-pulse-interval-seconds", 60));
                 if (stateTimer >= duration) beginClosing();
                 else {
-                    if (stateTimer % interval == 0) {
+                    if (!portal && stateTimer % interval == 0) {
                         spawnRiftMobs(Math.max(0, plugin.getConfig().getInt("rift.periodic-mobs", 1)));
                     }
-                    if (stateTimer % pulseInterval == 0) pulseResonance();
+                    if (!portal && stateTimer % pulseInterval == 0) pulseResonance();
                 }
             } else if (state == RiftState.CLOSING) {
                 stateTimer++;

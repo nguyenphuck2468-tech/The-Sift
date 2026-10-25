@@ -3,10 +3,12 @@ package com.gamepathics.thesift.foundation;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.GameMode;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.block.Biome;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
@@ -18,13 +20,18 @@ import org.bukkit.entity.LivingEntity;
 import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.bukkit.util.Vector;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,6 +44,7 @@ public final class ResonanceManager implements Listener {
     private final NamespacedKey itemKey;
     private final SiftMobFactory mobFactory;
     private final Map<UUID, BossBar> bars = new HashMap<>();
+    private final Map<UUID, Long> hornCooldownUntil = new HashMap<>();
     private long tick;
     private int taskId = -1;
 
@@ -62,6 +70,7 @@ public final class ResonanceManager implements Listener {
             bar.setVisible(false);
         }
         bars.clear();
+        hornCooldownUntil.clear();
     }
 
     public LivingEntity summonSinger(Location location) {
@@ -80,6 +89,42 @@ public final class ResonanceManager implements Listener {
         BossBar bar = Bukkit.createBossBar("§5Singer Resonance", BarColor.PURPLE, BarStyle.SEGMENTED_10);
         bars.put(singer.getUniqueId(), bar);
         return singer;
+    }
+
+    /** Mod parity: wake the Singer with a Goat Horn inside an Ancient City (Deep Dark biome). */
+    @EventHandler
+    public void onGoatHorn(PlayerInteractEvent event) {
+        if (!plugin.getConfig().getBoolean("resonance.horn-wakes-singer", true)) return;
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        ItemStack item = event.getItem();
+        if (item == null || item.getType() != Material.GOAT_HORN) return;
+        Player player = event.getPlayer();
+        Location location = player.getLocation();
+        if (location.getBlock().getBiome() != Biome.DEEP_DARK) return;
+        long now = System.currentTimeMillis();
+        Long until = hornCooldownUntil.get(player.getUniqueId());
+        if (until != null && now < until) return;
+        double radius = Math.max(4.0, plugin.getConfig().getDouble("resonance.horn-singer-check-radius", 48.0));
+        for (Entity nearby : player.getNearbyEntities(radius, radius, radius)) {
+            if (isSinger(nearby)) return;
+        }
+        Vector direction = location.getDirection().setY(0);
+        if (direction.lengthSquared() < 0.0001) direction = new Vector(1, 0, 0);
+        Location spawn = location.clone().add(direction.normalize().multiply(4)).add(0, 1, 0);
+        if (summonSinger(spawn) == null) {
+            player.sendActionBar("\u00a7cThe horn echoes, but nothing answers. Run /sift doctor.");
+            return;
+        }
+        long cooldownMillis = Math.max(0L, plugin.getConfig().getLong("resonance.horn-cooldown-seconds", 600L)) * 1000L;
+        hornCooldownUntil.put(player.getUniqueId(), now + cooldownMillis);
+        player.getWorld().playSound(spawn, Sound.ENTITY_WARDEN_LISTENING, 1.0f, 0.8f);
+        player.sendActionBar("\u00a75The horn wakes a Singer...");
+    }
+
+    @EventHandler
+    public void onHornPlayerQuit(PlayerQuitEvent event) {
+        hornCooldownUntil.remove(event.getPlayer().getUniqueId());
     }
 
     private void pulse() {
