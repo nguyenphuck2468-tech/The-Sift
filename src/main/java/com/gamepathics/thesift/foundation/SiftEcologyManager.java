@@ -49,12 +49,15 @@ public final class SiftEcologyManager implements Listener {
     private final EchoGolemManager echoGolemManager;
     private final RiftManager riftManager;
     private final NamespacedKey decoratedChunkKey;
+    private final NamespacedKey decorationRetryAttemptsKey;
+    private final NamespacedKey decorationRetryAtKey;
     private final NamespacedKey creatureKey;
     private final SiftMobFactory mobFactory;
     private final ExternalBlockBridge blockBridge;
     private final SiftiteContent content;
     private final BukkitTask tideTask;
     private final AtomicLong providerPlacementFailures = new AtomicLong();
+    private final AtomicLong deferredDecorationRetries = new AtomicLong();
     private final java.util.Map<String, AtomicLong> providerPlacementFailuresById = new ConcurrentHashMap<>();
     private volatile String lastProviderPlacementFailure = "none";
     private long tideTick;
@@ -66,6 +69,8 @@ public final class SiftEcologyManager implements Listener {
         this.echoGolemManager = echoGolemManager;
         this.riftManager = riftManager;
         this.decoratedChunkKey = new NamespacedKey(plugin, "sift_ecology_generated");
+        this.decorationRetryAttemptsKey = new NamespacedKey(plugin, "sift_ecology_retry_attempts");
+        this.decorationRetryAtKey = new NamespacedKey(plugin, "sift_ecology_retry_at");
         this.creatureKey = new NamespacedKey(plugin, "sift_creature");
         this.mobFactory = new SiftMobFactory(plugin);
         this.blockBridge = new ExternalBlockBridge(plugin);
@@ -95,6 +100,10 @@ public final class SiftEcologyManager implements Listener {
 
     private void populate(Chunk chunk) {
         if (!isSift(chunk.getWorld())) return;
+        if (ChunkRetryBackoff.isDeferred(chunk, decorationRetryAtKey, System.currentTimeMillis())) {
+            deferredDecorationRetries.incrementAndGet();
+            return;
+        }
 
         boolean measure = plugin.getConfig().getBoolean("debug.chunk-generation-metrics.enabled", false);
         long started = measure ? System.nanoTime() : 0L;
@@ -105,16 +114,21 @@ public final class SiftEcologyManager implements Listener {
             boolean completed = decorateChunkOnce(chunk, decoratedChunkKey,
                     () -> generationOperations[0] = decorateChunkContent(chunk));
             if (!completed) return;
+            ChunkRetryBackoff.clear(chunk, decorationRetryAttemptsKey, decorationRetryAtKey);
         } catch (RuntimeException exception) {
             for (Entity entity : chunk.getEntities()) {
                 if (!(entity instanceof Player) && !existingEntities.contains(entity.getUniqueId())) {
                     entity.remove();
                 }
             }
+            long delay = ChunkRetryBackoff.recordFailure(chunk, decorationRetryAttemptsKey,
+                    decorationRetryAtKey, System.currentTimeMillis());
+            int attempts = ChunkRetryBackoff.attempts(chunk, decorationRetryAttemptsKey);
             plugin.getLogger().log(java.util.logging.Level.WARNING,
                     "Sift chunk decoration failed for " + chunk.getWorld().getName() + ":"
-                            + chunk.getX() + ":" + chunk.getZ()
-                            + "; the completion marker was cleared so the chunk can retry.", exception);
+                            + chunk.getX() + ":" + chunk.getZ() + " (attempt " + attempts
+                            + "); retry deferred for " + (delay / 1000) + "s. Successful earlier block placements "
+                            + "are retained; the provider must be idempotent at a location.", exception);
             return;
         }
 
@@ -451,8 +465,9 @@ public final class SiftEcologyManager implements Listener {
     }
 
     private boolean placeBlock(Block block, String contentId, Material fallback) {
-        return placeBlock(block, contentId, fallback,
-                plugin.getConfig().getBoolean("providers.strict", true),
+        boolean strict = plugin.getConfig().getBoolean("providers.strict", true);
+        return placeBlock(block, contentId, fallback, strict,
+                () -> strict && blockBridge.isBlock(contentId, block),
                 () -> blockBridge.place(contentId, block.getLocation()), failure -> {
                     providerPlacementFailures.incrementAndGet();
                     providerPlacementFailuresById.computeIfAbsent(contentId, ignored -> new AtomicLong())
@@ -464,6 +479,13 @@ public final class SiftEcologyManager implements Listener {
 
     static boolean placeBlock(Block block, String contentId, Material fallback, boolean strict,
                               BooleanSupplier providerPlace, java.util.function.Consumer<String> onStrictFailure) {
+        return placeBlock(block, contentId, fallback, strict, () -> false, providerPlace, onStrictFailure);
+    }
+
+    static boolean placeBlock(Block block, String contentId, Material fallback, boolean strict,
+                              BooleanSupplier alreadyProviderBlock, BooleanSupplier providerPlace,
+                              java.util.function.Consumer<String> onStrictFailure) {
+        if (strict && alreadyProviderBlock.getAsBoolean()) return true;
         if (providerPlace.getAsBoolean()) return true;
         if (strict) {
             String failure = "Strict provider block placement failed for ID '" + contentId + "' at "
@@ -479,11 +501,13 @@ public final class SiftEcologyManager implements Listener {
     long providerPlacementFailureCount() { return providerPlacementFailures.get(); }
 
     String providerPlacementFailureSummary() {
-        if (providerPlacementFailuresById.isEmpty()) return "0 (last: none)";
+        if (providerPlacementFailuresById.isEmpty()) return "0 (deferred chunk retries: "
+                + deferredDecorationRetries.get() + "; last: none)";
         String ids = providerPlacementFailuresById.entrySet().stream().sorted(java.util.Map.Entry.comparingByKey())
                 .map(entry -> entry.getKey() + "=" + entry.getValue().get())
                 .collect(java.util.stream.Collectors.joining(", "));
-        return providerPlacementFailures.get() + " (" + ids + "; last: " + lastProviderPlacementFailure + ")";
+        return providerPlacementFailures.get() + " (" + ids + "; deferred chunk retries: "
+                + deferredDecorationRetries.get() + "; last: " + lastProviderPlacementFailure + ")";
     }
 
     private void generateCharoiteOre(Chunk chunk, Random random) {

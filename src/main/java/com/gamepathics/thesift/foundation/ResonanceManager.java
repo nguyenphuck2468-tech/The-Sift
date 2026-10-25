@@ -15,6 +15,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.LivingEntity;
+import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
@@ -140,6 +141,15 @@ public final class ResonanceManager implements Listener {
     private void ensureBar(LivingEntity singer) {
         bars.computeIfAbsent(singer.getUniqueId(), ignored ->
                 Bukkit.createBossBar("§5Singer Resonance", BarColor.PURPLE, BarStyle.SEGMENTED_10));
+    }
+
+    @EventHandler
+    public void onEntityAddedToWorld(EntityAddToWorldEvent event) {
+        if (event.getEntity() instanceof LivingEntity living && isSinger(living)) ensureBar(living);
+    }
+
+    int trackedBossBarCount() {
+        return bars.size();
     }
 
     private boolean protectedByCharoite(Player player) {

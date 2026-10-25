@@ -76,6 +76,18 @@ class SiftEcologyChunkMarkerTest {
     }
 
     @Test
+    void retrySkipsProviderBlockAlreadyPlacedByEarlierPartialAttempt() {
+        var block = server.addSimpleWorld("sift-idempotent-retry").getBlockAt(3, 70, 5);
+        AtomicInteger placeCalls = new AtomicInteger();
+
+        assertTrue(SiftEcologyManager.placeBlock(block, "sift_grass", Material.MOSS_BLOCK,
+                true, () -> true, () -> { placeCalls.incrementAndGet(); return true; },
+                ignored -> fail("recognized provider block should be kept")));
+
+        assertEquals(0, placeCalls.get());
+    }
+
+    @Test
     void missingStrictProviderClearsChunkMarkerAndRetryCanComplete() {
         var world = server.addSimpleWorld("sift-strict-retry");
         var chunk = world.getChunkAt(0, 0);

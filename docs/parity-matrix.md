@@ -60,3 +60,16 @@ With `providers.strict: false`, vanilla fallback remains available for developme
 - Geyser's current supported Java server version and ViaVersion condition: [setup](https://geysermc.org/wiki/geyser/setup/), [supported versions](https://geysermc.org/wiki/geyser/supported-versions/).
 - Floodgate installation and auth use: [Floodgate setup](https://geysermc.org/wiki/floodgate/setup/).
 - Plugin names and public evidence notes: [`docs/provider-sources.md`](provider-sources.md). Bukkit softdepend names are in `src/main/resources/plugin.yml`; Paper's optional load order is in `src/main/resources/paper-plugin.yml`.
+
+## Strict-mode parity gaps confirmed by static audit
+
+The 15 bundled biome definitions currently have empty `features` and `carvers`; Paper chunk generation has not been run. The strict Java decoration path also does not generate the following mod-referenced content:
+
+| Content | Source label | Strict-mode status |
+|---|---|---|
+| Abandoned portals and their loot chests | [mod] | Not generated; provider-backed structure and loot definition are missing. |
+| Sculk formations and Soul Canyon where Echo Golems find Soul Blocks | [mod] | Not generated; required structure/feature and provider identities are missing. |
+| Ichor springs/lakes | [mod] | Not generated in strict mode. `ichor_water` is a non-strict simulated block, not a flowing custom fluid: **STAND-IN**. |
+| Biome carvers/features | [mod] | All 15 biome JSON arrays are empty; terrain carve and placed-feature parity is not implemented. |
+
+This is a static repository audit, not a generated-chunk observation. No worldgen definitions were added in Stage 0.

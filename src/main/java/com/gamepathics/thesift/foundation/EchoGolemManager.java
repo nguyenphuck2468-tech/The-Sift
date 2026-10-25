@@ -16,6 +16,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
@@ -91,8 +92,7 @@ public final class EchoGolemManager implements Listener {
         var knockback = golem.getAttribute(Attribute.KNOCKBACK_RESISTANCE);
         if (knockback != null) knockback.setBaseValue(1.0);
 
-        BossBar bar = Bukkit.createBossBar("§bEcho Golem", BarColor.BLUE, BarStyle.SEGMENTED_20);
-        bars.put(golem.getUniqueId(), bar);
+        ensureBar(golem);
         
         // Resonance particles on spawn
         location.getWorld().spawnParticle(Particle.END_ROD, location.clone().add(0, 1, 0), 20, 0.5, 0.5, 0.5, 0.1);
@@ -157,6 +157,20 @@ public final class EchoGolemManager implements Listener {
             bar.setProgress(Math.max(0, Math.min(1, living.getHealth() / max)));
             return false;
         });
+    }
+
+    private void ensureBar(LivingEntity golem) {
+        bars.computeIfAbsent(golem.getUniqueId(), ignored ->
+                Bukkit.createBossBar("§bEcho Golem", BarColor.BLUE, BarStyle.SEGMENTED_20));
+    }
+
+    @EventHandler
+    public void onEntityAddedToWorld(EntityAddToWorldEvent event) {
+        if (event.getEntity() instanceof LivingEntity living && isEchoGolem(living)) ensureBar(living);
+    }
+
+    int trackedBossBarCount() {
+        return bars.size();
     }
 
     private boolean protectedByCharoite(Player player) {

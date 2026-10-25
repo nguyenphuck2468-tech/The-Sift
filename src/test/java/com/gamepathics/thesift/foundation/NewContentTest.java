@@ -8,17 +8,23 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.MockBukkit;
+import org.mockbukkit.mockbukkit.ServerMock;
+import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
+import org.bukkit.Location;
+import org.bukkit.entity.IronGolem;
+import org.bukkit.persistence.PersistentDataType;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class EchoGolemManagerTest {
 
+    private ServerMock server;
     private JavaPlugin mockPlugin;
     private EchoGolemManager echoGolemManager;
 
     @BeforeEach
     void setUp() {
-        MockBukkit.mock();
+        server = MockBukkit.mock();
         mockPlugin = MockBukkit.createMockPlugin("TheSift");
         echoGolemManager = new EchoGolemManager(mockPlugin);
     }
@@ -36,6 +42,20 @@ class EchoGolemManagerTest {
     @Test
     void start_doesNotThrow() {
         assertDoesNotThrow(() -> echoGolemManager.start());
+    }
+
+    @Test
+    void reloadedEchoGolemRecreatesItsBossBarOnce() {
+        var world = server.addSimpleWorld("golem-load");
+        IronGolem golem = world.spawn(new Location(world, 0, 64, 0), IronGolem.class);
+        golem.getPersistentDataContainer().set(new NamespacedKey(mockPlugin, "echo_golem_entity"),
+                PersistentDataType.STRING, "echo_golem");
+        EntityAddToWorldEvent event = new EntityAddToWorldEvent(golem, world);
+
+        echoGolemManager.onEntityAddedToWorld(event);
+        echoGolemManager.onEntityAddedToWorld(event);
+
+        assertEquals(1, echoGolemManager.trackedBossBarCount());
     }
 }
 

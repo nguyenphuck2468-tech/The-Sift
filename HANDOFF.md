@@ -416,3 +416,11 @@ Validation snapshot: the pre-change checkpoint had 63 tests; the current suite h
 ## Ongoing Rift follow-up
 
 The working tree adds a runtime-only, server-wide cooldown for melody-created Rifts, timeout/quit cleanup for partial melodies, strict provider gating before an Overworld Rift can open, and world loading through `SiftDimensionManager.getOrCreateWorld()`. Three tracker tests have been added; `clean build siftResourcePack` passed with 75/75 tests. Code commit `866030c2f882b79ace9fc3334cbe2924d5fc8b86` is pushed; CI [40147332345](https://github.com/nguyenphuck2468-tech/The-Sift/actions/runs/40147332345) passed. The cooldown resets at server restart and is not persistent. The actual mod-style Ancient City dimension gate remains unimplemented and requires the requested live structure survey before layout assumptions are encoded.
+
+Stage 0 follow-up: Paper 26.3 execution remains blocked by `run/paper-26.3/eula.txt` (`eula=false`); do not change this without the owner. Static audit confirms 15/15 biome JSON feature/carver arrays are empty, and identifies strict-mode gaps for abandoned portals/loot, sculk/Soul Canyon, and Ichor springs. No real server result is claimed.
+
+Bossbars now rebuild on Paper `EntityAddToWorldEvent`; automatic tests cover tagged Singer/Echo Golem restoration and avoid duplicate bars. Worldgen strict failure retries now use chunk-PDC exponential backoff and `/sift doctor` reports deferred retry counts. Partial successful provider placements are retained; retry skips them only if the provider adapter can identify the existing ID.
+
+The provenance inventory is in `IMPLEMENTATION_REPORT.md`: 63 PNG files remain unresolved; the embedded Geyser jar is 6,928 bytes, hash `3093BA847F63022869DC17B353F1CC0DC6AF208087D6DBAEF778BECD1BF89319`, first added in `7b1e0f0` on 2026-10-22. The CDN reference and name overlaps are not proof of origin. Nothing was deleted and no license was selected.
+
+Stage 0 follow-up verification: Java 25.0.4 / Gradle 9.7.1 clean build siftResourcePack --no-daemon passed, 80/80 tests (75 → 80), including persistent retry/backoff and Singer/Echo Golem bossbar restoration fixtures. This is not a live Paper test. EULA remains false; do not launch the Paper server until owner acceptance.

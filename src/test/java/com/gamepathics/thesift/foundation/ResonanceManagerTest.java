@@ -6,6 +6,7 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Allay;
 import org.bukkit.entity.Player;
+import com.destroystokyo.paper.event.entity.EntityAddToWorldEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.AfterEach;
@@ -128,6 +129,20 @@ class ResonanceManagerTest {
         pulse();
 
         assertUnaffected(player);
+    }
+
+    @Test
+    void reloadedSingerRecreatesItsBossBarOnce() {
+        var world = server.addSimpleWorld("singer-load");
+        Allay singer = world.spawn(new Location(world, 0, 64, 0), Allay.class);
+        singer.getPersistentDataContainer().set(new NamespacedKey(plugin, "resonance_entity"),
+                PersistentDataType.STRING, "singer");
+        EntityAddToWorldEvent event = new EntityAddToWorldEvent(singer, world);
+
+        manager.onEntityAddedToWorld(event);
+        manager.onEntityAddedToWorld(event);
+
+        assertEquals(1, manager.trackedBossBarCount());
     }
 
     private Player playerNearSinger() {
