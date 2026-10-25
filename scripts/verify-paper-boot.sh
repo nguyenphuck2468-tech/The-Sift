@@ -32,26 +32,36 @@ for _ in $(seq 1 300); do
 done
 
 if [[ "$done_seen" != "true" ]]; then
-  cat "$console_log"
+  printf 'stop\n' >&3 || true
+  for _ in $(seq 1 30); do
+    if ! kill -0 "$server_pid" 2>/dev/null; then break; fi
+    sleep 1
+  done
+  if kill -0 "$server_pid" 2>/dev/null; then kill "$server_pid" 2>/dev/null || true; fi
   wait "$server_pid" || true
+  cat "$console_log"
   echo "Paper 26.3 did not reach its Done marker within five minutes." >&2
   exit 1
 fi
 
+printf 'sift doctor\n' >&3
+doctor_seen=false
+for _ in $(seq 1 30); do
+  if grep -Fq 'Provider strict: true; dimension allowed: false' "$console_log" \
+      && grep -Fq 'Worldgen provider placement failures: 0' "$console_log"; then
+    doctor_seen=true
+    break
+  fi
+  if ! kill -0 "$server_pid" 2>/dev/null; then break; fi
+  sleep 1
+done
+
 printf 'stop\n' >&3
 wait "$server_pid"
 
-for log in "$console_log" "$run_dir/logs/latest.log"; do
-  if [[ ! -f "$log" ]]; then
-    echo "Expected Paper log was not written: $log" >&2
-    exit 1
-  fi
-  for marker in 'Unbound' 'Failed to parse' 'Registry loading errors'; do
-    if grep -Fq "$marker" "$log"; then
-      echo "Paper boot log contains forbidden datapack failure marker '$marker': $log" >&2
-      exit 1
-    fi
-  done
-done
+bash scripts/check-paper-boot-logs.sh "$console_log" "$run_dir/logs/latest.log"
 
-echo "Paper 26.3 reached Done and no unbound/parse/registry failure marker was found."
+if [[ "$doctor_seen" != "true" ]]; then
+  echo "Paper reached Done, but sift doctor did not report the strict lock and zero worldgen placement failures." >&2
+  exit 1
+fi

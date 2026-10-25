@@ -30,6 +30,9 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew --no-daemon clean build
 
+      - name: Test Paper boot log gate with fixtures
+        run: bash scripts/test-paper-boot-log-check.sh
+
       - name: Verify Paper 26.3 datapack boot
         env:
           MINECRAFT_EULA_ACCEPTED: ${{ vars.MINECRAFT_EULA_ACCEPTED }}

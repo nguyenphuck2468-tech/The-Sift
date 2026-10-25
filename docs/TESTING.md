@@ -42,9 +42,13 @@ Official references: [Geyser setup](https://geysermc.org/wiki/geyser/setup/), [s
 `/datapack list enabled` plus `/sift doctor`; third-party providers and a
 Bedrock client have not been tested. Do not accept the Minecraft server EULA
 automatically. The CI boot script is gated by the repository Actions variable
-`MINECRAFT_EULA_ACCEPTED=true`; set it only after the repository owner accepts
-the EULA. It starts Paper, waits for `Done`, checks the server logs for
-datapack registry errors, then sends `stop`.
+`MINECRAFT_EULA_ACCEPTED=true`; its current value was set by the prior Codex
+turn based on an inference, and owner confirmation is pending. Do not run the
+Paper CI boot while that decision is pending. Once confirmed, the gate starts
+Paper, waits for `Done`, sends `sift doctor` through the server console FIFO,
+checks plugin-enable and strict-lock/zero-worldgen-failure output, then sends
+`stop`. A fixture test covers a healthy log, plugin enable/load errors, and
+missing doctor status without starting Paper or accepting the EULA.
 
 To run the equivalent local smoke check after accepting the EULA yourself:
 
