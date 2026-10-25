@@ -73,3 +73,19 @@ The 15 bundled biome definitions currently have empty `features` and `carvers`; 
 | Biome carvers/features | [mod] | All 15 biome JSON arrays are empty; terrain carve and placed-feature parity is not implemented. |
 
 This is a static repository audit, not a generated-chunk observation. No worldgen definitions were added in Stage 0.
+
+## Progression-pack worldgen removal (Paper 26.3 boot repair)
+
+The progression pack no longer defines biomes or worldgen features. Its four duplicate biome files and legacy feature files were removed from `data/` and `overlay_26_3/`; advancement JSON is retained. The dimension pack is now the sole owner of the four matching biome IDs. These removed generation features are explicitly **chưa làm**; they did not load on Paper 26.3 and were not silently promoted to implemented content.
+
+| Removed progression feature/reference | Status | Reason / future parity path |
+|---|---|---|
+| `bulb_forest_geode`, `bulb_forest_healthy_sculk`, `bulb_forest_sculk_patch` | Chưa làm | Legacy configured-feature layout/schema did not bind on Paper 26.3. Reintroduce under `worldgen/feature/` with valid 26.3 definitions, a matching `worldgen/placed_feature/`, and provider-backed blocks in strict mode. |
+| `crystal_spires_geode`, `resonance_crystal` | Chưa làm | Legacy configured-feature references were unbound. Reintroduce only after the same 26.3 schema and provider checks pass. |
+| `echo_golem_spawn` / `crystal_spires_echo_golem_spawn` | Chưa làm | The old `minecraft:entity` feature type is not present in the Paper 26.3 feature registry report; mob placement needs a supported provider-backed path. |
+| `pink_meadows_geode` | Chưa làm | Its placed-feature JSON referenced a configured feature that was absent, causing an unbound registry ID. |
+| `pink_meadows` references to `sculk_patch`, `healthy_sculk`, `resonance_crystal`, `singer_spawn` | Chưa làm | Missing/legacy placed-feature graph removed with the progression worldgen tree. |
+| `shattered_peaks` references to `geode`, `resonance_crystal`, `rift_structure`, `echo_golem_spawn` | Chưa làm | Missing/legacy placed-feature graph removed with the progression worldgen tree. |
+| All 15 dimension-pack biome feature/carver arrays | Chưa làm | Currently empty. Worldgen content must be added to the dimension pack and validated by JSON graph tests and the Paper 26.3 boot gate. |
+
+Any future worldgen work must use the 26.3 `worldgen/feature/` schema (not legacy `configured_feature/`), provide complete biome → placed feature → feature references, and avoid vanilla Sift stand-ins while `providers.strict: true`.

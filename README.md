@@ -34,6 +34,12 @@ built-in stand-ins where the relevant provider or implementation is absent.
 This is a Paper 26.3 implementation; provider parsing and live-server behavior
 remain unverified until recorded in the parity matrix.
 
+The progression datapack (`src/main/resources/datapack`) supplies advancements
+only; biome and worldgen definitions are owned by the separate dimension
+datapack. The old duplicate progression biome/worldgen files were removed
+because their feature registry entries did not load on Paper 26.3. The removed
+generation features remain incomplete; see `docs/parity-matrix.md`.
+
 ### Configuration keys awaiting implementation
 
 These keys are retained for compatibility. The comments beside them in
