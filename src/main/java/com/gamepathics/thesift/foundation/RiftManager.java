@@ -57,6 +57,7 @@ public final class RiftManager implements Listener {
     private BukkitTask updateTask;
     private final PortalSongTracker portalSongTracker = new PortalSongTracker();
     private final SiftDimensionManager dimensionManager;
+    private long nextNaturalRiftAtMillis;
 
     public RiftManager(JavaPlugin plugin) {
         this(plugin, new ProviderReadiness(plugin));
@@ -138,6 +139,7 @@ public final class RiftManager implements Listener {
         long timeoutMillis = Math.max(1L, plugin.getConfig().getLong("rift.portal-song-timeout-seconds", 60)) * 1000L;
         portalSongTracker.expire(System.currentTimeMillis(), timeoutMillis);
         if (!plugin.getConfig().getBoolean("rift.enabled", true)) return;
+        maybeOpenNaturalRift();
 
         rifts.entrySet().removeIf(entry -> {
             RiftInstance rift = entry.getValue();
@@ -148,6 +150,43 @@ public final class RiftManager implements Listener {
             }
             return false;
         });
+    }
+
+    /**
+     * Mod parity: natural Rifts appear inside The Sift after several minutes and lead back to the
+     * Overworld. Only runs while a player is in The Sift; each opens like a normal (temporary) Rift.
+     */
+    private void maybeOpenNaturalRift() {
+        if (!plugin.getConfig().getBoolean("rift.natural.enabled", true)) return;
+        World sift = Bukkit.getWorld(SiftDimensionManager.DIMENSION_KEY);
+        if (sift == null || sift.getPlayers().isEmpty()) {
+            nextNaturalRiftAtMillis = 0L;
+            return;
+        }
+        long now = System.currentTimeMillis();
+        int minMinutes = Math.max(1, plugin.getConfig().getInt("rift.natural.min-minutes", 6));
+        int maxMinutes = Math.max(minMinutes, plugin.getConfig().getInt("rift.natural.max-minutes", 14));
+        if (nextNaturalRiftAtMillis == 0L) {
+            nextNaturalRiftAtMillis = now + ThreadLocalRandom.current().nextLong(minMinutes, maxMinutes + 1L) * 60_000L;
+            return;
+        }
+        if (now < nextNaturalRiftAtMillis) return;
+        nextNaturalRiftAtMillis = 0L;
+        int maxActive = Math.max(1, plugin.getConfig().getInt("rift.natural.max-active", 2));
+        long active = rifts.values().stream()
+                .filter(rift -> rift.center.getWorld() != null && rift.center.getWorld().equals(sift)
+                        && rift.state != RiftState.DORMANT).count();
+        if (active >= maxActive) return;
+        java.util.List<Player> players = sift.getPlayers();
+        Player target = players.get(ThreadLocalRandom.current().nextInt(players.size()));
+        double angle = ThreadLocalRandom.current().nextDouble(0, Math.PI * 2);
+        double distance = ThreadLocalRandom.current().nextDouble(18, 36);
+        int x = target.getLocation().getBlockX() + (int) Math.round(Math.cos(angle) * distance);
+        int z = target.getLocation().getBlockZ() + (int) Math.round(Math.sin(angle) * distance);
+        int y = sift.getHighestBlockYAt(x, z) + 1;
+        if (openRift(new Location(sift, x + 0.5, y, z + 0.5), target)) {
+            target.sendMessage("\u00a75A Rift tears open somewhere nearby...");
+        }
     }
 
     /** Active rifts are two-way passages between the Overworld and The Sift. */
