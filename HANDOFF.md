@@ -424,3 +424,5 @@ Bossbars now rebuild on Paper `EntityAddToWorldEvent`; automatic tests cover tag
 The provenance inventory is in `IMPLEMENTATION_REPORT.md`: 63 PNG files remain unresolved; the embedded Geyser jar is 6,928 bytes, hash `3093BA847F63022869DC17B353F1CC0DC6AF208087D6DBAEF778BECD1BF89319`, first added in `7b1e0f0` on 2026-10-22. The CDN reference and name overlaps are not proof of origin. Nothing was deleted and no license was selected.
 
 Stage 0 follow-up verification: Java 25.0.4 / Gradle 9.7.1 clean build siftResourcePack --no-daemon passed, 80/80 tests (75 → 80), including persistent retry/backoff and Singer/Echo Golem bossbar restoration fixtures. This is not a live Paper test. EULA remains false; do not launch the Paper server until owner acceptance.
+
+CI [40148685068](https://github.com/nguyenphuck2468-tech/The-Sift/actions/runs/40148685068) succeeded for code commit 826b434963740c3ad518575cb0745382c1e49f5c (80 tests). A report-only follow-up commit records this result.
