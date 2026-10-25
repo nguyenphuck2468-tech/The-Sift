@@ -89,6 +89,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         if (contentRegistry.isEnabled(ContentId.RIFT)) {
             riftManager = new RiftManager(this, providerReadiness);
             getServer().getPluginManager().registerEvents(riftManager, this);
+            getServer().getPluginManager().registerEvents(riftManager.ancientCityPortal(), this);
             riftManager.start();
         }
         if (contentRegistry.isEnabled(ContentId.SIFT_DIMENSION)) {

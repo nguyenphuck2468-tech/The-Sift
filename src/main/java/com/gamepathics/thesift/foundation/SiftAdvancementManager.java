@@ -44,6 +44,7 @@ public final class SiftAdvancementManager implements Listener {
         String id = contentId(event.getItem().getItemStack());
         if ("charoite".equals(id) || "siftite_nugget".equals(id)) grant(player, "shard");
         if ("rift_key".equals(id)) grant(player, "rift_key");
+        if ("rift_disc".equals(id)) grant(player, "rift_melody");
     }
 
     @EventHandler
@@ -86,6 +87,7 @@ public final class SiftAdvancementManager implements Listener {
         switch (id) {
             case "prism_warden" -> grant(killer, "warden", "prismatic");
             case "the_sifter", "sifter" -> grant(killer, "sifter");
+            case "dark_sniffer" -> grant(killer, "sniffer_hunter");
             default -> { }
         }
     }

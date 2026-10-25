@@ -58,6 +58,7 @@ public final class RiftManager implements Listener {
     private final PortalSongTracker portalSongTracker = new PortalSongTracker();
     private final SiftDimensionManager dimensionManager;
     private long nextNaturalRiftAtMillis;
+    private final AncientCityPortal ancientCity;
 
     public RiftManager(JavaPlugin plugin) {
         this(plugin, new ProviderReadiness(plugin));
@@ -71,6 +72,11 @@ public final class RiftManager implements Listener {
         this.mobFactory = new SiftMobFactory(plugin);
         this.blockBridge = new ExternalBlockBridge(plugin);
         this.sonorousBlocks = new SonorousBlockRegistry(plugin);
+        this.ancientCity = new AncientCityPortal(plugin);
+    }
+
+    AncientCityPortal ancientCityPortal() {
+        return ancientCity;
     }
 
     public void start() {
@@ -186,6 +192,7 @@ public final class RiftManager implements Listener {
         int y = sift.getHighestBlockYAt(x, z) + 1;
         if (openRift(new Location(sift, x + 0.5, y, z + 0.5), target)) {
             target.sendMessage("\u00a75A Rift tears open somewhere nearby...");
+            SiftAdvancementGrant.grant(plugin, target, "tear_in_the_sky");
         }
     }
 
@@ -223,7 +230,10 @@ public final class RiftManager implements Listener {
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             if (!entity.isValid() || entity.isDead()) { travelling.remove(entity.getUniqueId()); return; }
             entity.teleport(destination);
-            if (entity instanceof Player player) player.sendMessage("§5The Rift carries you between worlds.");
+            if (entity instanceof Player player) {
+                player.sendMessage("§5The Rift carries you between worlds.");
+                SiftAdvancementGrant.grant(plugin, player, "between_worlds");
+            }
             plugin.getServer().getScheduler().runTaskLater(plugin,
                     () -> travelling.remove(entity.getUniqueId()), 20L);
         });
@@ -280,7 +290,18 @@ public final class RiftManager implements Listener {
                     (float) Math.pow(2.0, (played - 1) / 12.0));
             if (result == PortalSongTracker.Result.COMPLETE) {
                 boolean asPortal = plugin.getConfig().getBoolean("rift.portal-song-opens-portal", true);
-                if (openRift(block.getLocation().add(0.5, 1, 0.5), event.getPlayer(), asPortal)) {
+                Location portalAt = block.getLocation().add(0.5, 1, 0.5);
+                Location frameAt = ancientCity.portalLocation(block);
+                if (frameAt != null) {
+                    portalAt = frameAt;
+                    asPortal = true;
+                }
+                if (openRift(portalAt, event.getPlayer(), asPortal)) {
+                    SiftAdvancementGrant.grant(plugin, event.getPlayer(), "sonorous_song");
+                    if (frameAt != null) {
+                        ancientCity.fireBeams(block, frameAt);
+                        SiftAdvancementGrant.grant(plugin, event.getPlayer(), "ancient_gate");
+                    }
                     portalSongTracker.startCooldown(now, cooldownMillis);
                     event.getPlayer().sendMessage("§5The Sonorous song awakens a Rift!");
                     event.getPlayer().sendActionBar("§bThe Sonorous song is complete.");

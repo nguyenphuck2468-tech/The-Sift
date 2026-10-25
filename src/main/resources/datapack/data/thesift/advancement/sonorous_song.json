@@ -1,0 +1,23 @@
+{
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "minecraft:note_block"
+    },
+    "title": "The Singer's Song",
+    "description": "Play the eight-note song on Note Blocks above Sonorous Deepslate",
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ],
+  "parent": "thesift:singer_awake"
+}

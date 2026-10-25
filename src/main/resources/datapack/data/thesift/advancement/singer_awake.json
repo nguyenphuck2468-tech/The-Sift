@@ -1,0 +1,23 @@
+{
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "display": {
+    "icon": {
+      "id": "minecraft:goat_horn"
+    },
+    "title": "Wake the Singer",
+    "description": "Blow a Goat Horn in an Ancient City to awaken the Sonorous Deepslate",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": false
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ],
+  "parent": "thesift:root"
+}

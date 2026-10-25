@@ -249,6 +249,7 @@ public final class ResonanceManager implements Listener {
             bar.removeAll();
             bar.setVisible(false);
         }
+        SiftAdvancementGrant.grant(plugin, event.getEntity().getKiller(), "singer_silenced");
         if (plugin.getConfig().getBoolean("resonance.singer.drop-charoite", true)) {
             ItemStack drop = new SiftiteContent(plugin).item(org.bukkit.Material.AMETHYST_SHARD,
                     "charoite", "Charoite");

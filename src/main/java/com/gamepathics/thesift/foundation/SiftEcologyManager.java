@@ -942,6 +942,7 @@ public final class SiftEcologyManager implements Listener {
             sift.spawnParticle(Particle.DUST, at.clone().add(0, 2, 0), 18,
                     2.5, 1.5, 2.5, ichor);
             if (player.getLocation().getBlock().getLightFromSky() > 0) {
+                SiftAdvancementGrant.grant(plugin, player, "ichor_wanderer");
                 player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 120, 0, true, false, true));
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 120, 0, true, false, true));
             }
