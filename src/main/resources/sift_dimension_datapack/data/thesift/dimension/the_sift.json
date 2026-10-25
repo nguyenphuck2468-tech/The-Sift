@@ -2,45 +2,15 @@
   "type": "thesift:the_sift",
   "generator": {
     "type": "minecraft:noise",
-    "settings": "minecraft:overworld",
+    "settings": "thesift:the_sift",
     "biome_source": {
       "type": "minecraft:multi_noise",
       "biomes": [
         {
-          "biome": "thesift:pink_meadows",
+          "biome": "thesift:sift_wastes",
           "parameters": {
             "temperature": [
-              0.0,
-              1.0
-            ],
-            "humidity": [
-              0.0,
-              1.0
-            ],
-            "continentalness": [
               -1.0,
-              0.25
-            ],
-            "erosion": [
-              -1.0,
-              1.0
-            ],
-            "weirdness": [
-              -1.0,
-              1.0
-            ],
-            "depth": [
-              -1.0,
-              1.0
-            ],
-            "offset": 0.0
-          }
-        },
-        {
-          "biome": "thesift:bulb_forest",
-          "parameters": {
-            "temperature": [
-              0.0,
               1.0
             ],
             "humidity": [
@@ -49,127 +19,7 @@
             ],
             "continentalness": [
               -1.0,
-              0.25
-            ],
-            "erosion": [
-              -1.0,
-              1.0
-            ],
-            "weirdness": [
-              -1.0,
-              1.0
-            ],
-            "depth": [
-              -1.0,
-              1.0
-            ],
-            "offset": 0.0
-          }
-        },
-        {
-          "biome": "thesift:carapace",
-          "parameters": {
-            "temperature": [
-              -1.0,
-              0.0
-            ],
-            "humidity": [
-              -1.0,
-              0.0
-            ],
-            "continentalness": [
-              -1.0,
-              0.25
-            ],
-            "erosion": [
-              -1.0,
-              1.0
-            ],
-            "weirdness": [
-              -1.0,
-              1.0
-            ],
-            "depth": [
-              -1.0,
-              1.0
-            ],
-            "offset": 0.0
-          }
-        },
-        {
-          "biome": "thesift:crystal_spires",
-          "parameters": {
-            "temperature": [
-              -1.0,
-              1.0
-            ],
-            "humidity": [
-              -1.0,
-              1.0
-            ],
-            "continentalness": [
-              0.25,
-              0.78
-            ],
-            "erosion": [
-              -1.0,
-              1.0
-            ],
-            "weirdness": [
-              -1.0,
-              1.0
-            ],
-            "depth": [
-              -1.0,
-              1.0
-            ],
-            "offset": 0.0
-          }
-        },
-        {
-          "biome": "thesift:shattered_peaks",
-          "parameters": {
-            "temperature": [
-              -1.0,
-              1.0
-            ],
-            "humidity": [
-              -1.0,
-              1.0
-            ],
-            "continentalness": [
-              0.78,
-              1.0
-            ],
-            "erosion": [
-              -1.0,
-              1.0
-            ],
-            "weirdness": [
-              -1.0,
-              1.0
-            ],
-            "depth": [
-              -1.0,
-              1.0
-            ],
-            "offset": 0.0
-          }
-        },
-        {
-          "biome": "thesift:ichor_snowy_peaks",
-          "parameters": {
-            "temperature": [
-              -1.0,
-              -0.65
-            ],
-            "humidity": [
-              -1.0,
-              1.0
-            ],
-            "continentalness": [
-              -1.0,
-              1.0
+              0.58
             ],
             "erosion": [
               -1.0,
@@ -190,16 +40,16 @@
           "biome": "thesift:overgrown_clearing",
           "parameters": {
             "temperature": [
-              -0.78,
-              -0.43
+              -1.0,
+              1.0
             ],
             "humidity": [
-              -1.0,
+              0.0,
               1.0
             ],
             "continentalness": [
               -1.0,
-              1.0
+              0.58
             ],
             "erosion": [
               -1.0,
@@ -207,239 +57,59 @@
             ],
             "weirdness": [
               -1.0,
-              1.0
+              0.18
             ],
             "depth": [
               -1.0,
               1.0
             ],
-            "offset": 0.002
-          }
-        },
-        {
-          "biome": "thesift:overgrown_forest_slopes",
-          "parameters": {
-            "temperature": [
-              -0.56,
-              -0.21
-            ],
-            "humidity": [
-              -1.0,
-              1.0
-            ],
-            "continentalness": [
-              -1.0,
-              1.0
-            ],
-            "erosion": [
-              -1.0,
-              1.0
-            ],
-            "weirdness": [
-              -1.0,
-              1.0
-            ],
-            "depth": [
-              -1.0,
-              1.0
-            ],
-            "offset": 0.004
+            "offset": 0.0
           }
         },
         {
           "biome": "thesift:overgrown_forest",
           "parameters": {
             "temperature": [
-              -0.33,
-              0.02
+              -1.0,
+              1.0
             ],
             "humidity": [
-              -1.0,
+              0.0,
               1.0
             ],
             "continentalness": [
               -1.0,
-              1.0
+              0.58
             ],
             "erosion": [
               -1.0,
               1.0
             ],
             "weirdness": [
-              -1.0,
+              0.18,
               1.0
             ],
             "depth": [
               -1.0,
               1.0
             ],
-            "offset": 0.006
-          }
-        },
-        {
-          "biome": "thesift:overgrown_peaks",
-          "parameters": {
-            "temperature": [
-              -0.11,
-              0.24
-            ],
-            "humidity": [
-              -1.0,
-              1.0
-            ],
-            "continentalness": [
-              -1.0,
-              1.0
-            ],
-            "erosion": [
-              -1.0,
-              1.0
-            ],
-            "weirdness": [
-              -1.0,
-              1.0
-            ],
-            "depth": [
-              -1.0,
-              1.0
-            ],
-            "offset": 0.008
-          }
-        },
-        {
-          "biome": "thesift:overgrown_slopes",
-          "parameters": {
-            "temperature": [
-              0.11,
-              0.46
-            ],
-            "humidity": [
-              -1.0,
-              1.0
-            ],
-            "continentalness": [
-              -1.0,
-              1.0
-            ],
-            "erosion": [
-              -1.0,
-              1.0
-            ],
-            "weirdness": [
-              -1.0,
-              1.0
-            ],
-            "depth": [
-              -1.0,
-              1.0
-            ],
-            "offset": 0.01
-          }
-        },
-        {
-          "biome": "thesift:sift_deep_dark",
-          "parameters": {
-            "temperature": [
-              0.33,
-              0.68
-            ],
-            "humidity": [
-              -1.0,
-              1.0
-            ],
-            "continentalness": [
-              -1.0,
-              1.0
-            ],
-            "erosion": [
-              -1.0,
-              1.0
-            ],
-            "weirdness": [
-              -1.0,
-              1.0
-            ],
-            "depth": [
-              -1.0,
-              1.0
-            ],
-            "offset": 0.012
-          }
-        },
-        {
-          "biome": "thesift:sift_wastes",
-          "parameters": {
-            "temperature": [
-              0.56,
-              0.91
-            ],
-            "humidity": [
-              -1.0,
-              1.0
-            ],
-            "continentalness": [
-              -1.0,
-              1.0
-            ],
-            "erosion": [
-              -1.0,
-              1.0
-            ],
-            "weirdness": [
-              -1.0,
-              1.0
-            ],
-            "depth": [
-              -1.0,
-              1.0
-            ],
-            "offset": 0.014
-          }
-        },
-        {
-          "biome": "thesift:siftslate_peaks",
-          "parameters": {
-            "temperature": [
-              0.78,
-              1
-            ],
-            "humidity": [
-              -1.0,
-              1.0
-            ],
-            "continentalness": [
-              -1.0,
-              1.0
-            ],
-            "erosion": [
-              -1.0,
-              1.0
-            ],
-            "weirdness": [
-              -1.0,
-              1.0
-            ],
-            "depth": [
-              -1.0,
-              1.0
-            ],
-            "offset": 0.016
+            "offset": 0.0
           }
         },
         {
           "biome": "thesift:siftslate_slopes",
           "parameters": {
             "temperature": [
-              1.0,
-              1
+              -1.0,
+              1.0
             ],
             "humidity": [
               -1.0,
-              1.0
+              0.0
             ],
             "continentalness": [
-              -1.0,
-              1.0
+              0.58,
+              0.88
             ],
             "erosion": [
               -1.0,
@@ -453,7 +123,187 @@
               -1.0,
               1.0
             ],
-            "offset": 0.018
+            "offset": 0.0
+          }
+        },
+        {
+          "biome": "thesift:overgrown_slopes",
+          "parameters": {
+            "temperature": [
+              -1.0,
+              1.0
+            ],
+            "humidity": [
+              0.0,
+              1.0
+            ],
+            "continentalness": [
+              0.58,
+              0.88
+            ],
+            "erosion": [
+              -1.0,
+              1.0
+            ],
+            "weirdness": [
+              -1.0,
+              0.18
+            ],
+            "depth": [
+              -1.0,
+              1.0
+            ],
+            "offset": 0.0
+          }
+        },
+        {
+          "biome": "thesift:overgrown_forest_slopes",
+          "parameters": {
+            "temperature": [
+              -1.0,
+              1.0
+            ],
+            "humidity": [
+              0.0,
+              1.0
+            ],
+            "continentalness": [
+              0.58,
+              0.88
+            ],
+            "erosion": [
+              -1.0,
+              1.0
+            ],
+            "weirdness": [
+              0.18,
+              1.0
+            ],
+            "depth": [
+              -1.0,
+              1.0
+            ],
+            "offset": 0.0
+          }
+        },
+        {
+          "biome": "thesift:ichor_snowy_peaks",
+          "parameters": {
+            "temperature": [
+              -1.0,
+              1.0
+            ],
+            "humidity": [
+              -1.0,
+              1.0
+            ],
+            "continentalness": [
+              0.88,
+              1.0
+            ],
+            "erosion": [
+              -1.0,
+              0.0
+            ],
+            "weirdness": [
+              -1.0,
+              1.0
+            ],
+            "depth": [
+              -1.0,
+              0.64
+            ],
+            "offset": 0.0
+          }
+        },
+        {
+          "biome": "thesift:siftslate_peaks",
+          "parameters": {
+            "temperature": [
+              -1.0,
+              1.0
+            ],
+            "humidity": [
+              -1.0,
+              0.0
+            ],
+            "continentalness": [
+              0.88,
+              1.0
+            ],
+            "erosion": [
+              0.0,
+              1.0
+            ],
+            "weirdness": [
+              -1.0,
+              1.0
+            ],
+            "depth": [
+              -1.0,
+              0.64
+            ],
+            "offset": 0.0
+          }
+        },
+        {
+          "biome": "thesift:overgrown_peaks",
+          "parameters": {
+            "temperature": [
+              -1.0,
+              1.0
+            ],
+            "humidity": [
+              0.0,
+              1.0
+            ],
+            "continentalness": [
+              0.88,
+              1.0
+            ],
+            "erosion": [
+              0.0,
+              1.0
+            ],
+            "weirdness": [
+              -1.0,
+              1.0
+            ],
+            "depth": [
+              -1.0,
+              0.64
+            ],
+            "offset": 0.0
+          }
+        },
+        {
+          "biome": "thesift:sift_deep_dark",
+          "parameters": {
+            "temperature": [
+              -1.0,
+              1.0
+            ],
+            "humidity": [
+              -1.0,
+              1.0
+            ],
+            "continentalness": [
+              0.88,
+              1.0
+            ],
+            "erosion": [
+              -1.0,
+              1.0
+            ],
+            "weirdness": [
+              -1.0,
+              1.0
+            ],
+            "depth": [
+              0.64,
+              1.0
+            ],
+            "offset": 0.0
           }
         }
       ]

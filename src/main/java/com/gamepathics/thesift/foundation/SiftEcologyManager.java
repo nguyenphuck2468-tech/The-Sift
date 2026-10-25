@@ -185,7 +185,7 @@ public final class SiftEcologyManager implements Listener {
             generateAbandonedPortal(chunk, random);
             generationOperations++;
         }
-        if ((key.contains("overgrown") || key.endsWith("carapace")) && random.nextInt(24) == 0) {
+        if ((key.contains("overgrown") || (key.endsWith("carapace") || key.endsWith("sift_wastes"))) && random.nextInt(24) == 0) {
             generateIchorSpring(chunk, random);
             generationOperations++;
         }
@@ -198,22 +198,22 @@ public final class SiftEcologyManager implements Listener {
         }
         spawnSiftWildlife(chunk, key, random);
         generationOperations++;
-        if (key.endsWith("pink_meadows") && random.nextInt(22) == 0) {
+        if ((key.endsWith("pink_meadows") || key.endsWith("overgrown_clearing")) && random.nextInt(22) == 0) {
             summonSinger(chunk, random);
             generationOperations++;
-        } else if (key.endsWith("crystal_spires") && random.nextInt(55) == 0) {
+        } else if ((key.endsWith("crystal_spires") || key.endsWith("siftslate_slopes")) && random.nextInt(55) == 0) {
             summonEchoGolem(chunk, random);
             generationOperations++;
         }
-        if (key.endsWith("shattered_peaks") && plugin.getConfig().getBoolean("content.rift-events", true)
+        if ((key.endsWith("shattered_peaks") || key.endsWith("siftslate_peaks")) && plugin.getConfig().getBoolean("content.rift-events", true)
                 && random.nextInt(120) == 0) {
             openNaturalRift(chunk);
             generationOperations++;
         }
-        if (key.endsWith("bulb_forest") && random.nextInt(160) == 0) {
+        if ((key.endsWith("bulb_forest") || key.endsWith("overgrown_forest")) && random.nextInt(160) == 0) {
             spawnBoss(chunk, EntityType.WARDEN, "Prism Warden", "prism_warden", 180.0, 28.0);
             generationOperations++;
-        } else if (key.endsWith("shattered_peaks") && random.nextInt(120) == 0) {
+        } else if ((key.endsWith("shattered_peaks") || key.endsWith("siftslate_peaks")) && random.nextInt(120) == 0) {
             spawnBoss(chunk, EntityType.RAVAGER, "The Sifter", "the_sifter", 220.0, 24.0);
             generationOperations++;
         }
@@ -226,18 +226,18 @@ public final class SiftEcologyManager implements Listener {
         generateCharoiteOre(chunk, random);
         generateSiftiteOre(chunk, random);
         spawnSiftWildlife(chunk, biome, random);
-        if (biome.endsWith("pink_meadows") && random.nextInt(22) == 0) summonSinger(chunk, random);
-        else if (biome.endsWith("crystal_spires") && random.nextInt(55) == 0) summonEchoGolem(chunk, random);
-        if (biome.endsWith("shattered_peaks") && plugin.getConfig().getBoolean("content.rift-events", true)
+        if ((biome.endsWith("pink_meadows") || biome.endsWith("overgrown_clearing")) && random.nextInt(22) == 0) summonSinger(chunk, random);
+        else if ((biome.endsWith("crystal_spires") || biome.endsWith("siftslate_slopes")) && random.nextInt(55) == 0) summonEchoGolem(chunk, random);
+        if ((biome.endsWith("shattered_peaks") || biome.endsWith("siftslate_peaks")) && plugin.getConfig().getBoolean("content.rift-events", true)
                 && random.nextInt(120) == 0) openNaturalRift(chunk);
-        if (biome.endsWith("bulb_forest") && random.nextInt(160) == 0)
+        if ((biome.endsWith("bulb_forest") || biome.endsWith("overgrown_forest")) && random.nextInt(160) == 0)
             spawnBoss(chunk, EntityType.WARDEN, "Prism Warden", "prism_warden", 180.0, 28.0);
-        else if (biome.endsWith("shattered_peaks") && random.nextInt(120) == 0)
+        else if ((biome.endsWith("shattered_peaks") || biome.endsWith("siftslate_peaks")) && random.nextInt(120) == 0)
             spawnBoss(chunk, EntityType.RAVAGER, "The Sifter", "the_sifter", 220.0, 24.0);
     }
 
     private void decorateStrictSurface(Chunk chunk, String biome, Random random) {
-        if (!(biome.endsWith("pink_meadows") || biome.endsWith("bulb_forest")
+        if (!((biome.endsWith("pink_meadows") || biome.endsWith("overgrown_clearing")) || (biome.endsWith("bulb_forest") || biome.endsWith("overgrown_forest"))
                 || biome.contains("overgrown"))) return;
         World world = chunk.getWorld();
         for (int i = 0; i < 28; i++) {
@@ -258,7 +258,7 @@ public final class SiftEcologyManager implements Listener {
         int z = chunk.getZ() * 16 + 3 + random.nextInt(10);
         int y = world.getHighestBlockYAt(x, z) + 1;
         if (y <= world.getMinHeight() || y >= world.getMaxHeight() - 12) return;
-        boolean forest = biome.endsWith("bulb_forest") || biome.endsWith("pink_meadows")
+        boolean forest = (biome.endsWith("bulb_forest") || biome.endsWith("overgrown_forest")) || (biome.endsWith("pink_meadows") || biome.endsWith("overgrown_clearing"))
                 || biome.contains("overgrown_forest") || biome.contains("overgrown_clearing");
         if (forest) {
             int height = 4 + random.nextInt(4);

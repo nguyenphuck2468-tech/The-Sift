@@ -439,3 +439,13 @@ Historical live Paper launch attempt (2026-10-25; resolved by progression-pack c
 - Removed legacy progression features are recorded as **chưa làm** in `docs/parity-matrix.md`. Future feature definitions must use the Paper 26.3 `worldgen/feature/` schema and provider-backed content while strict mode is enabled.
 - Server boot and console commands are **ĐÃ CHẠY THẬT** locally. Provider parsing, generated chunk output, and real third-party plugin behavior remain **CHƯA CHẠY**.
 - Final implementation commits: `5ac49a9` (progression worldgen removal) and `6ce9da2` (datapack tests, Paper boot CI, and docs). CI [40151839582](https://github.com/nguyenphuck2468-tech/The-Sift/actions/runs/40151839582) passed, including the Paper `Done` gate. The clean build/resource-pack task passed with 83/83 tests (80 → 83).
+
+
+## Terrain port (mielon-parity, 2026-10-25)
+
+Terrain now comes from the mod's datapack: `scripts/port_mod_terrain.py <mod data root> .`
+regenerates noise/density/carver/noise_settings, the dimension biome source and the
+dimension type (0..256). `scripts/check_terrain_refs.py` verifies references and runs in CI.
+Siftslate/growth/sculk terrain blocks are vanilla stand-ins (see parity matrix). The
+change was written without a Java 25/Paper toolchain: run `./gradlew clean build` and the
+Paper boot gate before merging, then delete and regenerate any existing `the_sift` world.

@@ -1,0 +1,93 @@
+{
+  "type": "minecraft:interpolated",
+  "input": {
+    "type": "minecraft:add",
+    "left": {
+      "type": "minecraft:gradient",
+      "from_value": 1.02,
+      "to_value": -1.78,
+      "axis": "y",
+      "tiling": "clamp_to_edge",
+      "from_coordinate": 0,
+      "to_coordinate": 256
+    },
+    "right": {
+      "type": "minecraft:add",
+      "left": {
+        "type": "minecraft:add",
+        "left": {
+          "type": "minecraft:add",
+          "left": "thesift:regional_offset",
+          "right": {
+            "type": "minecraft:add",
+            "left": {
+              "type": "minecraft:mul",
+              "left": "thesift:terrain_intensity",
+              "right": {
+                "type": "minecraft:add",
+                "left": "thesift:plateau_offset",
+                "right": "thesift:canyon_offset"
+              }
+            },
+            "right": {
+              "type": "minecraft:add",
+              "left": {
+                "type": "minecraft:mul",
+                "left": 0.041,
+                "right": {
+                  "type": "minecraft:noise",
+                  "noise": "thesift:terrain_detail",
+                  "xz_scale": 0.96,
+                  "y_scale": 0.0
+                }
+              },
+              "right": {
+                "type": "minecraft:add",
+                "left": {
+                  "type": "minecraft:mul",
+                  "left": "thesift:terrain_intensity",
+                  "right": {
+                    "type": "minecraft:mul",
+                    "left": 0.05,
+                    "right": {
+                      "type": "minecraft:noise",
+                      "noise": "thesift:escarpment_detail",
+                      "xz_scale": 0.58,
+                      "y_scale": 0.46
+                    }
+                  }
+                },
+                "right": {
+                  "type": "minecraft:mul",
+                  "left": "thesift:terrain_intensity",
+                  "right": {
+                    "type": "minecraft:mul",
+                    "left": 0.04,
+                    "right": {
+                      "type": "minecraft:noise",
+                      "noise": "thesift:cliff_roughness",
+                      "xz_scale": 1.12,
+                      "y_scale": 0.76
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "right": {
+          "type": "minecraft:add",
+          "left": "thesift:healthy_path_valley_offset",
+          "right": {
+            "type": "minecraft:add",
+            "left": "thesift:giant_cliff_offset",
+            "right": "thesift:layered_shelf_offset"
+          }
+        }
+      },
+      "right": "thesift:mountain_offset"
+    }
+  },
+  "cell_size_xz": 4,
+  "cell_size_y": 8
+}

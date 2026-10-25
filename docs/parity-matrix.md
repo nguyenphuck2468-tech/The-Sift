@@ -98,3 +98,16 @@ Already present in the repository before this branch: Singer, Echo Golem, Blub, 
 Added on the `mielon-parity` branch: Goat Horn wakes a Singer; Ancient City frame + eight Sonorous Deepslate + beams; portal-mode Rift; timed natural Rifts in The Sift; 10 more advancements (20 total, matching the mod's count).
 
 Still different or missing: Overgrown Willow wood set (cherry stand-in), sculk plants, Ichor as a real flowing fluid (**STAND-IN**), biome worldgen features/carvers in strict mode (all biome arrays empty), 10 vs 15 biomes, music-disc audio (needs a resource pack), Bedrock level 2.
+
+
+## Terrain port from the mod (mielon-parity)
+
+| Area | Status |
+|---|---|
+| Noise router, 21 density functions, 15 noises, `canyon`/`cave`/`cave_extra_underground` carvers, `the_sift` noise settings | **Ported** from the mod datapack by `scripts/port_mod_terrain.py` (namespace rewritten). Reference closure checked by `scripts/check_terrain_refs.py` (also run in CI). **CHƯA CHẠY** on a real Paper 26.3 server. |
+| Dimension biome source | Replaced by the mod's 10-biome multi-noise table. The five prototype biomes stay registered but no longer generate. |
+| Dimension type | `min_y 0`, `height 256`, `logical_height 256` to match the mod's density functions (previously -64/384). **Existing `the_sift` worlds must be regenerated.** |
+| Terrain blocks | **STAND-IN**: `siftslate`→`deepslate`, `siftslate_growth`→`moss_block`, `healthy_sculk`→`sculk`, `dry_healthy_sculk`→`pale_moss_block`. A datapack cannot place provider blocks. |
+| Biome carvers | The ten mod-named biomes now list the three mod carvers. |
+| Natural-spawn hooks | Singer (`overgrown_clearing`), Echo Golem (`siftslate_slopes`), Prism Warden (`overgrown_forest`), natural Rifts/The Sifter (`siftslate_peaks`), Ichor springs (`sift_wastes`) re-keyed from the prototype biomes. Compile and live behaviour **CHƯA CHẠY**. |
+| Biome `features` arrays, structures, lakes, willow trees, ores via placed features | Still **chưa làm** (empty). |

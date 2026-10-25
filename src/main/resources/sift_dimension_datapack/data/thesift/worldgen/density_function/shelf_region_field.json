@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:add",
+  "left": {
+    "type": "minecraft:noise",
+    "noise": "thesift:shelf_regions",
+    "xz_scale": 0.55,
+    "y_scale": 0.0
+  },
+  "right": {
+    "type": "minecraft:mul",
+    "left": 0.13,
+    "right": {
+      "type": "minecraft:noise",
+      "noise": "thesift:terrace_warp",
+      "xz_scale": 0.48,
+      "y_scale": 0.0
+    }
+  }
+}

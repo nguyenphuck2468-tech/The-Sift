@@ -22,7 +22,11 @@
       "modifier": "append"
     }
   },
-  "carvers": [],
+  "carvers": [
+    "thesift:cave",
+    "thesift:cave_extra_underground",
+    "thesift:canyon"
+  ],
   "downfall": 0.86,
   "effects": {
     "water_color": "#278f87",
