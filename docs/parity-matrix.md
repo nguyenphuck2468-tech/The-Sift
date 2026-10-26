@@ -110,7 +110,8 @@ Still different or missing: Overgrown Willow wood set (cherry stand-in), sculk p
 | Terrain blocks | **STAND-IN**: `siftslate`→`deepslate`, `siftslate_growth`→`moss_block`, `healthy_sculk`→`sculk`, `dry_healthy_sculk`→`pale_moss_block`. A datapack cannot place provider blocks. |
 | Biome carvers | The ten mod-named biomes now list the three mod carvers. |
 | Natural-spawn hooks | Singer (`overgrown_clearing`), Echo Golem (`siftslate_slopes`), Prism Warden (`overgrown_forest`), natural Rifts/The Sifter (`siftslate_peaks`), Ichor springs (`sift_wastes`) re-keyed from the prototype biomes. Compile and live behaviour **CHƯA CHẠY**. |
-| Biome `features` arrays, structures, lakes, willow trees, ores via placed features | Still **chưa làm** (empty). |
+| Biome `features` arrays, structures, lakes, willow trees, sculk and flora features | Still **chưa làm** (empty). |
+| Siftslate ores (coal, coal surface, diamond, emerald) | **Ported** by `scripts/port_mod_ores.py` with the mod's size/count/height/filters. **STAND-IN**: vanilla `deepslate_*_ore` replacing deepslate, in step 6 of all ten mod biomes. Charoite and Siftite ore remain Java/provider generated. |
 
 ## Port from the mod source (mielons-the-sift-neoforge-port, MIT, (c) 2026 Mielon)
 

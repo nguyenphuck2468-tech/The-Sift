@@ -3,9 +3,9 @@
 import json, re, sys
 from pathlib import Path
 base = Path(sys.argv[1] if len(sys.argv) > 1 else "src/main/resources/sift_dimension_datapack/data/thesift")
-registries = ["noise", "density_function", "carver", "noise_settings", "biome"]
-have = {f"thesift:{f.stem}": r for r in registries for f in (base / "worldgen" / r).glob("*.json")}
-have_by = {r: {k for k, v in have.items() if v == r} for r in registries}
+registries = ["noise", "density_function", "carver", "noise_settings", "biome", "feature", "placed_feature"]
+have_by = {r: {f"thesift:{f.stem}" for f in (base / "worldgen" / r).glob("*.json")} for r in registries}
+have = set().union(*have_by.values())
 IGNORE_NAMES = {"thesift:bedrock_floor", "thesift:the_sift"}  # random_name / dimension keys
 errors = []
 for f in base.rglob("*.json"):
@@ -24,6 +24,15 @@ for b in dim["generator"]["biome_source"]["biomes"]:
         errors.append(f"dimension biome missing: {b['biome']}")
 if dim["generator"]["settings"] not in have_by["noise_settings"]:
     errors.append("dimension settings missing")
+for f in (base / "worldgen/biome").glob("*.json"):
+    for step in json.loads(f.read_text()).get("features", []):
+        for ref in step:
+            if ref not in have_by["placed_feature"]:
+                errors.append(f"biome {f.stem} feature missing: {ref}")
+for f in (base / "worldgen/placed_feature").glob("*.json"):
+    ref = json.loads(f.read_text())["feature"]
+    if ref not in have_by["feature"]:
+        errors.append(f"placed_feature {f.stem} -> missing feature {ref}")
 print("files:", {r: len(v) for r, v in have_by.items()})
 print("ERRORS:" if errors else "OK: all references resolve")
 for e in errors: print(" ", e)
