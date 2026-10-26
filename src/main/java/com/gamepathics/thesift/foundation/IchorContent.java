@@ -38,11 +38,18 @@ public final class IchorContent {
         this.paneRecipeKey = new NamespacedKey(plugin, "ichor_glass_pane");
     }
 
+    /** Unregisters the two Ichor recipes owned by this plugin (used from onDisable). */
+    public void removeRecipes() {
+        plugin.getServer().removeRecipe(bottleRecipeKey);
+        plugin.getServer().removeRecipe(paneRecipeKey);
+    }
+
     public void registerRecipes() {
         Server server = plugin.getServer();
         server.removeRecipe(bottleRecipeKey);
         server.removeRecipe(paneRecipeKey);
         if (!isIchorEnabled()) return;
+        if (!plugin.getConfig().getBoolean("recipes.enabled", true)) return;
         if (plugin.getConfig().getBoolean("providers.strict", true)
                 && !new ProviderReadiness(plugin).itemsReady()) return;
 

@@ -44,6 +44,20 @@ public final class SiftiteContent implements Listener {
         this.externalItems = Objects.requireNonNull(externalItems);
     }
 
+    /** Unregisters every recipe this plugin owns (called from onDisable so a reload does not leave ghost recipes). */
+    public void removeRecipes() {
+        Server server = plugin.getServer();
+        for (String key : java.util.List.of("charoite", "siftite_nugget", "siftite_ingot",
+                "siftite_upgrade_smithing_template", "smelt_raw_sifter_meat", "smelt_blub_meat")) {
+            server.removeRecipe(new NamespacedKey(plugin, key));
+        }
+        for (String key : java.util.List.of("siftite_sword", "siftite_axe", "siftite_pickaxe",
+                "siftite_shovel", "siftite_hoe", "siftite_helmet", "siftite_chestplate",
+                "siftite_leggings", "siftite_boots")) {
+            server.removeRecipe(new NamespacedKey(plugin, key));
+        }
+    }
+
     public void registerRecipes() {
         Server server = plugin.getServer();
         for (String key : java.util.List.of("charoite", "siftite_nugget", "siftite_ingot",
@@ -373,6 +387,9 @@ public final class SiftiteContent implements Listener {
 
     /** Register a furnace smelting recipe from a tagged item to its cooked counterpart. */
     private void registerFurnish(String key, ItemStack input, ItemStack output) {
+        // Config kill-switch: with recipes.enabled=false the food chain still works through the
+        // FurnaceSmeltEvent fallback listener in SiftEcologyManager instead of a real recipe.
+        if (!plugin.getConfig().getBoolean("recipes.enabled", true)) return;
         if (input == null || output == null) return;
         NamespacedKey recipeKey = new NamespacedKey(plugin, key);
         plugin.getServer().removeRecipe(recipeKey);

@@ -210,6 +210,8 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                 for (Player player : dimension.getPlayers()) player.teleport(safeWorld.getSpawnLocation());
             }
         }
+        if (ichorContent != null) ichorContent.removeRecipes();
+        if (siftiteContent != null) siftiteContent.removeRecipes();
         if (ichorState != null) {
             ichorState.shutdown();
         }

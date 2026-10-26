@@ -934,6 +934,9 @@ public final class SiftEcologyManager implements Listener {
     /** Smelt Raw Sifter Meat into Cooked Sifter Meat (mod parity for the food chain). */
     @EventHandler(ignoreCancelled = true)
     public void onSmeltSifterMeat(org.bukkit.event.inventory.FurnaceSmeltEvent event) {
+        // When the registry owns real furnace recipes (recipes.enabled), let them resolve the
+        // output; this listener is only the belt-and-braces path for strict-provider setups.
+        if (plugin.getConfig().getBoolean("recipes.enabled", true)) return;
         ItemStack source = event.getSource();
         if (source.getType() == Material.BEEF && content.is(source, "raw_sifter_meat")) {
             ItemStack cooked = content.item(Material.COOKED_BEEF, "cooked_sifter_meat", "Cooked Sifter Meat");
@@ -1263,7 +1266,13 @@ public final class SiftEcologyManager implements Listener {
             event.setCancelled(true); // cancel the vanilla egg before it spawns anything
             Block clicked = event.getClickedBlock();
             Location at = clicked.getLocation().add(0.5, 1.0, 0.5);
-            if (summonCreature(species, at)) {
+            // Special mobs keep their dedicated managers so soul-event/charoite wiring applies.
+            boolean spawned = switch (species) {
+                case "echo_golem" -> echoGolemManager.summonEchoGolem(at) != null;
+                case "singer" -> resonanceManager.summonSinger(at) != null;
+                default -> summonCreature(species, at);
+            };
+            if (spawned) {
                 consumeOne(player, hand);
             } else {
                 player.sendMessage("\u00a7cUnknown Sift creature: " + species);

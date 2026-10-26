@@ -210,6 +210,11 @@ spawn-eggs:
   # "op" = only operators may use Sift spawn eggs; "all" = any player.
   permission-mode: op
 
+# Crafting/smelting recipes registered by the plugin (charoite, siftite gear, meat smelting,
+# ichor glass). With false, the meat food chain still works via the FurnaceSmeltEvent fallback.
+recipes:
+  enabled: true
+
 debug:
   chunk-generation-metrics:
     enabled: false

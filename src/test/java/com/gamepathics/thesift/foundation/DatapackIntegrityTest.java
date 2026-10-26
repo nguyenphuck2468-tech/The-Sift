@@ -37,6 +37,22 @@ class DatapackIntegrityTest {
     }
 
     @Test
+    void progressionPackShipsLootTablesReferencedByTheFoodChain() throws IOException {
+        Path lootRoot = PROGRESSION.resolve("data/thesift/loot_table/entity");
+        assertTrue(Files.exists(lootRoot.resolve("sifter.json")),
+                "datapack must bundle the Sifter loot table (raw_sifter_meat drop)");
+        assertTrue(Files.exists(lootRoot.resolve("blub.json")),
+                "datapack must bundle the Blub loot table (blub_meat drop)");
+        // Vanilla rabbit override so tamed Blub rabbits keep the mod-parity meat drop.
+        assertTrue(Files.exists(PROGRESSION.resolve("data/minecraft/loot_table/entities/rabbit.json")));
+        try (Stream<Path> paths = Files.walk(lootRoot)) {
+            for (Path json : paths.filter(path -> path.toString().endsWith(".json")).toList()) {
+                JsonParser.parseString(Files.readString(json)); // must be valid JSON
+            }
+        }
+    }
+
+    @Test
     void biomeIdsHaveOneOwnerAndProgressionKeepsAdvancements() throws IOException {
         Set<String> progressionBiomes = biomeIds(PROGRESSION);
         Set<String> dimensionBiomes = biomeIds(DIMENSION);
