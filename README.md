@@ -63,6 +63,17 @@ crafted Siftite tools/weapons; `siftite.spear-reach` sets the thrown-spear
 reach; and `echo-golem.charoite-protection` extends resonance healing to
 Charoite holders.
 
+### Advancement coverage
+
+The bundled progression datapack ships 21 advancements. Twenty of them are
+granted by real gameplay events (world entry, pickups, crafting, consumption,
+enchanting, boss/creature kills, Rift travel, portal song, Singer barter). The
+one exception is `thesift:tyrant` ("Crimson Conqueror"): its creature, the
+Spire Tyrant, has no spawner in this plugin yet, so the advancement is
+currently unobtainable. This gap is marked in
+`SiftAdvancementManager.onCreatureDeath` and tracked in
+`docs/mod-gap-analysis.md`.
+
 ## Current foundation scope
 
 - Gradle/Java 25 build.

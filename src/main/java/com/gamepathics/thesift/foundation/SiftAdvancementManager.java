@@ -88,6 +88,9 @@ public final class SiftAdvancementManager implements Listener {
             case "prism_warden" -> grant(killer, "warden", "prismatic");
             case "the_sifter", "sifter" -> grant(killer, "sifter");
             case "dark_sniffer" -> grant(killer, "sniffer_hunter");
+            // "tyrant" (Crimson Conqueror) has no spawner yet: the Spire Tyrant boss is not
+            // implemented in this plugin. The bundled datapack advancement stays unobtainable
+            // until a tyrant creature ID is spawned; tracked as a known gap.
             default -> { }
         }
     }
