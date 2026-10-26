@@ -157,9 +157,10 @@ public final class ResonanceManager implements Listener {
             Vector direction = player.getLocation().toVector().subtract(singer.getLocation().toVector()).setY(0);
             if (direction.lengthSquared() < 0.001) direction = new Vector(1, 0, 0);
             direction.normalize();
-            Location drop = singer.getLocation().add(direction.clone().multiply(0.6)).add(0, 1.2, 0);
+            final Vector pushDirection = direction;
+            Location drop = singer.getLocation().add(pushDirection.clone().multiply(0.6)).add(0, 1.2, 0);
             singer.getWorld().dropItem(drop, new ItemStack(material, amount), item ->
-                    item.setVelocity(direction.clone().multiply(0.3).setY(0.2)));
+                    item.setVelocity(pushDirection.clone().multiply(0.3).setY(0.2)));
             SiftAdvancementGrant.grant(plugin, player, "pitch_perfect");
         }, 40L);
     }
