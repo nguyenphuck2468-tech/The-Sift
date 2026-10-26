@@ -64,6 +64,13 @@ public final class SiftEcologyManager implements Listener {
 
     public SiftEcologyManager(JavaPlugin plugin, ResonanceManager resonanceManager,
                               EchoGolemManager echoGolemManager, RiftManager riftManager) {
+        this(plugin, resonanceManager, echoGolemManager, riftManager, null, null);
+    }
+
+    /** Shared wiring: reuse the plugin-wide SiftiteContent/SiftMobFactory when available. */
+    SiftEcologyManager(JavaPlugin plugin, ResonanceManager resonanceManager,
+                       EchoGolemManager echoGolemManager, RiftManager riftManager,
+                       SiftiteContent sharedContent, SiftMobFactory sharedMobFactory) {
         this.plugin = plugin;
         this.resonanceManager = resonanceManager;
         this.echoGolemManager = echoGolemManager;
@@ -72,9 +79,15 @@ public final class SiftEcologyManager implements Listener {
         this.decorationRetryAttemptsKey = new NamespacedKey(plugin, "sift_ecology_retry_attempts");
         this.decorationRetryAtKey = new NamespacedKey(plugin, "sift_ecology_retry_at");
         this.creatureKey = new NamespacedKey(plugin, "sift_creature");
-        this.mobFactory = new SiftMobFactory(plugin);
+        // Prefer the Echo Golem manager's already-shared instances (the ecology module always
+        // runs alongside it in the plugin lifecycle) so item caches stay consistent.
+        this.mobFactory = sharedMobFactory != null ? sharedMobFactory
+                : echoGolemManager != null ? echoGolemManager.mobFactory()
+                : new SiftMobFactory(plugin);
         this.blockBridge = new ExternalBlockBridge(plugin);
-        this.content = new SiftiteContent(plugin);
+        this.content = sharedContent != null ? sharedContent
+                : echoGolemManager != null ? echoGolemManager.content()
+                : new SiftiteContent(plugin);
         this.tideTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             tickTide();
             tickIchorWeather();
@@ -822,9 +835,9 @@ public final class SiftEcologyManager implements Listener {
     public void onSiftBossDeath(EntityDeathEvent event) {
         String id = event.getEntity().getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING);
         if ("prism_warden".equals(id) || "the_sifter".equals(id)) {
-            event.getDrops().add(new SiftiteContent(plugin).item(Material.ECHO_SHARD,
+            event.getDrops().add(content.item(Material.ECHO_SHARD,
                     "heart_of_the_sift", "Heart of the Sift"));
-            event.getDrops().add(new SiftiteContent(plugin).item(Material.AMETHYST_SHARD,
+            event.getDrops().add(content.item(Material.AMETHYST_SHARD,
                     "sift_shard", "Sift Shard"));
         }
     }

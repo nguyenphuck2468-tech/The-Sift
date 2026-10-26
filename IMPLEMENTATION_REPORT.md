@@ -282,9 +282,9 @@ explicit decision and a versioned migration plan.
 | `config-version` | Used by `ConfigMigration`; resource default now matches current version 3. | Keep. |
 | `content.*` for all declared `ContentId` values | All 34 flags are read dynamically by `loadContentFlags()` and shown by `/sift doctor`. `content.siftslate`, `content.healthy_sculk`, `content.overgrown_willow`, `content.blub`, `content.sifter`, and `content.siftite_spear` currently only affect the status snapshot; their related generation/command paths do not consult the flags. The other Siftite equipment flags gate recipe registration, but `/sift give` does not enforce those flags and some generated-item paths bypass them. | Keep for compatibility; fix incomplete enforcement in a later targeted change or mark experimental in docs. Do not delete yet. |
 | `resonance.*`, `resonance.singer.*` | Used. Singer attack values were added/activated in this pass. | Keep. |
-| `echo-golem.enabled`, `max-health`, `attack-damage`, `resonance-period`, `resonance-range`, `heal-amount`, `drop-siftite` | Used. | Keep. |
+| `echo-golem.enabled`, `max-health`, `resonance-period`, `resonance-range`, `heal-amount`, `drop-siftite` | Used. `max-health` default aligned to the reference mod (34 HP neutral guardian); the dead `attack-damage` key was removed because the Echo Golem never attacks players in the mod. | Keep. |
 | `echo-golem.resonance-damage`, `slowness-seconds`, `slowness-amplifier`, `mining-fatigue-seconds`, `mining-fatigue-amplifier` | Not read by Java. | Recommend removal only with approval and config migration; alternatively implement the documented effects separately. |
-| `echo-golem.charoite-protection` | Read only by a private helper that has no call sites; currently no gameplay effect. | Recommend wiring into a defined Echo Golem attack or removing with migration after approval. |
+| `echo-golem.charoite-protection` | Wired: owners holding Charoite receive the resonance heal even outside the pulse range (parity helper shared with ResonanceManager's Singer check). | Keep. |
 | `rift.*` | Used by Rift lifecycle and rewards. | Keep. |
 | `ichor.*` | Used for module enablement, material choice, cauldron costs/effects and Ichor items/state. | Keep. |
 | `charoite.enabled`, `world`, `ore-material`, `drop-min`, `drop-max` | Used. | Keep. |

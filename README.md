@@ -50,7 +50,7 @@ controls. This includes `content.siftslate`, `content.healthy_sculk`,
 `content.sifter`, `echo-golem.resonance-damage`,
 `echo-golem.slowness-seconds`, `echo-golem.slowness-amplifier`,
 `echo-golem.mining-fatigue-seconds`,
-`echo-golem.mining-fatigue-amplifier`, `echo-golem.charoite-protection`,
+`echo-golem.mining-fatigue-amplifier`,
 `charoite.material`, `siftite.ingot-material`, `siftite.nugget-material`,
 `siftite.template-material`, `siftite.smithing-only`,
 `siftite.durability-multiplier`, and `siftite.spear-reach`. Existing config

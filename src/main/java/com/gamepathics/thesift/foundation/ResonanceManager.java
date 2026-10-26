@@ -44,6 +44,7 @@ public final class ResonanceManager implements Listener {
     private final NamespacedKey entityKey;
     private final NamespacedKey itemKey;
     private final SiftMobFactory mobFactory;
+    private final SiftiteContent content;
     private final Map<UUID, BossBar> bars = new HashMap<>();
     private final Map<UUID, Long> hornCooldownUntil = new HashMap<>();
     private final Map<UUID, Long> barterUntil = new HashMap<>();
@@ -51,10 +52,16 @@ public final class ResonanceManager implements Listener {
     private int taskId = -1;
 
     public ResonanceManager(JavaPlugin plugin) {
+        this(plugin, new SiftiteContent(plugin), new SiftMobFactory(plugin));
+    }
+
+    /** Shared wiring: reuse the plugin-wide content registry and mob factory instead of new instances. */
+    ResonanceManager(JavaPlugin plugin, SiftiteContent content, SiftMobFactory mobFactory) {
         this.plugin = plugin;
         this.entityKey = new NamespacedKey(plugin, "resonance_entity");
         this.itemKey = new NamespacedKey(plugin, "content");
-        this.mobFactory = new SiftMobFactory(plugin);
+        this.content = content;
+        this.mobFactory = mobFactory;
     }
 
     public void start() {
@@ -294,8 +301,7 @@ public final class ResonanceManager implements Listener {
         }
         SiftAdvancementGrant.grant(plugin, event.getEntity().getKiller(), "singer_silenced");
         if (plugin.getConfig().getBoolean("resonance.singer.drop-charoite", true)) {
-            ItemStack drop = new SiftiteContent(plugin).item(org.bukkit.Material.AMETHYST_SHARD,
-                    "charoite", "Charoite");
+            ItemStack drop = content.forId("charoite");
             if (drop != null) event.getDrops().add(drop);
         }
     }

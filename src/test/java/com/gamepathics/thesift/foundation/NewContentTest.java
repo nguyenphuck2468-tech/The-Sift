@@ -57,6 +57,38 @@ class EchoGolemManagerTest {
 
         assertEquals(1, echoGolemManager.trackedBossBarCount());
     }
+
+    @Test
+    void charoiteInArmorOrOffhandCountsAsProtection() {
+        mockPlugin.getConfig().set("providers.strict", false);
+        var world = server.addSimpleWorld("golem-charoite");
+        org.mockbukkit.mockbukkit.entity.PlayerMock player = server.addPlayer();
+        ItemStack charoite = echoGolemManager.content().item(Material.AMETHYST_SHARD, "charoite", "Charoite");
+
+        assertFalse(echoGolemManager.protectedByCharoite(player));
+
+        player.getInventory().setHelmet(charoite);
+        assertTrue(echoGolemManager.protectedByCharoite(player));
+
+        player.getInventory().setHelmet(null);
+        player.getInventory().setItemInOffHand(charoite);
+        assertTrue(echoGolemManager.protectedByCharoite(player));
+
+        // Untagged vanilla items must not be mistaken for Charoite.
+        player.getInventory().setItemInOffHand(new ItemStack(Material.AMETHYST_SHARD));
+        assertFalse(echoGolemManager.protectedByCharoite(player));
+    }
+
+    @Test
+    void charoiteProtectionCanBeDisabledByConfig() {
+        mockPlugin.getConfig().set("providers.strict", false);
+        mockPlugin.getConfig().set("echo-golem.charoite-protection", false);
+        org.mockbukkit.mockbukkit.entity.PlayerMock player = server.addPlayer();
+        player.getInventory().setItem(0,
+                echoGolemManager.content().item(Material.AMETHYST_SHARD, "charoite", "Charoite"));
+
+        assertFalse(echoGolemManager.protectedByCharoite(player));
+    }
 }
 
 class RiftManagerTest {

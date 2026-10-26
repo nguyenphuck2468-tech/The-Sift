@@ -77,13 +77,14 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             getServer().getPluginManager().registerEvents(new CharoiteEnchantingListener(this), this);
         }
         if (contentRegistry.isEnabled(ContentId.SINGER) && contentRegistry.isEnabled(ContentId.RESONANCE)) {
-            resonanceManager = new ResonanceManager(this);
+            if (siftiteContent == null) siftiteContent = new SiftiteContent(this);
+            resonanceManager = new ResonanceManager(this, siftiteContent, new SiftMobFactory(this));
             getServer().getPluginManager().registerEvents(resonanceManager, this);
             resonanceManager.start();
         }
         if (contentRegistry.isEnabled(ContentId.ECHO_GOLEM)) {
             if (siftiteContent == null) siftiteContent = new SiftiteContent(this);
-            echoGolemManager = new EchoGolemManager(this, siftiteContent);
+            echoGolemManager = new EchoGolemManager(this, siftiteContent, new SiftMobFactory(this));
             getServer().getPluginManager().registerEvents(echoGolemManager, this);
             echoGolemManager.start();
         }
@@ -96,7 +97,9 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         }
         if (contentRegistry.isEnabled(ContentId.SIFT_DIMENSION)) {
             siftDimensionManager = new SiftDimensionManager(this, providerReadiness);
-            siftEcologyManager = new SiftEcologyManager(this, resonanceManager, echoGolemManager, riftManager);
+            siftEcologyManager = new SiftEcologyManager(this, resonanceManager, echoGolemManager,
+                    riftManager, siftiteContent,
+                    echoGolemManager != null ? echoGolemManager.mobFactory() : new SiftMobFactory(this));
             getServer().getPluginManager().registerEvents(siftEcologyManager, this);
             siftEcologyManager.populateLoadedSpawnChunks();
             advancementManager = new SiftAdvancementManager(this);
