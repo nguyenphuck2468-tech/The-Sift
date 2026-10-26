@@ -22,11 +22,11 @@ Phương pháp: đọc tĩnh toàn bộ mã Java và dữ liệu của mod, đ�
 
 ## 2. Nội dung plugin CÓ nhưng mod KHÔNG có (54 ID)
 
-Các mục này nằm trong `content-spec.json` nhưng không tồn tại trong mod. Chúng đến từ một thiết kế khác (không phải Mielon's The Sift):
+Các mục này nằm trong `content-spec.json` nhưng không có ID trùng trong mod. Ba mục là bản đổi tên của nội dung mod: `siftite_ore` (= `siftslate_siftite_ore`), `charoite_ore` (= `siftslate_charoite_ore`) và `overgrown_willow` (= bộ gỗ `overgrown_willow_*`). Chúng đến từ một thiết kế khác (không phải Mielon's The Sift):
 
 `bulb`, `bulb_glow`, `charoite_ore`, `chiseled_siftstone`, `cooked_loomer`, `drifter`, `frost_fragment`, `frost_stalker`, `glimmerwing`, `glowbell`, `heart_of_the_sift`, `hollow_bulb`, `koi`, `loomer`, `lumen_tulip`, `overgrown_willow`, `phase_boots`, `prism_blade`, `prism_boots`, `prism_chestplate`, `prism_helmet`, `prism_leggings`, `prism_warden`, `prismite`, `raw_loomer`, `rift_gate`, `rift_key`, `rift_walker`, `shard_axe`, `shard_ore`, `shard_pickaxe`, `shard_sword`, `shardling`, `sift_altar`, `sift_catalyst`, `sift_core`, `sift_crown`, `sift_grass`, `sift_leaves`, `sift_log`, `sift_planks`, `sift_shard`, `sift_soil`, `sift_wastes_stalker`, `siftite_ore`, `siftstone`, `siftstone_bricks`, `sky_fragment`, `spire_fragment`, `sunspore`, `the_sifter`, `thornback`, `violet_wisp`, `wisp`
 
-Đáng chú ý nhất: **The Sifter** (boss Ravager 220 máu), **Prism Warden** (boss), các bộ đồ **Prism/Shard**, **Rift Key** (mod không có), 5 biome tự đặt (`crystal_spires`, `carapace`, `shattered_peaks`, `bulb_forest`, `pink_meadows`).
+Đáng chú ý nhất: **The Sifter** (boss Ravager 220 máu), **Prism Warden** (boss), các bộ đồ **Prism/Shard**, **Rift Key** (mod chỉ có item `sift_rift`, chỉ dùng được ở chế độ Creative; Rift Key dùng được khi sinh tồn là phần của plugin), 5 biome tự đặt (`crystal_spires`, `carapace`, `shattered_peaks`, `bulb_forest`, `pink_meadows`).
 Nếu mục tiêu là "giống mod" thì nên tắt hoặc gỡ các mục này (xem mục 8).
 
 ## 3. Nội dung mod CÓ nhưng plugin THIẾU (67 item)
