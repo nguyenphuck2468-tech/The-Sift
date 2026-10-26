@@ -1,4 +1,4 @@
-config-version: 3
+config-version: 4
 
 content:
   ichor: true
@@ -168,6 +168,14 @@ providers:
   # Always enforced: dimension access is denied until all mandatory IDs resolve. Setting false is ignored.
   strict: true
   bedrock-enabled: false
+
+resource-pack:
+  # Gửi resource pack đi kèm plugin cho người chơi khi vào server (qua provider như ResourcePackManager nếu có).
+  auto-send: true
+  # URL http(s) công khai để client tải zip (server Paper không nhận file://); để trống nếu provider đọc file cục bộ.
+  server-url: ""
+  title: "The Sift (fan-made)"
+  prompt: "Texture mob/blok The Sift"
 
 integrations:
   blocks:

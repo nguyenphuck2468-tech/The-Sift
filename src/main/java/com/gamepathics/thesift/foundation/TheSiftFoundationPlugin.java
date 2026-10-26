@@ -25,9 +25,13 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     private SiftAdvancementManager advancementManager;
     private ProviderReadiness providerReadiness;
     private ProviderApiProbe providerApiProbe;
+    private DatapackManagerBridge datapackBridge;
+    private ResourcePackBridge resourcePackBridge;
 
     @Override
     public void onEnable() {
+        datapackBridge = new DatapackManagerBridge(this);
+        resourcePackBridge = new ResourcePackBridge(this);
         registerCommand("sift", new BasicCommand() {
             @Override
             public void execute(CommandSourceStack source, String[] args) {
@@ -110,8 +114,11 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             getServer().getPluginManager().registerEvents(new SoulBlockListener(this, siftiteContent), this);
         }
         registerContentPluginReloadHooks();
+        getServer().getPluginManager().registerEvents(new SiftResourcePackListener(this, resourcePackBridge), this);
         // Keep a delayed initial refresh as a fallback for providers without a load event.
         getServer().getScheduler().runTaskLater(this, () -> {
+            datapackBridge.stageBundledPacks();
+            resourcePackBridge.prepare();
             refreshContentRecipes();
             reportProviderReadiness();
         }, 200L);
@@ -233,7 +240,39 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             refreshContentRecipes();
             verifyRequiredPlugins();
             reportProviderReadiness();
+            datapackBridge.stageBundledPacks();
+            resourcePackBridge.prepare();
             sender.sendMessage("The Sift config was reloaded. Restart the server to apply content flag changes.");
+            sender.sendMessage(datapackBridge.status());
+            return true;
+        }
+        if (args.length >= 2 && args[0].equalsIgnoreCase("datapack")) {
+            if (args.length == 2 && args[1].equalsIgnoreCase("list")) {
+                datapackBridge.report(sender);
+                return true;
+            }
+            if (args.length == 3) {
+                boolean enable = args[1].equalsIgnoreCase("enable");
+                if (!enable && !args[1].equalsIgnoreCase("disable")) {
+                    sender.sendMessage("Usage: /sift datapack <list|enable|disable> [name]");
+                    return true;
+                }
+                sender.sendMessage(datapackBridge.setEnabled(args[2], enable)
+                        ? "Datapack '" + args[2] + "' " + (enable ? "enabled" : "disabled") + " and applied."
+                        : "Datapack '" + args[2] + "' not discovered yet; run /datapack list or restart.");
+                return true;
+            }
+            sender.sendMessage("Usage: /sift datapack <list|enable|disable> [name]");
+            return true;
+        }
+        if (args.length >= 2 && args[0].equalsIgnoreCase("resourcepack")) {
+            boolean force = args.length >= 3 && args[2].equalsIgnoreCase("force");
+            if (sender instanceof Player player) {
+                resourcePackBridge.sendTo(player, force);
+                sender.sendMessage("The Sift resource pack sent to you (" + (force ? "forced" : "additive") + ").");
+            } else {
+                resourcePackBridge.broadcastToPlayers(sender, force);
+            }
             return true;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("doctor")) {
@@ -399,7 +438,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             }
             return true;
         }
-        sender.sendMessage("Usage: /sift <doctor|reload|dimension|return|give <item> <player>|summon <species> [player]>");
+        sender.sendMessage("Usage: /sift <doctor|reload|datapack <list|enable|disable>|resourcepack [force]|dimension|return|give <item> <player>|summon <species> [player]>");
         return true;
     }
 
@@ -421,7 +460,9 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
 
     static java.util.List<String> commandSuggestions(String[] args, java.util.Collection<String> players) {
         java.util.List<String> candidates;
-        if (args.length == 1) candidates = java.util.List.of("doctor", "reload", "dimension", "return", "give", "summon");
+        if (args.length == 1) candidates = java.util.List.of("doctor", "reload", "datapack", "resourcepack", "dimension", "return", "give", "summon");
+        else if (args.length == 2 && args[0].equalsIgnoreCase("datapack")) candidates = java.util.List.of("list", "enable", "disable");
+        else if (args.length == 3 && args[0].equalsIgnoreCase("datapack") && !args[1].equalsIgnoreCase("list")) candidates = java.util.List.of("dimension", "progression");
         else if (args.length == 2 && args[0].equalsIgnoreCase("give")) candidates = java.util.List.of(
                 "ichor_bottle", "rift_key", "soul_block", "sonorous_deepslate", "siftslate", "charoite",
                 "siftite_ingot", "siftite_nugget", "siftite_upgrade_smithing_template");
