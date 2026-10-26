@@ -17,6 +17,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     private IchorContent ichorContent;
     private IchorState ichorState;
     private SiftiteContent siftiteContent;
+    private SiftMobFactory sharedMobFactory;
     private ResonanceManager resonanceManager;
     private EchoGolemManager echoGolemManager;
     private RiftManager riftManager;
@@ -73,28 +74,28 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                 || contentRegistry.isEnabled(ContentId.SIFTITE_INGOT)
                 || contentRegistry.isEnabled(ContentId.SIFTITE_ORE)
                 || contentRegistry.isEnabled(ContentId.SOUL_BLOCK)) {
-            siftiteContent = new SiftiteContent(this);
+            // Created through the shared accessor so later managers reuse the same instance.
+            siftiteContent = sharedContent();
             siftiteContent.registerRecipes();
             getServer().getPluginManager().registerEvents(siftiteContent, this);
             getServer().getPluginManager().registerEvents(new SiftiteListener(this, siftiteContent), this);
             getServer().getPluginManager().registerEvents(new SiftiteRecoveryManager(this), this);
             getServer().getPluginManager().registerEvents(new CharoiteEnchantingListener(this), this);
         }
+        // One shared content registry + mob factory for every manager, created lazily so a
+        // fully-disabled feature set does not pay the cost of an unused ExternalItemBridge.
         if (contentRegistry.isEnabled(ContentId.SINGER) && contentRegistry.isEnabled(ContentId.RESONANCE)) {
-            if (siftiteContent == null) siftiteContent = new SiftiteContent(this);
-            resonanceManager = new ResonanceManager(this, siftiteContent, new SiftMobFactory(this));
+            resonanceManager = new ResonanceManager(this, sharedContent(), sharedMobFactory());
             getServer().getPluginManager().registerEvents(resonanceManager, this);
             resonanceManager.start();
         }
         if (contentRegistry.isEnabled(ContentId.ECHO_GOLEM)) {
-            if (siftiteContent == null) siftiteContent = new SiftiteContent(this);
-            echoGolemManager = new EchoGolemManager(this, siftiteContent, new SiftMobFactory(this));
+            echoGolemManager = new EchoGolemManager(this, sharedContent(), sharedMobFactory());
             getServer().getPluginManager().registerEvents(echoGolemManager, this);
             echoGolemManager.start();
         }
         if (contentRegistry.isEnabled(ContentId.RIFT)) {
-            if (siftiteContent == null) siftiteContent = new SiftiteContent(this);
-            riftManager = new RiftManager(this, providerReadiness, siftiteContent);
+            riftManager = new RiftManager(this, providerReadiness, sharedContent(), sharedMobFactory());
             getServer().getPluginManager().registerEvents(riftManager, this);
             getServer().getPluginManager().registerEvents(riftManager.ancientCityPortal(), this);
             if (resonanceManager != null) riftManager.ancientCityPortal().setSingerSpawner(resonanceManager::summonSinger);
@@ -103,15 +104,14 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         if (contentRegistry.isEnabled(ContentId.SIFT_DIMENSION)) {
             siftDimensionManager = new SiftDimensionManager(this, providerReadiness);
             siftEcologyManager = new SiftEcologyManager(this, resonanceManager, echoGolemManager,
-                    riftManager, siftiteContent,
-                    echoGolemManager != null ? echoGolemManager.mobFactory() : new SiftMobFactory(this));
+                    riftManager, sharedContent(), sharedMobFactory());
             getServer().getPluginManager().registerEvents(siftEcologyManager, this);
             siftEcologyManager.populateLoadedSpawnChunks();
             advancementManager = new SiftAdvancementManager(this);
             getServer().getPluginManager().registerEvents(advancementManager, this);
         }
         if (contentRegistry.isEnabled(ContentId.SOUL_BLOCK)) {
-            getServer().getPluginManager().registerEvents(new SoulBlockListener(this, siftiteContent), this);
+            getServer().getPluginManager().registerEvents(new SoulBlockListener(this, sharedContent()), this);
         }
         registerContentPluginReloadHooks();
         getServer().getPluginManager().registerEvents(new SiftResourcePackListener(this, resourcePackBridge), this);
@@ -128,6 +128,29 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     }
 
     /** The Sift depends fully on provider plugins: vanilla fallback mode is not available. */
+
+    /** Lazily creates and returns the single shared {@link SiftiteContent} used by all managers. */
+    private SiftiteContent sharedContent() {
+        if (siftiteContent == null) siftiteContent = new SiftiteContent(this);
+        return siftiteContent;
+    }
+
+    /** Lazily creates and returns the single shared {@link SiftMobFactory} used by all managers. */
+    private SiftMobFactory sharedMobFactory() {
+        if (sharedMobFactory == null) sharedMobFactory = new SiftMobFactory(this);
+        return sharedMobFactory;
+    }
+
+    /** Shared content registry for tests/advanced integrations; never null after first use. */
+    public SiftiteContent siftiteContent() {
+        return sharedContent();
+    }
+
+    /** Shared mob factory for tests/advanced integrations. */
+    public SiftMobFactory mobFactory() {
+        return sharedMobFactory();
+    }
+
     private void enforceDependencyMode() {
         if (!getConfig().getBoolean("providers.strict", true)) {
             getLogger().warning("providers.strict: false is ignored; The Sift depends fully on provider plugins.");

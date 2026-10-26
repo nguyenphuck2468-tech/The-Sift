@@ -44,8 +44,8 @@ public final class ResonanceManager implements Listener {
     private static final String SINGER_ID = "singer";
     private final JavaPlugin plugin;
     private final NamespacedKey entityKey;
-    private final SiftMobFactory mobFactory;
-    private final SiftiteContent content;
+    private SiftMobFactory mobFactory;
+    private SiftiteContent content;
     private final Map<UUID, BossBar> bars = new HashMap<>();
     private final Map<UUID, Long> hornCooldownUntil = new HashMap<>();
     private final Map<UUID, Long> barterUntil = new HashMap<>();

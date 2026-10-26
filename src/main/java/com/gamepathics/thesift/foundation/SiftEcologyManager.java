@@ -94,15 +94,11 @@ public final class SiftEcologyManager implements Listener {
         this.blubOwnerKey = new NamespacedKey(plugin, "blub_owner");
         this.spearThrowAtKey = new NamespacedKey(plugin, "spear_last_throw");
         this.snifferCorruptionStartKey = new NamespacedKey(plugin, "sniffer_corruption_start");
-        // Prefer the Echo Golem manager's already-shared instances (the ecology module always
-        // runs alongside it in the plugin lifecycle) so item caches stay consistent.
-        this.mobFactory = sharedMobFactory != null ? sharedMobFactory
-                : echoGolemManager != null ? echoGolemManager.mobFactory()
-                : new SiftMobFactory(plugin);
+        // Shared instances are injected by the plugin lifecycle; fall back to local ones only
+        // for standalone/test construction.
+        this.mobFactory = sharedMobFactory != null ? sharedMobFactory : new SiftMobFactory(plugin);
         this.blockBridge = new ExternalBlockBridge(plugin);
-        this.content = sharedContent != null ? sharedContent
-                : echoGolemManager != null ? echoGolemManager.content()
-                : new SiftiteContent(plugin);
+        this.content = sharedContent != null ? sharedContent : new SiftiteContent(plugin);
         this.tideTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             tickTide();
             tickIchorWeather();

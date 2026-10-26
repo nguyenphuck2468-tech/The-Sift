@@ -35,37 +35,59 @@ import java.util.UUID;
 public final class EchoGolemManager implements Listener {
     private static final String ECHO_GOLEM_ID = "echo_golem";
     private final JavaPlugin plugin;
-    private final SiftiteContent content;
+    private SiftiteContent content;
     private final NamespacedKey entityKey;
     private final NamespacedKey ownerKey;
     private final NamespacedKey cargoKey;
-    private final SiftMobFactory mobFactory;
+    private SiftMobFactory mobFactory;
     private final Map<UUID, BossBar> bars = new HashMap<>();
     private long tick;
 
+    /**
+     * Shared content registry: prefers the plugin-wide instance when The Sift is running as a
+     * live plugin (one ExternalItemBridge/cache); falls back to a local one in unit tests where
+     * MockBukkit does not register this class as a plugin.
+     */
+    private SiftiteContent sharedContent() {
+        if (content == null) {
+            content = plugin instanceof TheSiftFoundationPlugin foundation
+                    ? foundation.siftiteContent() : new SiftiteContent(plugin);
+        }
+        return content;
+    }
+
+    /** Shared mob factory, resolved the same way as {@link #sharedContent()}. */
+    private SiftMobFactory sharedMobFactory() {
+        if (mobFactory == null) {
+            mobFactory = plugin instanceof TheSiftFoundationPlugin foundation
+                    ? foundation.mobFactory() : new SiftMobFactory(plugin);
+        }
+        return mobFactory;
+    }
+
     public EchoGolemManager(JavaPlugin plugin) {
-        this(plugin, new SiftiteContent(plugin), new SiftMobFactory(plugin));
-    }
-
-    EchoGolemManager(JavaPlugin plugin, SiftiteContent content) {
-        this(plugin, content, new SiftMobFactory(plugin));
-    }
-
-    EchoGolemManager(JavaPlugin plugin, SiftiteContent content, SiftMobFactory mobFactory) {
         this.plugin = plugin;
-        this.content = content;
         this.entityKey = new NamespacedKey(plugin, "echo_golem_entity");
         this.ownerKey = new NamespacedKey(plugin, "echo_golem_owner");
         this.cargoKey = new NamespacedKey(plugin, "echo_golem_soul_block");
+    }
+
+    EchoGolemManager(JavaPlugin plugin, SiftiteContent content) {
+        this(plugin);
+        this.content = content;
+    }
+
+    EchoGolemManager(JavaPlugin plugin, SiftiteContent content, SiftMobFactory mobFactory) {
+        this(plugin, content);
         this.mobFactory = mobFactory;
     }
 
     SiftiteContent content() {
-        return content;
+        return sharedContent();
     }
 
     SiftMobFactory mobFactory() {
-        return mobFactory;
+        return sharedMobFactory();
     }
 
     public void start() {
@@ -82,7 +104,7 @@ public final class EchoGolemManager implements Listener {
     }
 
     public LivingEntity summonEchoGolem(Location location) {
-        LivingEntity golem = mobFactory.spawn(ECHO_GOLEM_ID, location, EntityType.IRON_GOLEM);
+        LivingEntity golem = sharedMobFactory().spawn(ECHO_GOLEM_ID, location, EntityType.IRON_GOLEM);
         if (golem == null) return null;
         golem.getPersistentDataContainer().set(entityKey, PersistentDataType.STRING, ECHO_GOLEM_ID);
         golem.setCustomName("§b§lEcho Golem");

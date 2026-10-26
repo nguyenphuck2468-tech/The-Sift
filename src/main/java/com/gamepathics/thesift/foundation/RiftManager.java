@@ -64,25 +64,32 @@ public final class RiftManager implements Listener {
     // Lazily shared content registry so repeated item lookups reuse one ExternalItemBridge/cache.
     private SiftiteContent sharedContent;
 
-    public RiftManager(JavaPlugin plugin) {
-        this(plugin, new ProviderReadiness(plugin));
-    }
-
-    RiftManager(JavaPlugin plugin, ProviderReadiness providerReadiness) {
-        this(plugin, providerReadiness, null);
-    }
-
-    RiftManager(JavaPlugin plugin, ProviderReadiness providerReadiness, SiftiteContent sharedContent) {
+    /** Shared wiring: reuse the plugin-wide content registry and mob factory when provided. */
+    public RiftManager(JavaPlugin plugin, ProviderReadiness providerReadiness, SiftiteContent sharedContent,
+                       SiftMobFactory sharedMobFactory) {
         this.plugin = plugin;
         this.providerReadiness = providerReadiness;
         this.dimensionManager = new SiftDimensionManager(plugin, providerReadiness);
         this.riftKey = new NamespacedKey(plugin, "rift_key");
-        this.mobFactory = new SiftMobFactory(plugin);
+        // Prefer the injected plugin-wide factory; fall back to a local one for standalone use.
+        this.mobFactory = sharedMobFactory != null ? sharedMobFactory : new SiftMobFactory(plugin);
         this.blockBridge = new ExternalBlockBridge(plugin);
         this.sonorousBlocks = new SonorousBlockRegistry(plugin);
         this.ancientCity = new AncientCityPortal(plugin);
         // Reuse the plugin-wide content registry when available so item caches stay consistent.
         this.sharedContent = sharedContent;
+    }
+
+    public RiftManager(JavaPlugin plugin) {
+        this(plugin, new ProviderReadiness(plugin), null, null);
+    }
+
+    RiftManager(JavaPlugin plugin, ProviderReadiness providerReadiness) {
+        this(plugin, providerReadiness, null, null);
+    }
+
+    RiftManager(JavaPlugin plugin, ProviderReadiness providerReadiness, SiftiteContent sharedContent) {
+        this(plugin, providerReadiness, sharedContent, null);
     }
 
     AncientCityPortal ancientCityPortal() {
