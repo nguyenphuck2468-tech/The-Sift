@@ -24,6 +24,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
@@ -35,6 +36,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -42,19 +44,30 @@ public final class ResonanceManager implements Listener {
     private static final String SINGER_ID = "singer";
     private final JavaPlugin plugin;
     private final NamespacedKey entityKey;
-    private final NamespacedKey itemKey;
-    private final SiftMobFactory mobFactory;
+    private SiftMobFactory mobFactory;
+    private SiftiteContent content;
     private final Map<UUID, BossBar> bars = new HashMap<>();
     private final Map<UUID, Long> hornCooldownUntil = new HashMap<>();
     private final Map<UUID, Long> barterUntil = new HashMap<>();
+    /**
+     * Singer soul event (mod parity): the reference mod's Singer is invulnerable outside its
+     * soul event. Here a player holding a Soul Block at main hand "awakens" the Singer for
+     * resonance.singer.soul-event-seconds, during which it can be damaged and killed.
+     */
+    private final Map<UUID, Long> soulEventUntil = new HashMap<>();
     private long tick;
     private int taskId = -1;
 
     public ResonanceManager(JavaPlugin plugin) {
+        this(plugin, new SiftiteContent(plugin), new SiftMobFactory(plugin));
+    }
+
+    /** Shared wiring: reuse the plugin-wide content registry and mob factory instead of new instances. */
+    ResonanceManager(JavaPlugin plugin, SiftiteContent content, SiftMobFactory mobFactory) {
         this.plugin = plugin;
         this.entityKey = new NamespacedKey(plugin, "resonance_entity");
-        this.itemKey = new NamespacedKey(plugin, "content");
-        this.mobFactory = new SiftMobFactory(plugin);
+        this.content = content;
+        this.mobFactory = mobFactory;
     }
 
     public void start() {
@@ -74,6 +87,48 @@ public final class ResonanceManager implements Listener {
         bars.clear();
         hornCooldownUntil.clear();
         barterUntil.clear();
+        soulEventUntil.clear();
+    }
+
+    /** True while the Singer's soul event window is open (it can be damaged during this time). */
+    boolean inSoulEvent(UUID singerId) {
+        Long until = soulEventUntil.get(singerId);
+        return until != null && until > System.currentTimeMillis();
+    }
+
+    /**
+     * Mod parity: the Singer is invulnerable outside its soul event. Holding a Soul Block at
+     * main hand and right-clicking the Singer opens a resonance.singer.soul-event-seconds
+     * window during which damage is allowed; without one, the hit is cancelled with feedback.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onSingerDamaged(EntityDamageByEntityEvent event) {
+        if (!(event.getEntity() instanceof LivingEntity singer) || !isSinger(singer)) return;
+        if (!plugin.getConfig().getBoolean("resonance.singer.invulnerable", true)) return;
+        if (inSoulEvent(singer.getUniqueId())) return;
+        // Defensive re-check: the Bukkit API marks EntityDamageByEntityEvent "cancellable by
+        // contract" but some implementations don't honour it, so enforce invulnerability via
+        // zero damage as well as setCancelled.
+        event.setCancelled(true);
+        event.setDamage(0.0);
+        // Feedback is best-effort cosmetic: some server implementations throw for particles or
+        // action bars in special contexts; the cancellation above must never depend on them.
+        try {
+            singer.getWorld().spawnParticle(org.bukkit.Particle.SOUL,
+                    singer.getLocation().add(0, 1.0, 0), 6, 0.3, 0.3, 0.3, 0.0);
+        } catch (Throwable ignored) {
+        }
+        Player attacker = null;
+        if (event.getDamager() instanceof Player p) attacker = p;
+        else if (event.getDamager() instanceof org.bukkit.entity.Projectile proj
+                && proj.getShooter() instanceof Player p) attacker = p;
+        if (attacker != null) {
+            try {
+                attacker.sendActionBar("\u00a75The Singer cannot be harmed outside its soul event"
+                        + " \u2014 offer it a Soul Block.");
+            } catch (Throwable ignored) {
+            }
+        }
     }
 
     public LivingEntity summonSinger(Location location) {
@@ -132,15 +187,23 @@ public final class ResonanceManager implements Listener {
         if (event.getHand() != EquipmentSlot.HAND || !isSinger(event.getRightClicked())) return;
         Player player = event.getPlayer();
         ItemStack held = player.getInventory().getItemInMainHand();
-        if (held.getType() == Material.AIR || !held.hasItemMeta()
-                || !"soul_block".equals(held.getItemMeta().getPersistentDataContainer()
-                .get(itemKey, PersistentDataType.STRING))) return;
+        if (held.getType() == Material.AIR || !content.is(held, "soul_block")) return;
         event.setCancelled(true);
         Entity singer = event.getRightClicked();
         long now = System.currentTimeMillis();
         Long until = barterUntil.get(singer.getUniqueId());
         if (until != null && now < until) return;
         barterUntil.put(singer.getUniqueId(), now + 3000L);
+        // Soul event trigger (mod parity): offering a Soul Block also awakens the Singer for a
+        // limited window during which its invulnerability is lifted. Controlled by
+        // resonance.singer.soul-event-seconds (0 disables the mechanic entirely).
+        int soulEventSeconds = Math.max(0,
+                plugin.getConfig().getInt("resonance.singer.soul-event-seconds", 60));
+        if (soulEventSeconds > 0) {
+            soulEventUntil.put(singer.getUniqueId(), now + soulEventSeconds * 1000L);
+            player.sendActionBar("\u00a75The Singer accepts the Soul Block \u2014 it can be harmed for "
+                    + soulEventSeconds + "s.");
+        }
         if (player.getGameMode() != GameMode.CREATIVE) held.setAmount(held.getAmount() - 1);
         singer.getWorld().playSound(singer.getLocation(), Sound.ENTITY_ALLAY_ITEM_GIVEN, 1.0f, 1.0f);
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
@@ -183,9 +246,14 @@ public final class ResonanceManager implements Listener {
         }
         java.util.Set<UUID> seen = new java.util.HashSet<>();
         double range = Math.max(1, plugin.getConfig().getDouble("resonance.singer.range", 16.0));
+        // Chunk-based scan (same pattern as EchoGolemManager/RiftManager): iterate each world's
+        // entities once instead of re-scanning per player, which duplicated work and could miss
+        // Singers in chunks without a nearby player.
         for (World world : Bukkit.getWorlds()) {
-            for (Player player : world.getPlayers()) {
-                for (Entity entity : player.getNearbyEntities(range, range, range)) {
+            List<Player> players = world.getPlayers();
+            if (players.isEmpty()) continue;
+            for (Player centerPlayer : players) {
+                for (Entity entity : world.getNearbyEntities(centerPlayer.getLocation(), range, range, range)) {
                     if (!(entity instanceof LivingEntity singer) || !isSinger(entity) || !seen.add(entity.getUniqueId())) continue;
                     ensureBar(singer);
                     Location center = singer.getLocation();
@@ -244,6 +312,8 @@ public final class ResonanceManager implements Listener {
         if (!plugin.getConfig().getBoolean("resonance.singer.charoite-protection", true)) {
             return false;
         }
+        // Read the tag through the shared content registry so both Singer and Echo Golem
+        // charoite checks use one code path (and honour provider-created items).
         var inventory = player.getInventory();
         return hasTaggedCharoite(inventory.getStorageContents())
                 || hasTaggedCharoite(inventory.getArmorContents())
@@ -252,9 +322,7 @@ public final class ResonanceManager implements Listener {
 
     private boolean hasTaggedCharoite(ItemStack[] items) {
         for (ItemStack stack : items) {
-            if (stack != null && stack.hasItemMeta()
-                    && "charoite".equals(stack.getItemMeta().getPersistentDataContainer()
-                    .get(itemKey, PersistentDataType.STRING))) return true;
+            if (content.is(stack, "charoite")) return true;
         }
         return false;
     }
@@ -292,10 +360,18 @@ public final class ResonanceManager implements Listener {
             bar.removeAll();
             bar.setVisible(false);
         }
-        SiftAdvancementGrant.grant(plugin, event.getEntity().getKiller(), "singer_silenced");
+        Player killer = event.getEntity().getKiller();
+        // Parity: the reference mod's Singer is invulnerable outside its soul event. The plugin
+        // lifts that invulnerability during a soul-event window (see onBarter/onSingerDamaged),
+        // so singer_silenced is granted when the killer defeated it inside such a window, or
+        // outright when a server opts out of invulnerability (resonance.singer.invulnerable: false).
+        boolean soulEventKill = inSoulEvent(event.getEntity().getUniqueId());
+        if (!plugin.getConfig().getBoolean("resonance.singer.invulnerable", true) || soulEventKill) {
+            SiftAdvancementGrant.grant(plugin, killer, "singer_silenced");
+        }
+        soulEventUntil.remove(event.getEntity().getUniqueId());
         if (plugin.getConfig().getBoolean("resonance.singer.drop-charoite", true)) {
-            ItemStack drop = new SiftiteContent(plugin).item(org.bukkit.Material.AMETHYST_SHARD,
-                    "charoite", "Charoite");
+            ItemStack drop = content.forId("charoite");
             if (drop != null) event.getDrops().add(drop);
         }
     }

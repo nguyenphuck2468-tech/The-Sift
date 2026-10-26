@@ -8,6 +8,8 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.RecipeChoice;
+import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -32,15 +34,36 @@ public final class SiftiteContent implements Listener {
     private final ExternalItemBridge externalItems;
 
     public SiftiteContent(JavaPlugin plugin) {
+        this(plugin, new ExternalItemBridge(plugin));
+    }
+
+    /** Shared wiring: reuse one ExternalItemBridge (and its provider caches) across registries. */
+    SiftiteContent(JavaPlugin plugin, ExternalItemBridge externalItems) {
         this.plugin = Objects.requireNonNull(plugin);
         this.idKey = new NamespacedKey(plugin, "content");
-        this.externalItems = new ExternalItemBridge(plugin);
+        this.externalItems = Objects.requireNonNull(externalItems);
+    }
+
+    /** Unregisters every recipe this plugin owns (called from onDisable so a reload does not leave ghost recipes). */
+    public void removeRecipes() {
+        Server server = plugin.getServer();
+        for (String key : java.util.List.of("charoite", "siftite_nugget", "siftite_ingot",
+                "siftite_upgrade_smithing_template", "smelt_raw_sifter_meat", "smelt_blub_meat")) {
+            server.removeRecipe(new NamespacedKey(plugin, key));
+        }
+        for (String key : java.util.List.of("siftite_sword", "siftite_axe", "siftite_pickaxe",
+                "siftite_shovel", "siftite_hoe", "siftite_helmet", "siftite_chestplate",
+                "siftite_leggings", "siftite_boots")) {
+            server.removeRecipe(new NamespacedKey(plugin, key));
+        }
     }
 
     public void registerRecipes() {
         Server server = plugin.getServer();
         for (String key : java.util.List.of("charoite", "siftite_nugget", "siftite_ingot",
-                "siftite_upgrade_smithing_template")) server.removeRecipe(new NamespacedKey(plugin, key));
+                "siftite_upgrade_smithing_template", "smelt_raw_sifter_meat", "smelt_blub_meat")) {
+            server.removeRecipe(new NamespacedKey(plugin, key));
+        }
         for (String key : java.util.List.of("siftite_sword", "siftite_axe", "siftite_pickaxe",
                 "siftite_shovel", "siftite_hoe", "siftite_helmet", "siftite_chestplate",
                 "siftite_leggings", "siftite_boots")) server.removeRecipe(new NamespacedKey(plugin, key));
@@ -52,6 +75,15 @@ public final class SiftiteContent implements Listener {
             addShaped("charoite", item(Material.LAPIS_LAZULI, "charoite", "Charoite"),
                     " C ", "CAC", " C ", 'C', Material.AMETHYST_SHARD, 'A', Material.AMETHYST_BLOCK);
         }
+        // Reference-mod parity: Cooked Sifter Meat / Cooked Blub Meat come from smelting the
+        // raw drops (see SiftEcologyManager#onEntityDeath), so they must be obtainable even
+        // when FurnaceSmeltEvent is cancelled by other plugins.
+        registerFurnish("smelt_raw_sifter_meat",
+                item(Material.BEEF, "raw_sifter_meat", "Raw Sifter Meat"),
+                item(Material.COOKED_BEEF, "cooked_sifter_meat", "Cooked Sifter Meat"));
+        registerFurnish("smelt_blub_meat",
+                item(Material.MUTTON, "blub_meat", "Blub Meat"),
+                item(Material.COOKED_MUTTON, "cooked_blub_meat", "Cooked Blub Meat"));
         if (enabled("siftite_nugget", "siftite.enabled")) {
             addShapeless("siftite_nugget", item(Material.IRON_NUGGET, "siftite_nugget", "Siftite Nugget"),
                     Material.IRON_NUGGET, Material.AMETHYST_SHARD);
@@ -105,9 +137,31 @@ public final class SiftiteContent implements Listener {
         if (!providerItem) meta.setDisplayName("§d" + name);
         meta.getPersistentDataContainer().set(idKey, PersistentDataType.STRING, id);
         if (!providerItem && hasItemModel(id)) meta.setItemModel(NamespacedKey.fromString("thesift:" + id));
-        if (id.startsWith("siftite_") && !id.equals("siftite_upgrade_smithing_template")) addAttributes(meta, id);
+        if (id.startsWith("siftite_") && !id.equals("siftite_upgrade_smithing_template")) {
+            addAttributes(meta, id);
+            applyDurabilityMultiplier(result, meta, id);
+        }
         result.setItemMeta(meta);
         return result;
+    }
+
+    /**
+     * Applies {@code siftite.durability-multiplier} from config.yml to freshly crafted Siftite
+     * gear by raising the item's custom max-damage above its vanilla base (Paper Damageable
+     * meta). This makes the config knob a real gameplay effect instead of a dead flag surfaced
+     * only in {@code /sift doctor}. Damage stays clamped at 0; the extra headroom lives in
+     * getMaxDamage(), which is how vanilla treats items that have bonus durability.
+     */
+    private void applyDurabilityMultiplier(ItemStack result, ItemMeta meta, String id) {
+        double multiplier = plugin.getConfig().getDouble("siftite.durability-multiplier", 1.2);
+        if (multiplier <= 1.0 || result.getType().getMaxDurability() <= 0) return;
+        if (!(meta instanceof org.bukkit.inventory.meta.Damageable damageable)) return;
+        int extra = (int) Math.round(result.getType().getMaxDurability() * (multiplier - 1.0));
+        if (extra <= 0) return;
+        // getMaxDamage() throws unless a custom ceiling was set before, so fall back to the
+        // material's vanilla durability as the baseline.
+        int base = damageable.hasMaxDamage() ? damageable.getMaxDamage() : result.getType().getMaxDurability();
+        damageable.setMaxDamage(base + extra);
     }
 
     private boolean hasItemModel(String id) {
@@ -125,6 +179,17 @@ public final class SiftiteContent implements Listener {
         if (stack == null || !stack.hasItemMeta()) return false;
         return id.equals(stack.getItemMeta().getPersistentDataContainer()
                 .get(idKey, PersistentDataType.STRING));
+    }
+
+    /** The content id stamped on this stack's PDC, or null when the stack is not Sift content. */
+    public String idOf(ItemStack stack) {
+        if (stack == null || !stack.hasItemMeta()) return null;
+        return stack.getItemMeta().getPersistentDataContainer().get(idKey, PersistentDataType.STRING);
+    }
+
+    /** The PDC key this registry stamps item IDs under; lets other managers read tags directly. */
+    public NamespacedKey idKey() {
+        return idKey;
     }
 
     public ItemStack forId(String id) {
@@ -191,6 +256,7 @@ public final class SiftiteContent implements Listener {
             case "thornback" -> Material.TURTLE_SPAWN_EGG;
             case "glimmerwing" -> Material.BEE_SPAWN_EGG;
             case "the_sifter" -> Material.RAVAGER_SPAWN_EGG;
+            case "spire_tyrant" -> Material.RAVAGER_SPAWN_EGG; // crimson Sifter-variant boss
             case "frost_stalker" -> Material.STRAY_SPAWN_EGG;
             case "sunspore" -> Material.MOOSHROOM_SPAWN_EGG;
             case "drifter" -> Material.ENDERMAN_SPAWN_EGG;
@@ -199,6 +265,17 @@ public final class SiftiteContent implements Listener {
             case "lumen_tulip" -> Material.TORCHFLOWER_SEEDS;
             case "prismite" -> Material.SILVERFISH_SPAWN_EGG;
             case "loomer" -> Material.RABBIT_SPAWN_EGG;
+            // Remaining spec mobs get vanilla stand-in spawn eggs so every id in
+            // integrations/content-spec.json resolves through forId().
+            case "echo_golem" -> Material.IRON_GOLEM_SPAWN_EGG;
+            case "singer" -> Material.ALLAY_SPAWN_EGG;
+            case "dark_sniffer" -> Material.SNIFFER_SPAWN_EGG;
+            case "rift_walker" -> Material.ENDERMAN_SPAWN_EGG;
+            case "sift_wastes_stalker" -> Material.WITCH_SPAWN_EGG;
+            case "raw_sifter_meat" -> Material.BEEF;
+            case "cooked_sifter_meat" -> Material.COOKED_BEEF;
+            case "blub_meat" -> Material.MUTTON;
+            case "cooked_blub_meat" -> Material.COOKED_MUTTON;
             default -> null;
         };
         if (material == null) return null;
@@ -305,6 +382,19 @@ public final class SiftiteContent implements Listener {
         plugin.getServer().removeRecipe(recipeKey);
         ShapelessRecipe recipe = new ShapelessRecipe(recipeKey, result);
         for (Material ingredient : ingredients) recipe.addIngredient(ingredient);
+        plugin.getServer().addRecipe(recipe);
+    }
+
+    /** Register a furnace smelting recipe from a tagged item to its cooked counterpart. */
+    private void registerFurnish(String key, ItemStack input, ItemStack output) {
+        // Config kill-switch: with recipes.enabled=false the food chain still works through the
+        // FurnaceSmeltEvent fallback listener in SiftEcologyManager instead of a real recipe.
+        if (!plugin.getConfig().getBoolean("recipes.enabled", true)) return;
+        if (input == null || output == null) return;
+        NamespacedKey recipeKey = new NamespacedKey(plugin, key);
+        plugin.getServer().removeRecipe(recipeKey);
+        FurnaceRecipe recipe = new FurnaceRecipe(recipeKey, output,
+                new RecipeChoice.ExactChoice(input), 0.35f, 10);
         plugin.getServer().addRecipe(recipe);
     }
 

@@ -93,18 +93,43 @@ class SiftAdvancementManagerTest {
         EntityDeathEvent event = mock(EntityDeathEvent.class);
         when(event.getEntity()).thenReturn(dead);
         NamespacedKey sifterAdvancement = new NamespacedKey(plugin, "sifter");
-        NamespacedKey tyrantAdvancement = new NamespacedKey(plugin, "tyrant");
         NamespacedKey matriarchAdvancement = new NamespacedKey(plugin, "matriarch");
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
             bukkit.when(() -> Bukkit.getAdvancement(sifterAdvancement)).thenReturn(null);
-            bukkit.when(() -> Bukkit.getAdvancement(tyrantAdvancement)).thenReturn(null);
             bukkit.when(() -> Bukkit.getAdvancement(matriarchAdvancement)).thenReturn(null);
             manager.onCreatureDeath(event);
 
             bukkit.verify(() -> Bukkit.getAdvancement(sifterAdvancement));
-            bukkit.verify(() -> Bukkit.getAdvancement(tyrantAdvancement), never());
             bukkit.verify(() -> Bukkit.getAdvancement(matriarchAdvancement), never());
+        }
+    }
+
+    @Test
+    void killingSpireTyrantRequestsTyrantAdvancement() {
+        // Parity fix: the bundled "tyrant" advancement was unobtainable until a creature
+        // carried a matching ID; SiftEcologyManager now spawns "spire_tyrant".
+        var killer = server.addPlayer();
+        LivingEntity dead = mock(LivingEntity.class);
+        PersistentDataContainer pdc = mock(PersistentDataContainer.class);
+        NamespacedKey creatureKey = new NamespacedKey(plugin, "sift_creature");
+        when(dead.getPersistentDataContainer()).thenReturn(pdc);
+        when(pdc.get(eq(creatureKey), eq(PersistentDataType.STRING))).thenReturn("spire_tyrant");
+        when(dead.getKiller()).thenReturn(killer);
+        EntityDeathEvent event = mock(EntityDeathEvent.class);
+        when(event.getEntity()).thenReturn(dead);
+        NamespacedKey tyrantAdvancement = new NamespacedKey(plugin, "tyrant");
+        NamespacedKey sifterAdvancement = new NamespacedKey(plugin, "sifter");
+
+        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
+            bukkit.when(() -> Bukkit.getAdvancement(tyrantAdvancement)).thenReturn(null);
+            bukkit.when(() -> Bukkit.getAdvancement(sifterAdvancement)).thenReturn(null);
+            manager.onCreatureDeath(event);
+
+            // Parity design: the Spire Tyrant is a Sifter variant, so killing it grants BOTH
+            // "sifter" and "tyrant" (see SiftAdvancementManager.onCreatureDeath).
+            bukkit.verify(() -> Bukkit.getAdvancement(tyrantAdvancement));
+            bukkit.verify(() -> Bukkit.getAdvancement(sifterAdvancement));
         }
     }
 

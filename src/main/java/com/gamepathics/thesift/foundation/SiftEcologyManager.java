@@ -17,11 +17,18 @@ import org.bukkit.block.data.type.Snow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
@@ -52,6 +59,11 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey decorationRetryAttemptsKey;
     private final NamespacedKey decorationRetryAtKey;
     private final NamespacedKey creatureKey;
+    private final NamespacedKey blubOwnerKey;
+    private final NamespacedKey spearThrowAtKey;
+    private final NamespacedKey snifferCorruptionStartKey;
+    /** Last herd anchor per world so spawned Sifters regroup instead of scattering (mod parity). */
+    private final java.util.Map<org.bukkit.World, Location> sifterHerdAnchors = new ConcurrentHashMap<>();
     private final SiftMobFactory mobFactory;
     private final ExternalBlockBridge blockBridge;
     private final SiftiteContent content;
@@ -64,6 +76,13 @@ public final class SiftEcologyManager implements Listener {
 
     public SiftEcologyManager(JavaPlugin plugin, ResonanceManager resonanceManager,
                               EchoGolemManager echoGolemManager, RiftManager riftManager) {
+        this(plugin, resonanceManager, echoGolemManager, riftManager, null, null);
+    }
+
+    /** Shared wiring: reuse the plugin-wide SiftiteContent/SiftMobFactory when available. */
+    SiftEcologyManager(JavaPlugin plugin, ResonanceManager resonanceManager,
+                       EchoGolemManager echoGolemManager, RiftManager riftManager,
+                       SiftiteContent sharedContent, SiftMobFactory sharedMobFactory) {
         this.plugin = plugin;
         this.resonanceManager = resonanceManager;
         this.echoGolemManager = echoGolemManager;
@@ -72,18 +91,26 @@ public final class SiftEcologyManager implements Listener {
         this.decorationRetryAttemptsKey = new NamespacedKey(plugin, "sift_ecology_retry_attempts");
         this.decorationRetryAtKey = new NamespacedKey(plugin, "sift_ecology_retry_at");
         this.creatureKey = new NamespacedKey(plugin, "sift_creature");
-        this.mobFactory = new SiftMobFactory(plugin);
+        this.blubOwnerKey = new NamespacedKey(plugin, "blub_owner");
+        this.spearThrowAtKey = new NamespacedKey(plugin, "spear_last_throw");
+        this.snifferCorruptionStartKey = new NamespacedKey(plugin, "sniffer_corruption_start");
+        // Shared instances are injected by the plugin lifecycle; fall back to local ones only
+        // for standalone/test construction.
+        this.mobFactory = sharedMobFactory != null ? sharedMobFactory : new SiftMobFactory(plugin);
         this.blockBridge = new ExternalBlockBridge(plugin);
-        this.content = new SiftiteContent(plugin);
+        this.content = sharedContent != null ? sharedContent : new SiftiteContent(plugin);
         this.tideTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             tickTide();
             tickIchorWeather();
             tickDarkSniffers();
+            tickBlubs();
+            tickSifterHerds();
         }, 100L, 100L);
     }
 
     public void shutdown() {
         tideTask.cancel();
+        sifterHerdAnchors.clear();
     }
 
     public void populateLoadedSpawnChunks() {
@@ -214,7 +241,13 @@ public final class SiftEcologyManager implements Listener {
             spawnBoss(chunk, EntityType.WARDEN, "Prism Warden", "prism_warden", 180.0, 28.0);
             generationOperations++;
         } else if ((key.endsWith("shattered_peaks") || key.endsWith("siftslate_peaks")) && random.nextInt(120) == 0) {
-            spawnBoss(chunk, EntityType.RAVAGER, "The Sifter", "the_sifter", 220.0, 24.0);
+            // Spire Tyrant variant: crimson-named Sifter boss in the peaks; killing it grants
+            // the bundled "tyrant" advancement (see SiftAdvancementManager.onCreatureDeath).
+            boolean tyrant = plugin.getConfig().getBoolean("content.spire_tyrant", true)
+                    && random.nextBoolean();
+            spawnBoss(chunk, EntityType.RAVAGER,
+                    tyrant ? "Spire Tyrant" : "The Sifter",
+                    tyrant ? "spire_tyrant" : "the_sifter", 220.0, 24.0);
             generationOperations++;
         }
         return generationOperations;
@@ -232,8 +265,13 @@ public final class SiftEcologyManager implements Listener {
                 && random.nextInt(120) == 0) openNaturalRift(chunk);
         if ((biome.endsWith("bulb_forest") || biome.endsWith("overgrown_forest")) && random.nextInt(160) == 0)
             spawnBoss(chunk, EntityType.WARDEN, "Prism Warden", "prism_warden", 180.0, 28.0);
-        else if ((biome.endsWith("shattered_peaks") || biome.endsWith("siftslate_peaks")) && random.nextInt(120) == 0)
-            spawnBoss(chunk, EntityType.RAVAGER, "The Sifter", "the_sifter", 220.0, 24.0);
+        else if ((biome.endsWith("shattered_peaks") || biome.endsWith("siftslate_peaks")) && random.nextInt(120) == 0) {
+            boolean tyrant = plugin.getConfig().getBoolean("content.spire_tyrant", true)
+                    && random.nextBoolean();
+            spawnBoss(chunk, EntityType.RAVAGER,
+                    tyrant ? "Spire Tyrant" : "The Sifter",
+                    tyrant ? "spire_tyrant" : "the_sifter", 220.0, 24.0);
+        }
     }
 
     private void decorateStrictSurface(Chunk chunk, String biome, Random random) {
@@ -704,6 +742,12 @@ public final class SiftEcologyManager implements Listener {
         World world = chunk.getWorld();
         int count = 1 + random.nextInt(3);
         for (int i = 0; i < count; i++) {
+            // Honor the content.blub / content.sifter toggles from config.yml: species that are
+            // disabled must not spawn in the wild. Previously these keys were display-only.
+            if (!plugin.getConfig().getBoolean("content.blub", true)
+                    && biome.endsWith("carapace")) continue;
+            if (!plugin.getConfig().getBoolean("content.sifter", true)
+                    && biome.contains("sift_wastes")) continue;
             int x = chunk.getX() * 16 + 2 + random.nextInt(12);
             int z = chunk.getZ() * 16 + 2 + random.nextInt(12);
             int y = world.getHighestBlockYAt(x, z) + 1;
@@ -818,14 +862,81 @@ public final class SiftEcologyManager implements Listener {
         }
     }
 
+    /**
+     * Right-click in air with a Siftite Spear throws it as a projectile. This wires the
+     * {@code siftite.spear-reach} config knob (previously only surfaced by /sift doctor) into
+     * actual gameplay: the throw range is clamped to that value and the spear consumes one
+     * durability point per throw.
+     */
+    @EventHandler
+    public void onSpearThrow(PlayerInteractEvent event) {
+        if (event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_AIR) return;
+        var hand = event.getHand();
+        if (hand != org.bukkit.inventory.EquipmentSlot.HAND) return; // avoid double-fire per off-hand swing
+        var item = event.getItem();
+        if (item == null || !content.is(item, "siftite_spear")) return;
+        Player player = event.getPlayer();
+        long now = System.currentTimeMillis();
+        var pdc = player.getPersistentDataContainer();
+        Long last = pdc.get(spearThrowAtKey, PersistentDataType.LONG);
+        if (last != null && now - last < 500L) return; // simple cooldown against double-fire
+        pdc.set(spearThrowAtKey, PersistentDataType.LONG, now);
+
+        double reach = Math.max(1.0, plugin.getConfig().getDouble("siftite.spear-reach", 4.5));
+        Location eye = player.getEyeLocation();
+        org.bukkit.entity.Item projectile = eye.getWorld().dropItem(eye, item.clone());
+        projectile.setVelocity(eye.getDirection().normalize().multiply(reach));
+        projectile.setCanPlayerPickup(false);
+        projectile.setCanMobPickup(false);
+        projectile.setPickupDelay(60); // ~3s until the thrown spear can be looted again
+        projectile.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING, "thrown_siftite_spear");
+
+        // Consume one durability point from the held spear via ItemStack#damage so the client's
+        // held-item state stays in sync; when the spear breaks, clear the hand slot.
+        org.bukkit.inventory.ItemStack damaged = item.damage(1, player);
+        player.getInventory().setItem(hand, damaged == null || damaged.getType().isAir() ? null : damaged);
+    }
+
     @EventHandler
     public void onSiftBossDeath(EntityDeathEvent event) {
         String id = event.getEntity().getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING);
-        if ("prism_warden".equals(id) || "the_sifter".equals(id)) {
-            event.getDrops().add(new SiftiteContent(plugin).item(Material.ECHO_SHARD,
+        if ("prism_warden".equals(id) || "the_sifter".equals(id) || "spire_tyrant".equals(id)) {
+            event.getDrops().add(content.item(Material.ECHO_SHARD,
                     "heart_of_the_sift", "Heart of the Sift"));
-            event.getDrops().add(new SiftiteContent(plugin).item(Material.AMETHYST_SHARD,
+            event.getDrops().add(content.item(Material.AMETHYST_SHARD,
                     "sift_shard", "Sift Shard"));
+            // Crimson Keep token: makes the advancement icon item (thesift:spire_fragment)
+            // obtainable in survival; killing a Spire Tyrant drops two of them.
+            int fragments = "spire_tyrant".equals(id) ? 2 : 1;
+            for (int i = 0; i < fragments; i++) {
+                ItemStack fragment = content.item(Material.AMETHYST_SHARD,
+                        "spire_fragment", "Spire Fragment");
+                if (fragment != null) event.getDrops().add(fragment);
+            }
+        }
+        // Reference-mod parity (Sifter): drops raw_sifter_meat, which smelts to cooked_sifter_meat.
+        if ("sifter".equals(id)) {
+            ItemStack raw = content.item(Material.BEEF, "raw_sifter_meat", "Raw Sifter Meat");
+            if (raw != null) event.getDrops().add(raw);
+        }
+        // Blub tamed by the owner who killed it keeps nothing; wild/tamed Blub drops its own meat
+        // so the food chain (Blub -> Dark Sniffer) reads correctly in survival.
+        if ("blub".equals(id)) {
+            ItemStack meat = content.item(Material.MUTTON, "blub_meat", "Blub Meat");
+            if (meat != null) event.getDrops().add(meat);
+        }
+    }
+
+    /** Smelt Raw Sifter Meat into Cooked Sifter Meat (mod parity for the food chain). */
+    @EventHandler(ignoreCancelled = true)
+    public void onSmeltSifterMeat(org.bukkit.event.inventory.FurnaceSmeltEvent event) {
+        // When the registry owns real furnace recipes (recipes.enabled), let them resolve the
+        // output; this listener is only the belt-and-braces path for strict-provider setups.
+        if (plugin.getConfig().getBoolean("recipes.enabled", true)) return;
+        ItemStack source = event.getSource();
+        if (source.getType() == Material.BEEF && content.is(source, "raw_sifter_meat")) {
+            ItemStack cooked = content.item(Material.COOKED_BEEF, "cooked_sifter_meat", "Cooked Sifter Meat");
+            if (cooked != null) event.setResult(cooked);
         }
     }
 
@@ -853,6 +964,7 @@ public final class SiftEcologyManager implements Listener {
             case "thornback" -> { type = EntityType.TURTLE; display = "Thornback"; }
             case "glimmerwing" -> { type = EntityType.BEE; display = "Glimmerwing"; }
             case "the_sifter" -> { type = EntityType.RAVAGER; display = "The Sifter"; }
+            case "spire_tyrant" -> { type = EntityType.RAVAGER; display = "Spire Tyrant"; }
             case "sifter" -> { type = EntityType.RAVAGER; display = "Sifter"; }
             case "frost_stalker" -> { type = EntityType.STRAY; display = "Frost Stalker"; }
             case "sunspore" -> { type = EntityType.MOOSHROOM; display = "Sunspore"; }
@@ -860,10 +972,29 @@ public final class SiftEcologyManager implements Listener {
             case "shardling" -> { type = EntityType.ENDERMITE; display = "Shardling"; }
             case "prism_warden" -> { type = EntityType.WARDEN; display = "Prism Warden"; }
             case "prismite" -> { type = EntityType.SILVERFISH; display = "Prismite"; }
+            case "rift_walker" -> { type = EntityType.ENDERMAN; display = "Rift Walker"; }
+            case "sift_wastes_stalker" -> { type = EntityType.WITCH; display = "Sift Wastes Stalker"; }
             default -> { return false; }
         }
 
-        boolean boss = id.equals("the_sifter") || id.equals("prism_warden");
+        boolean boss = id.equals("the_sifter") || id.equals("prism_warden") || id.equals("spire_tyrant");
+        // Mod parity (Sifter): herds cluster around a shared anchor instead of scattering.
+        if ("sifter".equals(id)) {
+            Location anchor = sifterHerdAnchors.get(location.getWorld());
+            if (anchor == null || anchor.distanceSquared(location) > 1600) {
+                location = location.clone();
+                if (anchor != null) {
+                    Vector toward = anchor.toVector().subtract(location.toVector()).normalize()
+                            .multiply(24);
+                    location = location.add(toward);
+                }
+            } else {
+                Vector offset = new Vector(java.util.concurrent.ThreadLocalRandom.current().nextDouble() * 12 - 6,
+                        0, java.util.concurrent.ThreadLocalRandom.current().nextDouble() * 12 - 6);
+                location = anchor.clone().add(offset);
+            }
+            sifterHerdAnchors.put(location.getWorld(), location.clone());
+        }
         Entity entity = mobFactory.spawn(id, location, type);
         if (entity == null) return false;
         entity.setPersistent(true);
@@ -873,8 +1004,10 @@ public final class SiftEcologyManager implements Listener {
         if (entity instanceof LivingEntity living) {
             living.setRemoveWhenFarAway(false);
             if (boss) {
-                double health = id.equals("the_sifter") ? 220.0 : 180.0;
-                double damage = id.equals("the_sifter") ? 24.0 : 28.0;
+                // Spire Tyrant mirrors the Sifter boss statline (220 HP / 24 dmg); Prism Warden keeps 180/28.
+                boolean sifterLine = id.equals("the_sifter") || id.equals("spire_tyrant");
+                double health = sifterLine ? 220.0 : 180.0;
+                double damage = sifterLine ? 24.0 : 28.0;
                 if (living.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH) != null) {
                     living.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).setBaseValue(health);
                     living.setHealth(health);
@@ -882,9 +1015,64 @@ public final class SiftEcologyManager implements Listener {
                 if (living.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE) != null) {
                     living.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE).setBaseValue(damage);
                 }
+            } else {
+                // Non-boss Sift mobs previously kept their vanilla stand-in stats; apply the
+                // reference mod's per-mob defaults (config-overridable via mobs.<id>.* keys).
+                SiftMobFactory.applyAttributes(living, modMobStats(id));
             }
         }
         return true;
+    }
+
+    /**
+     * Per-mob base attributes mirroring the reference mod (docs/mod-gap-analysis.md §5).
+     * Config paths {@code mobs.<id>.max-health / movement-speed / attack-damage / knockback-resist}
+     * override each value so server owners can tune without recompiling.
+     */
+    private java.util.Map<String, Double> modMobStats(String id) {
+        java.util.Map<String, Double> stats = new java.util.HashMap<>();
+        switch (id) {
+            case "sifter" -> {
+                stats.put("MAX_HEALTH", plugin.getConfig().getDouble("mobs.sifter.max-health", 40.0));
+                stats.put("MOVEMENT_SPEED", plugin.getConfig().getDouble("mobs.sifter.movement-speed", 0.31));
+                stats.put("ATTACK_DAMAGE", plugin.getConfig().getDouble("mobs.sifter.attack-damage", 10.0));
+            }
+            case "dark_sniffer" -> {
+                stats.put("MAX_HEALTH", plugin.getConfig().getDouble("mobs.dark_sniffer.max-health", 40.0));
+                stats.put("MOVEMENT_SPEED", plugin.getConfig().getDouble("mobs.dark_sniffer.movement-speed", 0.1));
+                stats.put("ATTACK_DAMAGE", plugin.getConfig().getDouble("mobs.dark_sniffer.attack-damage", 7.0));
+                stats.put("KNOCKBACK_RESISTANCE",
+                        plugin.getConfig().getDouble("mobs.dark_sniffer.knockback-resist", 0.75));
+            }
+            case "blub" -> {
+                stats.put("MAX_HEALTH", plugin.getConfig().getDouble("mobs.blub.max-health", 20.0));
+                stats.put("MOVEMENT_SPEED", plugin.getConfig().getDouble("mobs.blub.movement-speed", 0.3));
+                stats.put("ATTACK_DAMAGE", plugin.getConfig().getDouble("mobs.blub.attack-damage", 3.0));
+            }
+            default -> {
+                return java.util.Map.of();
+            }
+        }
+        return stats;
+    }
+
+    /**
+     * Reference-mod parity: Sifters travel in herds. Every herd member walks back toward the
+     * world's last-known anchor when it strays too far, reproducing the mod's group movement
+     * without a custom AI goal (which would need NMS). Runs on the existing ecology tick.
+     */
+    private void tickSifterHerds() {
+        World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
+        if (sift == null) return;
+        Location anchor = sifterHerdAnchors.get(sift);
+        if (anchor == null) return;
+        for (Entity entity : sift.getEntities()) {
+            if (!(entity instanceof Mob mob)) continue;
+            if (!"sifter".equals(entity.getPersistentDataContainer()
+                    .get(creatureKey, PersistentDataType.STRING))) continue;
+            if (mob.getLocation().distanceSquared(anchor) <= 900) continue;
+            mob.getPathfinder().moveTo(anchor);
+        }
     }
 
     private boolean isSift(World world) {
@@ -964,18 +1152,183 @@ public final class SiftEcologyManager implements Listener {
     private void tickDarkSniffers() {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
         if (sift == null) return;
-        for (Player target : sift.getPlayers()) {
-            for (Entity entity : target.getNearbyEntities(18, 10, 18)) {
-                if (!(entity instanceof LivingEntity living) || entity.getType() != EntityType.SNIFFER) continue;
-                String id = entity.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING);
-                if (!"dark_sniffer".equals(id)) continue;
-                Vector pull = living.getLocation().toVector().subtract(target.getLocation().toVector());
+        // Sonic Sniff: pull players toward the Dark Sniffer (mod parity, docs §5). Scans the
+        // world once per tick instead of per player so multiple survivors never double-pull.
+        for (Entity entity : sift.getEntities()) {
+            if (!(entity instanceof LivingEntity sniffer) || entity.getType() != EntityType.SNIFFER) continue;
+            String id = entity.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING);
+            if (!"dark_sniffer".equals(id)) continue;
+            for (Entity nearby : sift.getNearbyEntities(entity.getLocation(), 18, 10, 18)) {
+                if (!(nearby instanceof Player target)) continue;
+                Vector pull = sniffer.getLocation().toVector().subtract(target.getLocation().toVector());
                 if (pull.lengthSquared() < 0.01) continue;
                 pull.normalize().multiply(0.28).setY(0.18);
                 target.setVelocity(target.getVelocity().multiply(0.45).add(pull));
                 target.playSound(target.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 0.25f, 1.6f);
                 sift.spawnParticle(Particle.SONIC_BOOM, target.getLocation().add(0, 1, 0), 1);
             }
+        }
+        // Corruption conversion: vanilla Sniffers that linger on sculk/soul ground in The Sift
+        // turn into a Dark Sniffer, mirroring the mod's "infected sniffer" transformation.
+        long cooldownMillis = plugin.getConfig().getInt("mobs.dark-sniffer.corruption-ticks", 200) * 50L;
+        long now = System.currentTimeMillis();
+        java.util.List<Entity> conversions = new java.util.ArrayList<>();
+        for (Entity entity : sift.getEntities()) {
+            if (entity.getType() != EntityType.SNIFFER) continue;
+            var pdc = entity.getPersistentDataContainer();
+            if (pdc.has(creatureKey, PersistentDataType.STRING)) continue; // already a Dark Sniffer
+            Long firstOnSculk = pdc.get(snifferCorruptionStartKey, PersistentDataType.LONG);
+            Location loc = entity.getLocation();
+            Block below = loc.getBlock().getRelative(0, -1, 0);
+            boolean onSculk = below.getType() == Material.SCULK || below.getType() == Material.SCULK_CATALYST
+                    || below.getType() == Material.SOUL_SAND || below.getType() == Material.SOUL_SOIL;
+            if (!onSculk) {
+                if (firstOnSculk != null) pdc.remove(snifferCorruptionStartKey);
+                continue;
+            }
+            if (firstOnSculk == null) {
+                pdc.set(snifferCorruptionStartKey, PersistentDataType.LONG, now);
+                sift.spawnParticle(Particle.WITCH, loc.add(0, 1.5, 0), 6, 0.4, 0.3, 0.4, 0.1);
+                continue;
+            }
+            if (now - firstOnSculk >= cooldownMillis) conversions.add(entity);
+        }
+        // Convert after iteration so removal never disturbs the live entity list mid-scan.
+        for (Entity entity : conversions) {
+            Location loc = entity.getLocation();
+            entity.getPersistentDataContainer().remove(snifferCorruptionStartKey);
+            entity.remove();
+            if (summonCreature("dark_sniffer", loc)) {
+                sift.playSound(loc, Sound.ENTITY_SNIFFER_DIGGING, 0.8f, 0.6f);
+                sift.spawnParticle(Particle.LARGE_SMOKE, loc.add(0, 1, 0), 20, 0.5, 0.6, 0.5, 0.05);
+            }
+        }
+    }
+
+    /**
+     * Reference-mod parity (Blub): right-clicking a wild Blub with a Soul Block tames it.
+     * The tamed Blub follows its owner and defends them against hostile mobs. Sitting is not
+     * implemented because a Rabbit has no leash/sit path without an item in hand; the mod's
+     * "sit" state is a GeckoLib animation we cannot mirror on a vanilla stand-in.
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void onBlubInteract(PlayerInteractEntityEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        Entity target = event.getRightClicked();
+        if (!"blub".equals(target.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING))) {
+            return;
+        }
+        Player player = event.getPlayer();
+        var pdc = target.getPersistentDataContainer();
+        String ownerId = pdc.get(blubOwnerKey, PersistentDataType.STRING);
+        ItemStack hand = player.getInventory().getItemInMainHand();
+        if (ownerId == null && content.is(hand, "soul_block")) {
+            if (!plugin.getConfig().getBoolean("content.blub", true)) return;
+            consumeOne(player, hand);
+            pdc.set(blubOwnerKey, PersistentDataType.STRING, player.getUniqueId().toString());
+            if (target instanceof LivingEntity living) living.setRemoveWhenFarAway(false);
+            SiftAdvancementGrant.grant(plugin, player, "matriarch");
+            player.sendMessage("\u00a7dThe Blub accepts your Soul Block and follows you.");
+            event.setCancelled(true);
+        } else if (ownerId != null && ownerId.equals(player.getUniqueId().toString())) {
+            // Already yours: a small heart response, mirroring the mod's bond feedback.
+            target.getWorld().spawnParticle(Particle.HEART, target.getLocation().add(0, 0.6, 0), 3);
+            event.setCancelled(true);
+        }
+    }
+
+    /**
+     * Mod-parity spawn eggs: right-clicking a block with a tagged Sift spawn egg summons the
+     * matching creature through the normal {@link #summonCreature} path (provider-first spawn,
+     * config stats, PDC tagging). Vanilla stand-in eggs carry our content id in their PDC, so
+     * this never interferes with real vanilla eggs.
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void onSpawnEggUse(PlayerInteractEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        ItemStack hand = event.getItem();
+        if (hand == null || !hand.getType().name().endsWith("_SPAWN_EGG")) return;
+        String species = content.idOf(hand);
+        if (species == null) return;
+        Player player = event.getPlayer();
+        if (!plugin.getConfig().getBoolean("spawn-eggs.enabled", true)) {
+            event.setCancelled(true);
+            player.sendMessage("\u00a7cSift spawn eggs are disabled by configuration.");
+            return;
+        }
+        if (!"op".equals(plugin.getConfig().getString("spawn-eggs.permission-mode", "op"))
+                || player.isOp()) {
+            event.setCancelled(true); // cancel the vanilla egg before it spawns anything
+            Block clicked = event.getClickedBlock();
+            Location at = clicked.getLocation().add(0.5, 1.0, 0.5);
+            // Special mobs keep their dedicated managers so soul-event/charoite wiring applies.
+            boolean spawned = switch (species) {
+                case "echo_golem" -> echoGolemManager.summonEchoGolem(at) != null;
+                case "singer" -> resonanceManager.summonSinger(at) != null;
+                default -> summonCreature(species, at);
+            };
+            if (spawned) {
+                consumeOne(player, hand);
+            } else {
+                player.sendMessage("\u00a7cUnknown Sift creature: " + species);
+            }
+        }
+    }
+
+    /** Follow + defend tick for tamed Blubs, batched per world instead of per player. */
+    private void tickBlubs() {
+        World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
+        if (sift == null) return;
+        for (Entity entity : sift.getEntities()) {
+            if (!(entity instanceof Mob blub)) continue;
+            var pdc = blub.getPersistentDataContainer();
+            if (!"blub".equals(pdc.get(creatureKey, PersistentDataType.STRING))) continue;
+            String ownerId = pdc.get(blubOwnerKey, PersistentDataType.STRING);
+            if (ownerId == null) continue;
+            Player owner;
+            try {
+                owner = Bukkit.getPlayer(UUID.fromString(ownerId));
+            } catch (IllegalArgumentException ignored) {
+                continue;
+            }
+            if (owner == null || !owner.isOnline() || owner.getWorld() != sift) continue;
+            // Defend: target the most recent hostile attacker of the owner within range,
+            // otherwise follow (teleport-lead like the mod's seated/following behaviour).
+            boolean defending = false;
+            if (blub.getTarget() == null) {
+                for (Entity holder : sift.getNearbyEntities(owner.getLocation(), 8, 4, 8)) {
+                    if (!(holder instanceof Mob hostile)) continue;
+                    if (hostile.getTarget() == owner && hostile.getLocation()
+                            .distanceSquared(blub.getLocation()) < 64) {
+                        blub.setTarget(hostile);
+                        defending = true;
+                        break;
+                    }
+                }
+            } else if (blub.getTarget() instanceof Mob hostile && hostile.getTarget() == owner) {
+                defending = true;
+            }
+            double distance = blub.getLocation().distanceSquared(owner.getLocation());
+            if (!defending && distance > 25) {
+                if (distance > 900) {
+                    Location anchor = owner.getLocation().add(0, 0.2, 0);
+                    if (blub.teleport(anchor)) {
+                        sift.spawnParticle(Particle.POOF, anchor, 4, 0.2, 0.2, 0.2, 0);
+                    }
+                } else {
+                    // Walk toward the owner using Paper's Pathfinder API (no NMS needed).
+                    blub.getPathfinder().moveTo(owner.getLocation());
+                }
+            }
+        }
+    }
+
+    private void consumeOne(Player player, ItemStack hand) {
+        if (hand.getAmount() <= 1) {
+            player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
+        } else {
+            hand.setAmount(hand.getAmount() - 1);
         }
     }
 }

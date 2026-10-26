@@ -1,4 +1,4 @@
-config-version: 3
+config-version: 4
 
 content:
   ichor: true
@@ -23,7 +23,7 @@ content:
   siftite_pickaxe: true
   siftite_shovel: true
   siftite_hoe: true
-  # Chưa triển khai: cờ này hiện chỉ xuất hiện trong /sift doctor, chưa điều khiển nội dung.
+  # Ngắn hạn: Spear là Netherite Sword stand-in; ném được (spear-reach) nhưng chưa có mô hình projectile riêng.
   siftite_spear: true
   siftite_helmet: true
   siftite_chestplate: true
@@ -36,10 +36,14 @@ content:
   rift-events: true
   singer: true
   echo_golem: true
-  # Chưa triển khai: cờ này hiện chỉ xuất hiện trong /sift doctor, chưa điều khiển nội dung.
+  # Triển khai một phần: Blub thuần hóa bằng Soul Block + follow/protect đã hoạt động; chưa có GeckoLib animation.
   blub: true
-  # Chưa triển khai: cờ này hiện chỉ xuất hiện trong /sift doctor, chưa điều khiển nội dung.
+  # Triển khai một phần: Sifter spawn theo đàn + drop đã hoạt động; chưa có cơ chế sàng lọc item như mod.
   sifter: true
+  # Biến thể boss "Spire Tyrant" (tên đỏ, cùng statline với The Sifter) randomly thay thế
+  # The Sifter trong shattered/siftslate peaks; tiêu diệt sẽ mở advancement thesift:tyrant.
+  # Lưu ý: structure Crimson Keep của mod gốc chưa được port.
+  spire_tyrant: true
   rift: true
   sift_dimension: true
 
@@ -57,11 +61,17 @@ resonance:
     slowness-amplifier: 0
     charoite-protection: true
     drop-charoite: true
+    # Singer soul event (mod parity): the Singer is invulnerable outside its soul event.
+    # Offering a Soul Block (right-click while holding it) opens this window, during which
+    # the Singer can be damaged and killed; killing it inside the window grants
+    # thesift:singer_silenced. Set to 0 to disable the mechanic (Singer stays killable via
+    # resonance.singer.invulnerable: false only).
+    soul-event-seconds: 60
 
 echo-golem:
   enabled: true
-  max-health: 80.0
-  attack-damage: 12.0
+  # Parity với mod gốc: Echo Golem có 34 máu và KHÔNG tấn công người chơi (trung tính).
+  max-health: 34.0
   resonance-period: 8
   resonance-range: 20.0
   # Chưa triển khai: các giá trị resonance/debuff bên dưới chưa được áp dụng trong gameplay.
@@ -71,7 +81,7 @@ echo-golem:
   mining-fatigue-seconds: 6
   mining-fatigue-amplifier: 2
   heal-amount: 4.0
-  # Chưa triển khai: helper đọc khóa này không được gọi; hiện không có hiệu ứng.
+  # Chủ sở hữu mang Charoite nhận hồi máu từ nhịp cộng hưởng ngay cả ngoài tầm gần.
   charoite-protection: true
   drop-siftite: true
 
@@ -128,12 +138,12 @@ siftite:
   template-material: NETHERITE_UPGRADE_SMITHING_TEMPLATE
   # Chưa triển khai: hiện không thay đổi loại recipe.
   smithing-only: true
-  # Chưa triển khai: durability hiện không được nhân theo cấu hình.
+  # Áp dụng khi chế tạo: cộng thêm (multiplier-1)*max durability vào item Siftite mới crafting.
   durability-multiplier: 1.2
   knockback-resistance: 0.1
   weapon-damage-bonus: 1.0
   spear-damage: 9.0
-  # Chưa triển khai: tầm đánh hiện chưa được áp dụng.
+  # Tầm với của cú ném Spear (block); Spear stand-in ném được nhưng chưa có mô hình projectile riêng.
   spear-reach: 4.5
   mining-speed-bonus: 0.2
   mini-rift-recovery: true
@@ -158,6 +168,14 @@ providers:
   # Always enforced: dimension access is denied until all mandatory IDs resolve. Setting false is ignored.
   strict: true
   bedrock-enabled: false
+
+resource-pack:
+  # Gửi resource pack đi kèm plugin cho người chơi khi vào server (qua provider như ResourcePackManager nếu có).
+  auto-send: true
+  # URL http(s) công khai để client tải zip (server Paper không nhận file://); để trống nếu provider đọc file cục bộ.
+  server-url: ""
+  title: "The Sift (fan-made)"
+  prompt: "Texture mob/blok The Sift"
 
 integrations:
   blocks:
@@ -184,6 +202,18 @@ integrations:
 sift-world:
   tide-period-seconds: 120
   ichor-weather-period-seconds: 900
+
+# Mod-parity spawn eggs (vanilla stand-in eggs tagged with a Sift content id).
+spawn-eggs:
+  # When false, right-clicking with a Sift spawn egg is cancelled entirely.
+  enabled: true
+  # "op" = only operators may use Sift spawn eggs; "all" = any player.
+  permission-mode: op
+
+# Crafting/smelting recipes registered by the plugin (charoite, siftite gear, meat smelting,
+# ichor glass). With false, the meat food chain still works via the FurnaceSmeltEvent fallback.
+recipes:
+  enabled: true
 
 debug:
   chunk-generation-metrics:

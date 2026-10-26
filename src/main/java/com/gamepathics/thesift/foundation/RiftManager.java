@@ -61,24 +61,44 @@ public final class RiftManager implements Listener {
     private final AncientCityPortal ancientCity;
     private final SonorousConsoleTracker consoles = new SonorousConsoleTracker();
     private RiftInstance lastOpened;
+    // Lazily shared content registry so repeated item lookups reuse one ExternalItemBridge/cache.
+    private SiftiteContent sharedContent;
 
-    public RiftManager(JavaPlugin plugin) {
-        this(plugin, new ProviderReadiness(plugin));
-    }
-
-    RiftManager(JavaPlugin plugin, ProviderReadiness providerReadiness) {
+    /** Shared wiring: reuse the plugin-wide content registry and mob factory when provided. */
+    public RiftManager(JavaPlugin plugin, ProviderReadiness providerReadiness, SiftiteContent sharedContent,
+                       SiftMobFactory sharedMobFactory) {
         this.plugin = plugin;
         this.providerReadiness = providerReadiness;
         this.dimensionManager = new SiftDimensionManager(plugin, providerReadiness);
         this.riftKey = new NamespacedKey(plugin, "rift_key");
-        this.mobFactory = new SiftMobFactory(plugin);
+        // Prefer the injected plugin-wide factory; fall back to a local one for standalone use.
+        this.mobFactory = sharedMobFactory != null ? sharedMobFactory : new SiftMobFactory(plugin);
         this.blockBridge = new ExternalBlockBridge(plugin);
         this.sonorousBlocks = new SonorousBlockRegistry(plugin);
         this.ancientCity = new AncientCityPortal(plugin);
+        // Reuse the plugin-wide content registry when available so item caches stay consistent.
+        this.sharedContent = sharedContent;
+    }
+
+    public RiftManager(JavaPlugin plugin) {
+        this(plugin, new ProviderReadiness(plugin), null, null);
+    }
+
+    RiftManager(JavaPlugin plugin, ProviderReadiness providerReadiness) {
+        this(plugin, providerReadiness, null, null);
+    }
+
+    RiftManager(JavaPlugin plugin, ProviderReadiness providerReadiness, SiftiteContent sharedContent) {
+        this(plugin, providerReadiness, sharedContent, null);
     }
 
     AncientCityPortal ancientCityPortal() {
         return ancientCity;
+    }
+
+    private SiftiteContent riftContent() {
+        if (sharedContent == null) sharedContent = new SiftiteContent(plugin);
+        return sharedContent;
     }
 
     public void start() {
@@ -95,7 +115,7 @@ public final class RiftManager implements Listener {
     }
 
     public ItemStack createRiftKey() {
-        ItemStack key = new SiftiteContent(plugin).item(Material.TRIAL_KEY, RIFT_KEY_ID, "Rift Key");
+        ItemStack key = riftContent().item(Material.TRIAL_KEY, RIFT_KEY_ID, "Rift Key");
         if (key == null) return null;
         ItemMeta meta = key.getItemMeta();
         meta.setDisplayName("§5§lRift Key");
@@ -567,7 +587,7 @@ public final class RiftManager implements Listener {
         private void dropRewards() {
             // Drop Siftite, Charoite, etc.
             int rewardCount = Math.max(0, plugin.getConfig().getInt("rift.reward-drops", 3));
-            SiftiteContent content = new SiftiteContent(plugin);
+            SiftiteContent content = riftContent();
             ItemStack reward = rewardCount == 0 ? null
                     : content.item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot");
             if (rewardCount > 0 && reward == null) {
