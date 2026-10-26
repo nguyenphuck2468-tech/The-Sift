@@ -428,7 +428,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         else if (args.length == 2 && args[0].equalsIgnoreCase("summon")) candidates = java.util.List.of(
                 "singer", "echo_golem", "rift", "blub", "dark_sniffer", "bulb", "loomer", "wisp",
                 "violet_wisp", "koi", "hollow_bulb", "glowbell", "thornback", "glimmerwing",
-                "the_sifter", "sifter", "frost_stalker", "sunspore", "drifter", "shardling",
+                "the_sifter", "spire_tyrant", "sifter", "frost_stalker", "sunspore", "drifter", "shardling",
                 "prism_warden", "prismite", "lumen_tulip");
         else if (args.length == 3 && (args[0].equalsIgnoreCase("give")
                 || args[0].equalsIgnoreCase("summon"))) candidates = java.util.List.copyOf(players);

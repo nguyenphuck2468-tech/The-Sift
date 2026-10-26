@@ -65,14 +65,31 @@ Charoite holders.
 
 ### Advancement coverage
 
-The bundled progression datapack ships 21 advancements. Twenty of them are
+The bundled progression datapack ships 21 advancements. All twenty-one are now
 granted by real gameplay events (world entry, pickups, crafting, consumption,
-enchanting, boss/creature kills, Rift travel, portal song, Singer barter). The
-one exception is `thesift:tyrant` ("Crimson Conqueror"): its creature, the
-Spire Tyrant, has no spawner in this plugin yet, so the advancement is
-currently unobtainable. This gap is marked in
-`SiftAdvancementManager.onCreatureDeath` and tracked in
+enchanting, boss/creature kills, Rift travel, portal song, Singer barter). In
+particular `thesift:tyrant` ("Crimson Conqueror") was previously unobtainable
+because no creature ever carried a matching ID; the ecology spawner now
+introduces a crimson-named **Spire Tyrant** variant of the Sifter boss in the
+shattered/siftslate peaks (config: `content.spire_tyrant`, default on), and
+killing it grants the advancement plus Spire Fragment drops. Caveat kept from
+the reference mod: the Tyrant canonically dwells in the Crimson Keep structure,
+which this plugin does not generate yet — so the advancement text remains
+aspirational even though it is obtainable. Structure parity is tracked in
 `docs/mod-gap-analysis.md`.
+
+### Spawn eggs (mod parity)
+
+The reference mod ships a spawn egg for every Sift creature. The plugin maps
+each creature content id onto a vanilla stand-in egg material (e.g.
+`dark_sniffer` → Sniffer egg, `spire_tyrant` → Ravager egg) and a listener in
+the ecology manager intercepts right-clicks with tagged eggs: the vanilla
+spawn is cancelled and the creature is summoned through the normal provider-
+first `summonCreature` path (config stats, PDC tagging, Singer/Echo Golem
+special handling). Untagged vanilla eggs are untouched. Behaviour is gated by
+`spawn-eggs.enabled` and `spawn-eggs.permission-mode` (`op` or `all`) in
+`config.yml`. Custom-textured egg items still require the resource pack and
+are tracked as unverified in `docs/parity-matrix.md`.
 
 ## Current foundation scope
 

@@ -22,6 +22,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -60,6 +61,9 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey creatureKey;
     private final NamespacedKey blubOwnerKey;
     private final NamespacedKey spearThrowAtKey;
+    private final NamespacedKey snifferCorruptionStartKey;
+    /** Last herd anchor per world so spawned Sifters regroup instead of scattering (mod parity). */
+    private final java.util.Map<org.bukkit.World, Location> sifterHerdAnchors = new ConcurrentHashMap<>();
     private final SiftMobFactory mobFactory;
     private final ExternalBlockBridge blockBridge;
     private final SiftiteContent content;
@@ -89,6 +93,7 @@ public final class SiftEcologyManager implements Listener {
         this.creatureKey = new NamespacedKey(plugin, "sift_creature");
         this.blubOwnerKey = new NamespacedKey(plugin, "blub_owner");
         this.spearThrowAtKey = new NamespacedKey(plugin, "spear_last_throw");
+        this.snifferCorruptionStartKey = new NamespacedKey(plugin, "sniffer_corruption_start");
         // Prefer the Echo Golem manager's already-shared instances (the ecology module always
         // runs alongside it in the plugin lifecycle) so item caches stay consistent.
         this.mobFactory = sharedMobFactory != null ? sharedMobFactory
@@ -103,11 +108,13 @@ public final class SiftEcologyManager implements Listener {
             tickIchorWeather();
             tickDarkSniffers();
             tickBlubs();
+            tickSifterHerds();
         }, 100L, 100L);
     }
 
     public void shutdown() {
         tideTask.cancel();
+        sifterHerdAnchors.clear();
     }
 
     public void populateLoadedSpawnChunks() {
@@ -238,7 +245,13 @@ public final class SiftEcologyManager implements Listener {
             spawnBoss(chunk, EntityType.WARDEN, "Prism Warden", "prism_warden", 180.0, 28.0);
             generationOperations++;
         } else if ((key.endsWith("shattered_peaks") || key.endsWith("siftslate_peaks")) && random.nextInt(120) == 0) {
-            spawnBoss(chunk, EntityType.RAVAGER, "The Sifter", "the_sifter", 220.0, 24.0);
+            // Spire Tyrant variant: crimson-named Sifter boss in the peaks; killing it grants
+            // the bundled "tyrant" advancement (see SiftAdvancementManager.onCreatureDeath).
+            boolean tyrant = plugin.getConfig().getBoolean("content.spire_tyrant", true)
+                    && random.nextBoolean();
+            spawnBoss(chunk, EntityType.RAVAGER,
+                    tyrant ? "Spire Tyrant" : "The Sifter",
+                    tyrant ? "spire_tyrant" : "the_sifter", 220.0, 24.0);
             generationOperations++;
         }
         return generationOperations;
@@ -256,8 +269,13 @@ public final class SiftEcologyManager implements Listener {
                 && random.nextInt(120) == 0) openNaturalRift(chunk);
         if ((biome.endsWith("bulb_forest") || biome.endsWith("overgrown_forest")) && random.nextInt(160) == 0)
             spawnBoss(chunk, EntityType.WARDEN, "Prism Warden", "prism_warden", 180.0, 28.0);
-        else if ((biome.endsWith("shattered_peaks") || biome.endsWith("siftslate_peaks")) && random.nextInt(120) == 0)
-            spawnBoss(chunk, EntityType.RAVAGER, "The Sifter", "the_sifter", 220.0, 24.0);
+        else if ((biome.endsWith("shattered_peaks") || biome.endsWith("siftslate_peaks")) && random.nextInt(120) == 0) {
+            boolean tyrant = plugin.getConfig().getBoolean("content.spire_tyrant", true)
+                    && random.nextBoolean();
+            spawnBoss(chunk, EntityType.RAVAGER,
+                    tyrant ? "Spire Tyrant" : "The Sifter",
+                    tyrant ? "spire_tyrant" : "the_sifter", 220.0, 24.0);
+        }
     }
 
     private void decorateStrictSurface(Chunk chunk, String biome, Random random) {
@@ -886,11 +904,19 @@ public final class SiftEcologyManager implements Listener {
     @EventHandler
     public void onSiftBossDeath(EntityDeathEvent event) {
         String id = event.getEntity().getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING);
-        if ("prism_warden".equals(id) || "the_sifter".equals(id)) {
+        if ("prism_warden".equals(id) || "the_sifter".equals(id) || "spire_tyrant".equals(id)) {
             event.getDrops().add(content.item(Material.ECHO_SHARD,
                     "heart_of_the_sift", "Heart of the Sift"));
             event.getDrops().add(content.item(Material.AMETHYST_SHARD,
                     "sift_shard", "Sift Shard"));
+            // Crimson Keep token: makes the advancement icon item (thesift:spire_fragment)
+            // obtainable in survival; killing a Spire Tyrant drops two of them.
+            int fragments = "spire_tyrant".equals(id) ? 2 : 1;
+            for (int i = 0; i < fragments; i++) {
+                ItemStack fragment = content.item(Material.AMETHYST_SHARD,
+                        "spire_fragment", "Spire Fragment");
+                if (fragment != null) event.getDrops().add(fragment);
+            }
         }
         // Reference-mod parity (Sifter): drops raw_sifter_meat, which smelts to cooked_sifter_meat.
         if ("sifter".equals(id)) {
@@ -939,6 +965,7 @@ public final class SiftEcologyManager implements Listener {
             case "thornback" -> { type = EntityType.TURTLE; display = "Thornback"; }
             case "glimmerwing" -> { type = EntityType.BEE; display = "Glimmerwing"; }
             case "the_sifter" -> { type = EntityType.RAVAGER; display = "The Sifter"; }
+            case "spire_tyrant" -> { type = EntityType.RAVAGER; display = "Spire Tyrant"; }
             case "sifter" -> { type = EntityType.RAVAGER; display = "Sifter"; }
             case "frost_stalker" -> { type = EntityType.STRAY; display = "Frost Stalker"; }
             case "sunspore" -> { type = EntityType.MOOSHROOM; display = "Sunspore"; }
@@ -946,10 +973,29 @@ public final class SiftEcologyManager implements Listener {
             case "shardling" -> { type = EntityType.ENDERMITE; display = "Shardling"; }
             case "prism_warden" -> { type = EntityType.WARDEN; display = "Prism Warden"; }
             case "prismite" -> { type = EntityType.SILVERFISH; display = "Prismite"; }
+            case "rift_walker" -> { type = EntityType.ENDERMAN; display = "Rift Walker"; }
+            case "sift_wastes_stalker" -> { type = EntityType.WITCH; display = "Sift Wastes Stalker"; }
             default -> { return false; }
         }
 
-        boolean boss = id.equals("the_sifter") || id.equals("prism_warden");
+        boolean boss = id.equals("the_sifter") || id.equals("prism_warden") || id.equals("spire_tyrant");
+        // Mod parity (Sifter): herds cluster around a shared anchor instead of scattering.
+        if ("sifter".equals(id)) {
+            Location anchor = sifterHerdAnchors.get(location.getWorld());
+            if (anchor == null || anchor.distanceSquared(location) > 1600) {
+                location = location.clone();
+                if (anchor != null) {
+                    Vector toward = anchor.toVector().subtract(location.toVector()).normalize()
+                            .multiply(24);
+                    location = location.add(toward);
+                }
+            } else {
+                Vector offset = new Vector(java.util.concurrent.ThreadLocalRandom.current().nextDouble() * 12 - 6,
+                        0, java.util.concurrent.ThreadLocalRandom.current().nextDouble() * 12 - 6);
+                location = anchor.clone().add(offset);
+            }
+            sifterHerdAnchors.put(location.getWorld(), location.clone());
+        }
         Entity entity = mobFactory.spawn(id, location, type);
         if (entity == null) return false;
         entity.setPersistent(true);
@@ -959,8 +1005,10 @@ public final class SiftEcologyManager implements Listener {
         if (entity instanceof LivingEntity living) {
             living.setRemoveWhenFarAway(false);
             if (boss) {
-                double health = id.equals("the_sifter") ? 220.0 : 180.0;
-                double damage = id.equals("the_sifter") ? 24.0 : 28.0;
+                // Spire Tyrant mirrors the Sifter boss statline (220 HP / 24 dmg); Prism Warden keeps 180/28.
+                boolean sifterLine = id.equals("the_sifter") || id.equals("spire_tyrant");
+                double health = sifterLine ? 220.0 : 180.0;
+                double damage = sifterLine ? 24.0 : 28.0;
                 if (living.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH) != null) {
                     living.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).setBaseValue(health);
                     living.setHealth(health);
@@ -968,9 +1016,64 @@ public final class SiftEcologyManager implements Listener {
                 if (living.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE) != null) {
                     living.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE).setBaseValue(damage);
                 }
+            } else {
+                // Non-boss Sift mobs previously kept their vanilla stand-in stats; apply the
+                // reference mod's per-mob defaults (config-overridable via mobs.<id>.* keys).
+                SiftMobFactory.applyAttributes(living, modMobStats(id));
             }
         }
         return true;
+    }
+
+    /**
+     * Per-mob base attributes mirroring the reference mod (docs/mod-gap-analysis.md §5).
+     * Config paths {@code mobs.<id>.max-health / movement-speed / attack-damage / knockback-resist}
+     * override each value so server owners can tune without recompiling.
+     */
+    private java.util.Map<String, Double> modMobStats(String id) {
+        java.util.Map<String, Double> stats = new java.util.HashMap<>();
+        switch (id) {
+            case "sifter" -> {
+                stats.put("MAX_HEALTH", plugin.getConfig().getDouble("mobs.sifter.max-health", 40.0));
+                stats.put("MOVEMENT_SPEED", plugin.getConfig().getDouble("mobs.sifter.movement-speed", 0.31));
+                stats.put("ATTACK_DAMAGE", plugin.getConfig().getDouble("mobs.sifter.attack-damage", 10.0));
+            }
+            case "dark_sniffer" -> {
+                stats.put("MAX_HEALTH", plugin.getConfig().getDouble("mobs.dark_sniffer.max-health", 40.0));
+                stats.put("MOVEMENT_SPEED", plugin.getConfig().getDouble("mobs.dark_sniffer.movement-speed", 0.1));
+                stats.put("ATTACK_DAMAGE", plugin.getConfig().getDouble("mobs.dark_sniffer.attack-damage", 7.0));
+                stats.put("KNOCKBACK_RESISTANCE",
+                        plugin.getConfig().getDouble("mobs.dark_sniffer.knockback-resist", 0.75));
+            }
+            case "blub" -> {
+                stats.put("MAX_HEALTH", plugin.getConfig().getDouble("mobs.blub.max-health", 20.0));
+                stats.put("MOVEMENT_SPEED", plugin.getConfig().getDouble("mobs.blub.movement-speed", 0.3));
+                stats.put("ATTACK_DAMAGE", plugin.getConfig().getDouble("mobs.blub.attack-damage", 3.0));
+            }
+            default -> {
+                return java.util.Map.of();
+            }
+        }
+        return stats;
+    }
+
+    /**
+     * Reference-mod parity: Sifters travel in herds. Every herd member walks back toward the
+     * world's last-known anchor when it strays too far, reproducing the mod's group movement
+     * without a custom AI goal (which would need NMS). Runs on the existing ecology tick.
+     */
+    private void tickSifterHerds() {
+        World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
+        if (sift == null) return;
+        Location anchor = sifterHerdAnchors.get(sift);
+        if (anchor == null) return;
+        for (Entity entity : sift.getEntities()) {
+            if (!(entity instanceof Mob mob)) continue;
+            if (!"sifter".equals(entity.getPersistentDataContainer()
+                    .get(creatureKey, PersistentDataType.STRING))) continue;
+            if (mob.getLocation().distanceSquared(anchor) <= 900) continue;
+            mob.getPathfinder().moveTo(anchor);
+        }
     }
 
     private boolean isSift(World world) {
@@ -1050,17 +1153,55 @@ public final class SiftEcologyManager implements Listener {
     private void tickDarkSniffers() {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
         if (sift == null) return;
-        for (Player target : sift.getPlayers()) {
-            for (Entity entity : target.getNearbyEntities(18, 10, 18)) {
-                if (!(entity instanceof LivingEntity living) || entity.getType() != EntityType.SNIFFER) continue;
-                String id = entity.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING);
-                if (!"dark_sniffer".equals(id)) continue;
-                Vector pull = living.getLocation().toVector().subtract(target.getLocation().toVector());
+        // Sonic Sniff: pull players toward the Dark Sniffer (mod parity, docs §5). Scans the
+        // world once per tick instead of per player so multiple survivors never double-pull.
+        for (Entity entity : sift.getEntities()) {
+            if (!(entity instanceof LivingEntity sniffer) || entity.getType() != EntityType.SNIFFER) continue;
+            String id = entity.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING);
+            if (!"dark_sniffer".equals(id)) continue;
+            for (Entity nearby : sift.getNearbyEntities(entity.getLocation(), 18, 10, 18)) {
+                if (!(nearby instanceof Player target)) continue;
+                Vector pull = sniffer.getLocation().toVector().subtract(target.getLocation().toVector());
                 if (pull.lengthSquared() < 0.01) continue;
                 pull.normalize().multiply(0.28).setY(0.18);
                 target.setVelocity(target.getVelocity().multiply(0.45).add(pull));
                 target.playSound(target.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 0.25f, 1.6f);
                 sift.spawnParticle(Particle.SONIC_BOOM, target.getLocation().add(0, 1, 0), 1);
+            }
+        }
+        // Corruption conversion: vanilla Sniffers that linger on sculk/soul ground in The Sift
+        // turn into a Dark Sniffer, mirroring the mod's "infected sniffer" transformation.
+        long cooldownMillis = plugin.getConfig().getInt("mobs.dark-sniffer.corruption-ticks", 200) * 50L;
+        long now = System.currentTimeMillis();
+        java.util.List<Entity> conversions = new java.util.ArrayList<>();
+        for (Entity entity : sift.getEntities()) {
+            if (entity.getType() != EntityType.SNIFFER) continue;
+            var pdc = entity.getPersistentDataContainer();
+            if (pdc.has(creatureKey, PersistentDataType.STRING)) continue; // already a Dark Sniffer
+            Long firstOnSculk = pdc.get(snifferCorruptionStartKey, PersistentDataType.LONG);
+            Location loc = entity.getLocation();
+            Block below = loc.getBlock().getRelative(0, -1, 0);
+            boolean onSculk = below.getType() == Material.SCULK || below.getType() == Material.SCULK_CATALYST
+                    || below.getType() == Material.SOUL_SAND || below.getType() == Material.SOUL_SOIL;
+            if (!onSculk) {
+                if (firstOnSculk != null) pdc.remove(snifferCorruptionStartKey);
+                continue;
+            }
+            if (firstOnSculk == null) {
+                pdc.set(snifferCorruptionStartKey, PersistentDataType.LONG, now);
+                sift.spawnParticle(Particle.WITCH, loc.add(0, 1.5, 0), 6, 0.4, 0.3, 0.4, 0.1);
+                continue;
+            }
+            if (now - firstOnSculk >= cooldownMillis) conversions.add(entity);
+        }
+        // Convert after iteration so removal never disturbs the live entity list mid-scan.
+        for (Entity entity : conversions) {
+            Location loc = entity.getLocation();
+            entity.getPersistentDataContainer().remove(snifferCorruptionStartKey);
+            entity.remove();
+            if (summonCreature("dark_sniffer", loc)) {
+                sift.playSound(loc, Sound.ENTITY_SNIFFER_DIGGING, 0.8f, 0.6f);
+                sift.spawnParticle(Particle.LARGE_SMOKE, loc.add(0, 1, 0), 20, 0.5, 0.6, 0.5, 0.05);
             }
         }
     }
@@ -1094,6 +1235,39 @@ public final class SiftEcologyManager implements Listener {
             // Already yours: a small heart response, mirroring the mod's bond feedback.
             target.getWorld().spawnParticle(Particle.HEART, target.getLocation().add(0, 0.6, 0), 3);
             event.setCancelled(true);
+        }
+    }
+
+    /**
+     * Mod-parity spawn eggs: right-clicking a block with a tagged Sift spawn egg summons the
+     * matching creature through the normal {@link #summonCreature} path (provider-first spawn,
+     * config stats, PDC tagging). Vanilla stand-in eggs carry our content id in their PDC, so
+     * this never interferes with real vanilla eggs.
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void onSpawnEggUse(PlayerInteractEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        ItemStack hand = event.getItem();
+        if (hand == null || !hand.getType().name().endsWith("_SPAWN_EGG")) return;
+        String species = content.idOf(hand);
+        if (species == null) return;
+        Player player = event.getPlayer();
+        if (!plugin.getConfig().getBoolean("spawn-eggs.enabled", true)) {
+            event.setCancelled(true);
+            player.sendMessage("\u00a7cSift spawn eggs are disabled by configuration.");
+            return;
+        }
+        if (!"op".equals(plugin.getConfig().getString("spawn-eggs.permission-mode", "op"))
+                || player.isOp()) {
+            event.setCancelled(true); // cancel the vanilla egg before it spawns anything
+            Block clicked = event.getClickedBlock();
+            Location at = clicked.getLocation().add(0.5, 1.0, 0.5);
+            if (summonCreature(species, at)) {
+                consumeOne(player, hand);
+            } else {
+                player.sendMessage("\u00a7cUnknown Sift creature: " + species);
+            }
         }
     }
 

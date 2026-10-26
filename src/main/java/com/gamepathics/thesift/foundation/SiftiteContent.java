@@ -167,6 +167,12 @@ public final class SiftiteContent implements Listener {
                 .get(idKey, PersistentDataType.STRING));
     }
 
+    /** The content id stamped on this stack's PDC, or null when the stack is not Sift content. */
+    public String idOf(ItemStack stack) {
+        if (stack == null || !stack.hasItemMeta()) return null;
+        return stack.getItemMeta().getPersistentDataContainer().get(idKey, PersistentDataType.STRING);
+    }
+
     /** The PDC key this registry stamps item IDs under; lets other managers read tags directly. */
     public NamespacedKey idKey() {
         return idKey;
@@ -236,6 +242,7 @@ public final class SiftiteContent implements Listener {
             case "thornback" -> Material.TURTLE_SPAWN_EGG;
             case "glimmerwing" -> Material.BEE_SPAWN_EGG;
             case "the_sifter" -> Material.RAVAGER_SPAWN_EGG;
+            case "spire_tyrant" -> Material.RAVAGER_SPAWN_EGG; // crimson Sifter-variant boss
             case "frost_stalker" -> Material.STRAY_SPAWN_EGG;
             case "sunspore" -> Material.MOOSHROOM_SPAWN_EGG;
             case "drifter" -> Material.ENDERMAN_SPAWN_EGG;
@@ -244,6 +251,13 @@ public final class SiftiteContent implements Listener {
             case "lumen_tulip" -> Material.TORCHFLOWER_SEEDS;
             case "prismite" -> Material.SILVERFISH_SPAWN_EGG;
             case "loomer" -> Material.RABBIT_SPAWN_EGG;
+            // Remaining spec mobs get vanilla stand-in spawn eggs so every id in
+            // integrations/content-spec.json resolves through forId().
+            case "echo_golem" -> Material.IRON_GOLEM_SPAWN_EGG;
+            case "singer" -> Material.ALLAY_SPAWN_EGG;
+            case "dark_sniffer" -> Material.SNIFFER_SPAWN_EGG;
+            case "rift_walker" -> Material.ENDERMAN_SPAWN_EGG;
+            case "sift_wastes_stalker" -> Material.WITCH_SPAWN_EGG;
             case "raw_sifter_meat" -> Material.BEEF;
             case "cooked_sifter_meat" -> Material.COOKED_BEEF;
             case "blub_meat" -> Material.MUTTON;

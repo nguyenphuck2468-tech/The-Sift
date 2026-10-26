@@ -40,6 +40,10 @@ content:
   blub: true
   # Triển khai một phần: Sifter spawn theo đàn + drop đã hoạt động; chưa có cơ chế sàng lọc item như mod.
   sifter: true
+  # Biến thể boss "Spire Tyrant" (tên đỏ, cùng statline với The Sifter) randomly thay thế
+  # The Sifter trong shattered/siftslate peaks; tiêu diệt sẽ mở advancement thesift:tyrant.
+  # Lưu ý: structure Crimson Keep của mod gốc chưa được port.
+  spire_tyrant: true
   rift: true
   sift_dimension: true
 
@@ -57,6 +61,12 @@ resonance:
     slowness-amplifier: 0
     charoite-protection: true
     drop-charoite: true
+    # Singer soul event (mod parity): the Singer is invulnerable outside its soul event.
+    # Offering a Soul Block (right-click while holding it) opens this window, during which
+    # the Singer can be damaged and killed; killing it inside the window grants
+    # thesift:singer_silenced. Set to 0 to disable the mechanic (Singer stays killable via
+    # resonance.singer.invulnerable: false only).
+    soul-event-seconds: 60
 
 echo-golem:
   enabled: true
@@ -184,6 +194,13 @@ integrations:
 sift-world:
   tide-period-seconds: 120
   ichor-weather-period-seconds: 900
+
+# Mod-parity spawn eggs (vanilla stand-in eggs tagged with a Sift content id).
+spawn-eggs:
+  # When false, right-clicking with a Sift spawn egg is cancelled entirely.
+  enabled: true
+  # "op" = only operators may use Sift spawn eggs; "all" = any player.
+  permission-mode: op
 
 debug:
   chunk-generation-metrics:
