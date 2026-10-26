@@ -892,6 +892,27 @@ public final class SiftEcologyManager implements Listener {
             event.getDrops().add(content.item(Material.AMETHYST_SHARD,
                     "sift_shard", "Sift Shard"));
         }
+        // Reference-mod parity (Sifter): drops raw_sifter_meat, which smelts to cooked_sifter_meat.
+        if ("sifter".equals(id)) {
+            ItemStack raw = content.item(Material.BEEF, "raw_sifter_meat", "Raw Sifter Meat");
+            if (raw != null) event.getDrops().add(raw);
+        }
+        // Blub tamed by the owner who killed it keeps nothing; wild/tamed Blub drops its own meat
+        // so the food chain (Blub -> Dark Sniffer) reads correctly in survival.
+        if ("blub".equals(id)) {
+            ItemStack meat = content.item(Material.MUTTON, "blub_meat", "Blub Meat");
+            if (meat != null) event.getDrops().add(meat);
+        }
+    }
+
+    /** Smelt Raw Sifter Meat into Cooked Sifter Meat (mod parity for the food chain). */
+    @EventHandler(ignoreCancelled = true)
+    public void onSmeltSifterMeat(org.bukkit.event.inventory.FurnaceSmeltEvent event) {
+        ItemStack source = event.getSource();
+        if (source.getType() == Material.BEEF && content.is(source, "raw_sifter_meat")) {
+            ItemStack cooked = content.item(Material.COOKED_BEEF, "cooked_sifter_meat", "Cooked Sifter Meat");
+            if (cooked != null) event.setResult(cooked);
+        }
     }
 
     public boolean summonCreature(String species, Location location) {

@@ -8,6 +8,8 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.RecipeChoice;
+import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -32,15 +34,22 @@ public final class SiftiteContent implements Listener {
     private final ExternalItemBridge externalItems;
 
     public SiftiteContent(JavaPlugin plugin) {
+        this(plugin, new ExternalItemBridge(plugin));
+    }
+
+    /** Shared wiring: reuse one ExternalItemBridge (and its provider caches) across registries. */
+    SiftiteContent(JavaPlugin plugin, ExternalItemBridge externalItems) {
         this.plugin = Objects.requireNonNull(plugin);
         this.idKey = new NamespacedKey(plugin, "content");
-        this.externalItems = new ExternalItemBridge(plugin);
+        this.externalItems = Objects.requireNonNull(externalItems);
     }
 
     public void registerRecipes() {
         Server server = plugin.getServer();
         for (String key : java.util.List.of("charoite", "siftite_nugget", "siftite_ingot",
-                "siftite_upgrade_smithing_template")) server.removeRecipe(new NamespacedKey(plugin, key));
+                "siftite_upgrade_smithing_template", "smelt_raw_sifter_meat", "smelt_blub_meat")) {
+            server.removeRecipe(new NamespacedKey(plugin, key));
+        }
         for (String key : java.util.List.of("siftite_sword", "siftite_axe", "siftite_pickaxe",
                 "siftite_shovel", "siftite_hoe", "siftite_helmet", "siftite_chestplate",
                 "siftite_leggings", "siftite_boots")) server.removeRecipe(new NamespacedKey(plugin, key));
@@ -52,6 +61,15 @@ public final class SiftiteContent implements Listener {
             addShaped("charoite", item(Material.LAPIS_LAZULI, "charoite", "Charoite"),
                     " C ", "CAC", " C ", 'C', Material.AMETHYST_SHARD, 'A', Material.AMETHYST_BLOCK);
         }
+        // Reference-mod parity: Cooked Sifter Meat / Cooked Blub Meat come from smelting the
+        // raw drops (see SiftEcologyManager#onEntityDeath), so they must be obtainable even
+        // when FurnaceSmeltEvent is cancelled by other plugins.
+        registerFurnish("smelt_raw_sifter_meat",
+                item(Material.BEEF, "raw_sifter_meat", "Raw Sifter Meat"),
+                item(Material.COOKED_BEEF, "cooked_sifter_meat", "Cooked Sifter Meat"));
+        registerFurnish("smelt_blub_meat",
+                item(Material.MUTTON, "blub_meat", "Blub Meat"),
+                item(Material.COOKED_MUTTON, "cooked_blub_meat", "Cooked Blub Meat"));
         if (enabled("siftite_nugget", "siftite.enabled")) {
             addShapeless("siftite_nugget", item(Material.IRON_NUGGET, "siftite_nugget", "Siftite Nugget"),
                     Material.IRON_NUGGET, Material.AMETHYST_SHARD);
@@ -149,6 +167,11 @@ public final class SiftiteContent implements Listener {
                 .get(idKey, PersistentDataType.STRING));
     }
 
+    /** The PDC key this registry stamps item IDs under; lets other managers read tags directly. */
+    public NamespacedKey idKey() {
+        return idKey;
+    }
+
     public ItemStack forId(String id) {
         ItemStack foundationItem = switch (id) {
             case "charoite" -> item(Material.LAPIS_LAZULI, id, "Charoite");
@@ -221,6 +244,10 @@ public final class SiftiteContent implements Listener {
             case "lumen_tulip" -> Material.TORCHFLOWER_SEEDS;
             case "prismite" -> Material.SILVERFISH_SPAWN_EGG;
             case "loomer" -> Material.RABBIT_SPAWN_EGG;
+            case "raw_sifter_meat" -> Material.BEEF;
+            case "cooked_sifter_meat" -> Material.COOKED_BEEF;
+            case "blub_meat" -> Material.MUTTON;
+            case "cooked_blub_meat" -> Material.COOKED_MUTTON;
             default -> null;
         };
         if (material == null) return null;
@@ -327,6 +354,16 @@ public final class SiftiteContent implements Listener {
         plugin.getServer().removeRecipe(recipeKey);
         ShapelessRecipe recipe = new ShapelessRecipe(recipeKey, result);
         for (Material ingredient : ingredients) recipe.addIngredient(ingredient);
+        plugin.getServer().addRecipe(recipe);
+    }
+
+    /** Register a furnace smelting recipe from a tagged item to its cooked counterpart. */
+    private void registerFurnish(String key, ItemStack input, ItemStack output) {
+        if (input == null || output == null) return;
+        NamespacedKey recipeKey = new NamespacedKey(plugin, key);
+        plugin.getServer().removeRecipe(recipeKey);
+        FurnaceRecipe recipe = new FurnaceRecipe(recipeKey, output,
+                new RecipeChoice.ExactChoice(input), 0.35f, 10);
         plugin.getServer().addRecipe(recipe);
     }
 

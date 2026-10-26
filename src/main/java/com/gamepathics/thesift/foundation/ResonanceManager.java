@@ -43,7 +43,6 @@ public final class ResonanceManager implements Listener {
     private static final String SINGER_ID = "singer";
     private final JavaPlugin plugin;
     private final NamespacedKey entityKey;
-    private final NamespacedKey itemKey;
     private final SiftMobFactory mobFactory;
     private final SiftiteContent content;
     private final Map<UUID, BossBar> bars = new HashMap<>();
@@ -60,7 +59,6 @@ public final class ResonanceManager implements Listener {
     ResonanceManager(JavaPlugin plugin, SiftiteContent content, SiftMobFactory mobFactory) {
         this.plugin = plugin;
         this.entityKey = new NamespacedKey(plugin, "resonance_entity");
-        this.itemKey = new NamespacedKey(plugin, "content");
         this.content = content;
         this.mobFactory = mobFactory;
     }
@@ -140,9 +138,7 @@ public final class ResonanceManager implements Listener {
         if (event.getHand() != EquipmentSlot.HAND || !isSinger(event.getRightClicked())) return;
         Player player = event.getPlayer();
         ItemStack held = player.getInventory().getItemInMainHand();
-        if (held.getType() == Material.AIR || !held.hasItemMeta()
-                || !"soul_block".equals(held.getItemMeta().getPersistentDataContainer()
-                .get(itemKey, PersistentDataType.STRING))) return;
+        if (held.getType() == Material.AIR || !content.is(held, "soul_block")) return;
         event.setCancelled(true);
         Entity singer = event.getRightClicked();
         long now = System.currentTimeMillis();
@@ -257,6 +253,8 @@ public final class ResonanceManager implements Listener {
         if (!plugin.getConfig().getBoolean("resonance.singer.charoite-protection", true)) {
             return false;
         }
+        // Read the tag through the shared content registry so both Singer and Echo Golem
+        // charoite checks use one code path (and honour provider-created items).
         var inventory = player.getInventory();
         return hasTaggedCharoite(inventory.getStorageContents())
                 || hasTaggedCharoite(inventory.getArmorContents())
@@ -265,9 +263,7 @@ public final class ResonanceManager implements Listener {
 
     private boolean hasTaggedCharoite(ItemStack[] items) {
         for (ItemStack stack : items) {
-            if (stack != null && stack.hasItemMeta()
-                    && "charoite".equals(stack.getItemMeta().getPersistentDataContainer()
-                    .get(itemKey, PersistentDataType.STRING))) return true;
+            if (content.is(stack, "charoite")) return true;
         }
         return false;
     }

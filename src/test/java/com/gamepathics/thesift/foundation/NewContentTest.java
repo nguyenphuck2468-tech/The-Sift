@@ -204,3 +204,51 @@ class SiftiteDurabilityTest {
         assertTrue(content.is(ingot, "siftite_ingot"));
     }
 }
+
+class MeatFoodChainTest {
+
+    @AfterEach
+    void tearDown() {
+        MockBukkit.unmock();
+    }
+
+    @Test
+    void cookedMeatIdsResolveToTaggedItems() {
+        MockBukkit.mock();
+        JavaPlugin mockPlugin = MockBukkit.createMockPlugin("TheSift");
+        mockPlugin.getConfig().set("providers.strict", false);
+        SiftiteContent content = new SiftiteContent(mockPlugin);
+
+        ItemStack rawSifter = content.forId("raw_sifter_meat");
+        ItemStack cookedSifter = content.forId("cooked_sifter_meat");
+        ItemStack blubMeat = content.forId("blub_meat");
+        ItemStack cookedBlub = content.forId("cooked_blub_meat");
+
+        assertNotNull(rawSifter);
+        assertNotNull(cookedSifter);
+        assertNotNull(blubMeat);
+        assertNotNull(cookedBlub);
+        assertTrue(content.is(rawSifter, "raw_sifter_meat"));
+        assertTrue(content.is(cookedSifter, "cooked_sifter_meat"));
+        assertTrue(content.is(blubMeat, "blub_meat"));
+        assertTrue(content.is(cookedBlub, "cooked_blub_meat"));
+    }
+
+    @Test
+    void smeltingRecipesAreRegisteredAndReloadSafe() {
+        ServerMock server = MockBukkit.mock();
+        JavaPlugin mockPlugin = MockBukkit.createMockPlugin("TheSift");
+        mockPlugin.getConfig().set("providers.strict", false);
+        SiftiteContent content = new SiftiteContent(mockPlugin);
+
+        content.registerRecipes();
+        NamespacedKey sifterKey = new NamespacedKey(mockPlugin, "smelt_raw_sifter_meat");
+        var recipe = server.getRecipe(sifterKey);
+        assertNotNull(recipe, "smelt_raw_sifter_meat recipe should exist after registerRecipes()");
+        assertInstanceOf(org.bukkit.inventory.FurnaceRecipe.class, recipe);
+
+        // Re-registering must replace (not duplicate or crash) the recipe.
+        content.registerRecipes();
+        assertNotNull(server.getRecipe(sifterKey));
+    }
+}
