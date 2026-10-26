@@ -65,9 +65,9 @@ Mod có 22 advancement thật. Plugin có bộ riêng (`prismatic`, `matriarch`,
 | Mob | Mod | Plugin |
 | --- | --- | --- |
 | Singer | peaceful, bất tử ngoài soul event, trao đổi Soul Block | **đã sửa** ở commit trước (peaceful, trao đổi); chưa có soul event |
-| Echo Golem | 34 máu, tốc độ 0.23, follow 128; **không tấn công**, nhặt Soul Block ở Soul Canyon, bond bằng Echo Shard | config 80 máu, sát thương 12, debuff "resonance" (chưa kiểm chứng đã áp dụng đúng) |
-| Blub | 20 máu, tốc độ 0.3, dmg 3; thuần hoá bằng Soul Block, đi theo, ngồi, bảo vệ chủ | `EntityType.RABBIT` đặt tên; cờ config ghi "chưa triển khai" (không thuần hoá được) |
-| Sifter | 40 máu, tốc độ 0.31, dmg 10, đi đàn, rơi Raw Sifter Meat | `RAVAGER` đặt tên; cờ config ghi "chưa triển khai" |
+| Echo Golem | 34 máu, tốc độ 0.23, follow 128; **không tấn công**, nhặt Soul Block ở Soul Canyon, bond bằng Echo Shard | **đã sửa**: mặc định 34 máu, không còn ATTACK_DAMAGE (xóa key chết), charoite-protection hook vào pulse, scan theo chunk |
+| Blub | 20 máu, tốc độ 0.3, dmg 3; thuần hoá bằng Soul Block, đi theo, ngồi, bảo vệ chủ | **đã sửa**: thuần hoá bằng Soul Block (follow/protect/sit), drop Blub Meat → nung thành Cooked Blub Meat (`smelt_blub_meat`) |
+| Sifter | 40 máu, tốc độ 0.31, dmg 10, đi đàn, rơi Raw Sifter Meat | một phần: drop Raw Sifter Meat → nung thành Cooked Sifter Meat (`smelt_raw_sifter_meat`); **chưa có herd behavior** |
 | Dark Sniffer | 40 máu, tốc độ 0.1, dmg 7, knockback 0.75, **Sonic Sniff** kéo mục tiêu; sniffer bị sculk nhiễm biến đổi | có spawn; chưa thấy Sonic Sniff hay cơ chế nhiễm |
 
 Mod còn có: Warden-Dark Sniffer (mixin), RiftMobAvoidance (mob tránh Rift), Siftite return entity.
