@@ -46,15 +46,22 @@ These keys are retained for compatibility. The comments beside them in
 `src/main/resources/config.yml` mark the exact keys that are presently
 informational or have no gameplay effect; do not treat those values as working
 controls. This includes `content.siftslate`, `content.healthy_sculk`,
-`content.overgrown_willow`, `content.siftite_spear`, `content.blub`,
-`content.sifter`, `echo-golem.resonance-damage`,
+`content.overgrown_willow`,
+`echo-golem.resonance-damage`,
 `echo-golem.slowness-seconds`, `echo-golem.slowness-amplifier`,
 `echo-golem.mining-fatigue-seconds`,
 `echo-golem.mining-fatigue-amplifier`,
 `charoite.material`, `siftite.ingot-material`, `siftite.nugget-material`,
-`siftite.template-material`, `siftite.smithing-only`,
-`siftite.durability-multiplier`, and `siftite.spear-reach`. Existing config
+`siftite.template-material`, and `siftite.smithing-only`. Existing config
 files keep these keys; they have not been removed or migrated.
+
+Keys activated in the latest parity pass (previously informational):
+`content.blub` and `content.sifter` now gate Sift ecology spawning and the
+Blub Soul Block taming interaction; `content.siftite_spear` gates recipes for
+the spear; `siftite.durability-multiplier` adds bonus durability to freshly
+crafted Siftite tools/weapons; `siftite.spear-reach` sets the thrown-spear
+reach; and `echo-golem.charoite-protection` extends resonance healing to
+Charoite holders.
 
 ## Current foundation scope
 

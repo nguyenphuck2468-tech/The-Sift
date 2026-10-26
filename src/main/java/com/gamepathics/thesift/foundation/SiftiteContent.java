@@ -105,9 +105,31 @@ public final class SiftiteContent implements Listener {
         if (!providerItem) meta.setDisplayName("§d" + name);
         meta.getPersistentDataContainer().set(idKey, PersistentDataType.STRING, id);
         if (!providerItem && hasItemModel(id)) meta.setItemModel(NamespacedKey.fromString("thesift:" + id));
-        if (id.startsWith("siftite_") && !id.equals("siftite_upgrade_smithing_template")) addAttributes(meta, id);
+        if (id.startsWith("siftite_") && !id.equals("siftite_upgrade_smithing_template")) {
+            addAttributes(meta, id);
+            applyDurabilityMultiplier(result, meta, id);
+        }
         result.setItemMeta(meta);
         return result;
+    }
+
+    /**
+     * Applies {@code siftite.durability-multiplier} from config.yml to freshly crafted Siftite
+     * gear by raising the item's custom max-damage above its vanilla base (Paper Damageable
+     * meta). This makes the config knob a real gameplay effect instead of a dead flag surfaced
+     * only in {@code /sift doctor}. Damage stays clamped at 0; the extra headroom lives in
+     * getMaxDamage(), which is how vanilla treats items that have bonus durability.
+     */
+    private void applyDurabilityMultiplier(ItemStack result, ItemMeta meta, String id) {
+        double multiplier = plugin.getConfig().getDouble("siftite.durability-multiplier", 1.2);
+        if (multiplier <= 1.0 || result.getType().getMaxDurability() <= 0) return;
+        if (!(meta instanceof org.bukkit.inventory.meta.Damageable damageable)) return;
+        int extra = (int) Math.round(result.getType().getMaxDurability() * (multiplier - 1.0));
+        if (extra <= 0) return;
+        // getMaxDamage() throws unless a custom ceiling was set before, so fall back to the
+        // material's vanilla durability as the baseline.
+        int base = damageable.hasMaxDamage() ? damageable.getMaxDamage() : result.getType().getMaxDurability();
+        damageable.setMaxDamage(base + extra);
     }
 
     private boolean hasItemModel(String id) {

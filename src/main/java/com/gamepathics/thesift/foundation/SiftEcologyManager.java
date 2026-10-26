@@ -17,11 +17,17 @@ import org.bukkit.block.data.type.Snow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
@@ -52,6 +58,8 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey decorationRetryAttemptsKey;
     private final NamespacedKey decorationRetryAtKey;
     private final NamespacedKey creatureKey;
+    private final NamespacedKey blubOwnerKey;
+    private final NamespacedKey spearThrowAtKey;
     private final SiftMobFactory mobFactory;
     private final ExternalBlockBridge blockBridge;
     private final SiftiteContent content;
@@ -79,6 +87,8 @@ public final class SiftEcologyManager implements Listener {
         this.decorationRetryAttemptsKey = new NamespacedKey(plugin, "sift_ecology_retry_attempts");
         this.decorationRetryAtKey = new NamespacedKey(plugin, "sift_ecology_retry_at");
         this.creatureKey = new NamespacedKey(plugin, "sift_creature");
+        this.blubOwnerKey = new NamespacedKey(plugin, "blub_owner");
+        this.spearThrowAtKey = new NamespacedKey(plugin, "spear_last_throw");
         // Prefer the Echo Golem manager's already-shared instances (the ecology module always
         // runs alongside it in the plugin lifecycle) so item caches stay consistent.
         this.mobFactory = sharedMobFactory != null ? sharedMobFactory
@@ -92,6 +102,7 @@ public final class SiftEcologyManager implements Listener {
             tickTide();
             tickIchorWeather();
             tickDarkSniffers();
+            tickBlubs();
         }, 100L, 100L);
     }
 
@@ -717,6 +728,12 @@ public final class SiftEcologyManager implements Listener {
         World world = chunk.getWorld();
         int count = 1 + random.nextInt(3);
         for (int i = 0; i < count; i++) {
+            // Honor the content.blub / content.sifter toggles from config.yml: species that are
+            // disabled must not spawn in the wild. Previously these keys were display-only.
+            if (!plugin.getConfig().getBoolean("content.blub", true)
+                    && biome.endsWith("carapace")) continue;
+            if (!plugin.getConfig().getBoolean("content.sifter", true)
+                    && biome.contains("sift_wastes")) continue;
             int x = chunk.getX() * 16 + 2 + random.nextInt(12);
             int z = chunk.getZ() * 16 + 2 + random.nextInt(12);
             int y = world.getHighestBlockYAt(x, z) + 1;
@@ -829,6 +846,41 @@ public final class SiftEcologyManager implements Listener {
                 living.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE).setBaseValue(attackDamage);
             }
         }
+    }
+
+    /**
+     * Right-click in air with a Siftite Spear throws it as a projectile. This wires the
+     * {@code siftite.spear-reach} config knob (previously only surfaced by /sift doctor) into
+     * actual gameplay: the throw range is clamped to that value and the spear consumes one
+     * durability point per throw.
+     */
+    @EventHandler
+    public void onSpearThrow(PlayerInteractEvent event) {
+        if (event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_AIR) return;
+        var hand = event.getHand();
+        if (hand != org.bukkit.inventory.EquipmentSlot.HAND) return; // avoid double-fire per off-hand swing
+        var item = event.getItem();
+        if (item == null || !content.is(item, "siftite_spear")) return;
+        Player player = event.getPlayer();
+        long now = System.currentTimeMillis();
+        var pdc = player.getPersistentDataContainer();
+        Long last = pdc.get(spearThrowAtKey, PersistentDataType.LONG);
+        if (last != null && now - last < 500L) return; // simple cooldown against double-fire
+        pdc.set(spearThrowAtKey, PersistentDataType.LONG, now);
+
+        double reach = Math.max(1.0, plugin.getConfig().getDouble("siftite.spear-reach", 4.5));
+        Location eye = player.getEyeLocation();
+        org.bukkit.entity.Item projectile = eye.getWorld().dropItem(eye, item.clone());
+        projectile.setVelocity(eye.getDirection().normalize().multiply(reach));
+        projectile.setCanPlayerPickup(false);
+        projectile.setCanMobPickup(false);
+        projectile.setPickupDelay(60); // ~3s until the thrown spear can be looted again
+        projectile.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING, "thrown_siftite_spear");
+
+        // Consume one durability point from the held spear via ItemStack#damage so the client's
+        // held-item state stays in sync; when the spear breaks, clear the hand slot.
+        org.bukkit.inventory.ItemStack damaged = item.damage(1, player);
+        player.getInventory().setItem(hand, damaged == null || damaged.getType().isAir() ? null : damaged);
     }
 
     @EventHandler
@@ -989,6 +1041,94 @@ public final class SiftEcologyManager implements Listener {
                 target.playSound(target.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 0.25f, 1.6f);
                 sift.spawnParticle(Particle.SONIC_BOOM, target.getLocation().add(0, 1, 0), 1);
             }
+        }
+    }
+
+    /**
+     * Reference-mod parity (Blub): right-clicking a wild Blub with a Soul Block tames it.
+     * The tamed Blub follows its owner and defends them against hostile mobs. Sitting is not
+     * implemented because a Rabbit has no leash/sit path without an item in hand; the mod's
+     * "sit" state is a GeckoLib animation we cannot mirror on a vanilla stand-in.
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void onBlubInteract(PlayerInteractEntityEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        Entity target = event.getRightClicked();
+        if (!"blub".equals(target.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING))) {
+            return;
+        }
+        Player player = event.getPlayer();
+        var pdc = target.getPersistentDataContainer();
+        String ownerId = pdc.get(blubOwnerKey, PersistentDataType.STRING);
+        ItemStack hand = player.getInventory().getItemInMainHand();
+        if (ownerId == null && content.is(hand, "soul_block")) {
+            if (!plugin.getConfig().getBoolean("content.blub", true)) return;
+            consumeOne(player, hand);
+            pdc.set(blubOwnerKey, PersistentDataType.STRING, player.getUniqueId().toString());
+            if (target instanceof LivingEntity living) living.setRemoveWhenFarAway(false);
+            SiftAdvancementGrant.grant(plugin, player, "matriarch");
+            player.sendMessage("\u00a7dThe Blub accepts your Soul Block and follows you.");
+            event.setCancelled(true);
+        } else if (ownerId != null && ownerId.equals(player.getUniqueId().toString())) {
+            // Already yours: a small heart response, mirroring the mod's bond feedback.
+            target.getWorld().spawnParticle(Particle.HEART, target.getLocation().add(0, 0.6, 0), 3);
+            event.setCancelled(true);
+        }
+    }
+
+    /** Follow + defend tick for tamed Blubs, batched per world instead of per player. */
+    private void tickBlubs() {
+        World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
+        if (sift == null) return;
+        for (Entity entity : sift.getEntities()) {
+            if (!(entity instanceof Mob blub)) continue;
+            var pdc = blub.getPersistentDataContainer();
+            if (!"blub".equals(pdc.get(creatureKey, PersistentDataType.STRING))) continue;
+            String ownerId = pdc.get(blubOwnerKey, PersistentDataType.STRING);
+            if (ownerId == null) continue;
+            Player owner;
+            try {
+                owner = Bukkit.getPlayer(UUID.fromString(ownerId));
+            } catch (IllegalArgumentException ignored) {
+                continue;
+            }
+            if (owner == null || !owner.isOnline() || owner.getWorld() != sift) continue;
+            // Defend: target the most recent hostile attacker of the owner within range,
+            // otherwise follow (teleport-lead like the mod's seated/following behaviour).
+            boolean defending = false;
+            if (blub.getTarget() == null) {
+                for (Entity holder : sift.getNearbyEntities(owner.getLocation(), 8, 4, 8)) {
+                    if (!(holder instanceof Mob hostile)) continue;
+                    if (hostile.getTarget() == owner && hostile.getLocation()
+                            .distanceSquared(blub.getLocation()) < 64) {
+                        blub.setTarget(hostile);
+                        defending = true;
+                        break;
+                    }
+                }
+            } else if (blub.getTarget() instanceof Mob hostile && hostile.getTarget() == owner) {
+                defending = true;
+            }
+            double distance = blub.getLocation().distanceSquared(owner.getLocation());
+            if (!defending && distance > 25) {
+                if (distance > 900) {
+                    Location anchor = owner.getLocation().add(0, 0.2, 0);
+                    if (blub.teleport(anchor)) {
+                        sift.spawnParticle(Particle.POOF, anchor, 4, 0.2, 0.2, 0.2, 0);
+                    }
+                } else {
+                    // Walk toward the owner using Paper's Pathfinder API (no NMS needed).
+                    blub.getPathfinder().moveTo(owner.getLocation());
+                }
+            }
+        }
+    }
+
+    private void consumeOne(Player player, ItemStack hand) {
+        if (hand.getAmount() <= 1) {
+            player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
+        } else {
+            hand.setAmount(hand.getAmount() - 1);
         }
     }
 }

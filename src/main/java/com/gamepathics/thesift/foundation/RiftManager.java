@@ -69,6 +69,10 @@ public final class RiftManager implements Listener {
     }
 
     RiftManager(JavaPlugin plugin, ProviderReadiness providerReadiness) {
+        this(plugin, providerReadiness, null);
+    }
+
+    RiftManager(JavaPlugin plugin, ProviderReadiness providerReadiness, SiftiteContent sharedContent) {
         this.plugin = plugin;
         this.providerReadiness = providerReadiness;
         this.dimensionManager = new SiftDimensionManager(plugin, providerReadiness);
@@ -77,6 +81,8 @@ public final class RiftManager implements Listener {
         this.blockBridge = new ExternalBlockBridge(plugin);
         this.sonorousBlocks = new SonorousBlockRegistry(plugin);
         this.ancientCity = new AncientCityPortal(plugin);
+        // Reuse the plugin-wide content registry when available so item caches stay consistent.
+        this.sharedContent = sharedContent;
     }
 
     AncientCityPortal ancientCityPortal() {

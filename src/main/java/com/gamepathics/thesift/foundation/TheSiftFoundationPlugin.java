@@ -89,7 +89,8 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             echoGolemManager.start();
         }
         if (contentRegistry.isEnabled(ContentId.RIFT)) {
-            riftManager = new RiftManager(this, providerReadiness);
+            if (siftiteContent == null) siftiteContent = new SiftiteContent(this);
+            riftManager = new RiftManager(this, providerReadiness, siftiteContent);
             getServer().getPluginManager().registerEvents(riftManager, this);
             getServer().getPluginManager().registerEvents(riftManager.ancientCityPortal(), this);
             if (resonanceManager != null) riftManager.ancientCityPortal().setSingerSpawner(resonanceManager::summonSinger);

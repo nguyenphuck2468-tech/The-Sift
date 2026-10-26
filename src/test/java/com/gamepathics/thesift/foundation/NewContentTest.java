@@ -148,3 +148,59 @@ class RiftManagerTest {
         assertDoesNotThrow(() -> riftManager.start());
     }
 }
+
+class SiftiteDurabilityTest {
+
+    @AfterEach
+    void tearDown() {
+        MockBukkit.unmock();
+    }
+
+    @Test
+    void durabilityMultiplierRaisesCustomMaxDamageOnFreshGear() {
+        ServerMock server = MockBukkit.mock();
+        JavaPlugin mockPlugin = MockBukkit.createMockPlugin("TheSift");
+        mockPlugin.getConfig().set("providers.strict", false);
+        mockPlugin.getConfig().set("siftite.durability-multiplier", 1.5);
+        SiftiteContent content = new SiftiteContent(mockPlugin);
+
+        ItemStack spear = content.item(Material.NETHERITE_SWORD, "siftite_spear", "Siftite Spear");
+        assertNotNull(spear);
+        var meta = spear.getItemMeta();
+        assertInstanceOf(org.bukkit.inventory.meta.Damageable.class, meta);
+        org.bukkit.inventory.meta.Damageable damageable = (org.bukkit.inventory.meta.Damageable) meta;
+        int vanilla = Material.NETHERITE_SWORD.getMaxDurability();
+        assertTrue(damageable.hasMaxDamage());
+        assertEquals(vanilla + Math.round(vanilla * 0.5f), damageable.getMaxDamage());
+        assertEquals(0, damageable.getDamage());
+    }
+
+    @Test
+    void multiplierOfOneLeavesGearAtVanillaDurability() {
+        ServerMock server = MockBukkit.mock();
+        JavaPlugin mockPlugin = MockBukkit.createMockPlugin("TheSift");
+        mockPlugin.getConfig().set("providers.strict", false);
+        mockPlugin.getConfig().set("siftite.durability-multiplier", 1.0);
+        SiftiteContent content = new SiftiteContent(mockPlugin);
+
+        ItemStack sword = content.item(Material.NETHERITE_SWORD, "siftite_spear", "Siftite Spear");
+        var meta = sword.getItemMeta();
+        assertInstanceOf(org.bukkit.inventory.meta.Damageable.class, meta);
+        org.bukkit.inventory.meta.Damageable damageable = (org.bukkit.inventory.meta.Damageable) meta;
+        assertFalse(damageable.hasMaxDamage(), "no custom ceiling should be written at x1.0");
+    }
+
+    @Test
+    void nonDamageableItemsIgnoreTheMultiplier() {
+        ServerMock server = MockBukkit.mock();
+        JavaPlugin mockPlugin = MockBukkit.createMockPlugin("TheSift");
+        mockPlugin.getConfig().set("providers.strict", false);
+        mockPlugin.getConfig().set("siftite.durability-multiplier", 2.0);
+        SiftiteContent content = new SiftiteContent(mockPlugin);
+
+        // siftite_ingot maps to NETHERITE_INGOT which has no durability: must not throw.
+        ItemStack ingot = content.item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot");
+        assertNotNull(ingot);
+        assertTrue(content.is(ingot, "siftite_ingot"));
+    }
+}

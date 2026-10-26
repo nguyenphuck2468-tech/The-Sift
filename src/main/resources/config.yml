@@ -23,7 +23,7 @@ content:
   siftite_pickaxe: true
   siftite_shovel: true
   siftite_hoe: true
-  # Chưa triển khai: cờ này hiện chỉ xuất hiện trong /sift doctor, chưa điều khiển nội dung.
+  # Ngắn hạn: Spear là Netherite Sword stand-in; ném được (spear-reach) nhưng chưa có mô hình projectile riêng.
   siftite_spear: true
   siftite_helmet: true
   siftite_chestplate: true
@@ -36,9 +36,9 @@ content:
   rift-events: true
   singer: true
   echo_golem: true
-  # Chưa triển khai: cờ này hiện chỉ xuất hiện trong /sift doctor, chưa điều khiển nội dung.
+  # Triển khai một phần: Blub thuần hóa bằng Soul Block + follow/protect đã hoạt động; chưa có GeckoLib animation.
   blub: true
-  # Chưa triển khai: cờ này hiện chỉ xuất hiện trong /sift doctor, chưa điều khiển nội dung.
+  # Triển khai một phần: Sifter spawn theo đàn + drop đã hoạt động; chưa có cơ chế sàng lọc item như mod.
   sifter: true
   rift: true
   sift_dimension: true
@@ -128,12 +128,12 @@ siftite:
   template-material: NETHERITE_UPGRADE_SMITHING_TEMPLATE
   # Chưa triển khai: hiện không thay đổi loại recipe.
   smithing-only: true
-  # Chưa triển khai: durability hiện không được nhân theo cấu hình.
+  # Áp dụng khi chế tạo: cộng thêm (multiplier-1)*max durability vào item Siftite mới crafting.
   durability-multiplier: 1.2
   knockback-resistance: 0.1
   weapon-damage-bonus: 1.0
   spear-damage: 9.0
-  # Chưa triển khai: tầm đánh hiện chưa được áp dụng.
+  # Tầm với của cú ném Spear (block); Spear stand-in ném được nhưng chưa có mô hình projectile riêng.
   spear-reach: 4.5
   mining-speed-bonus: 0.2
   mini-rift-recovery: true

@@ -35,6 +35,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.util.Vector;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -190,9 +191,14 @@ public final class ResonanceManager implements Listener {
         }
         java.util.Set<UUID> seen = new java.util.HashSet<>();
         double range = Math.max(1, plugin.getConfig().getDouble("resonance.singer.range", 16.0));
+        // Chunk-based scan (same pattern as EchoGolemManager/RiftManager): iterate each world's
+        // entities once instead of re-scanning per player, which duplicated work and could miss
+        // Singers in chunks without a nearby player.
         for (World world : Bukkit.getWorlds()) {
-            for (Player player : world.getPlayers()) {
-                for (Entity entity : player.getNearbyEntities(range, range, range)) {
+            List<Player> players = world.getPlayers();
+            if (players.isEmpty()) continue;
+            for (Player centerPlayer : players) {
+                for (Entity entity : world.getNearbyEntities(centerPlayer.getLocation(), range, range, range)) {
                     if (!(entity instanceof LivingEntity singer) || !isSinger(entity) || !seen.add(entity.getUniqueId())) continue;
                     ensureBar(singer);
                     Location center = singer.getLocation();
@@ -299,7 +305,13 @@ public final class ResonanceManager implements Listener {
             bar.removeAll();
             bar.setVisible(false);
         }
-        SiftAdvancementGrant.grant(plugin, event.getEntity().getKiller(), "singer_silenced");
+        Player killer = event.getEntity().getKiller();
+        // Parity: the reference mod's Singer is invulnerable outside its soul event, so it
+        // cannot die to players. singer_silenced stays granted for servers that opt out of
+        // invulnerability (resonance.singer.invulnerable: false).
+        if (!plugin.getConfig().getBoolean("resonance.singer.invulnerable", true)) {
+            SiftAdvancementGrant.grant(plugin, killer, "singer_silenced");
+        }
         if (plugin.getConfig().getBoolean("resonance.singer.drop-charoite", true)) {
             ItemStack drop = content.forId("charoite");
             if (drop != null) event.getDrops().add(drop);
