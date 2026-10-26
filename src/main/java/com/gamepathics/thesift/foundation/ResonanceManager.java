@@ -5,6 +5,7 @@ import org.bukkit.Location;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Tag;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
@@ -45,6 +46,7 @@ public final class ResonanceManager implements Listener {
     private final SiftMobFactory mobFactory;
     private final Map<UUID, BossBar> bars = new HashMap<>();
     private final Map<UUID, Long> hornCooldownUntil = new HashMap<>();
+    private final Map<UUID, Long> barterUntil = new HashMap<>();
     private long tick;
     private int taskId = -1;
 
@@ -71,6 +73,7 @@ public final class ResonanceManager implements Listener {
         }
         bars.clear();
         hornCooldownUntil.clear();
+        barterUntil.clear();
     }
 
     public LivingEntity summonSinger(Location location) {
@@ -80,6 +83,7 @@ public final class ResonanceManager implements Listener {
         singer.setCustomName("§5§lSinger");
         singer.setCustomNameVisible(true);
         singer.setPersistent(true);
+        singer.setInvulnerable(plugin.getConfig().getBoolean("resonance.singer.invulnerable", true));
         if (singer instanceof Mob mob) mob.setCanPickupItems(false);
         var maxHealth = singer.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
         if (maxHealth != null) {
@@ -94,7 +98,7 @@ public final class ResonanceManager implements Listener {
     /** Mod parity: wake the Singer with a Goat Horn inside an Ancient City (Deep Dark biome). */
     @EventHandler
     public void onGoatHorn(PlayerInteractEvent event) {
-        if (!plugin.getConfig().getBoolean("resonance.horn-wakes-singer", true)) return;
+        if (!plugin.getConfig().getBoolean("resonance.horn-wakes-singer", false)) return;
         if (event.getHand() != EquipmentSlot.HAND) return;
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         ItemStack item = event.getItem();
@@ -120,6 +124,44 @@ public final class ResonanceManager implements Listener {
         hornCooldownUntil.put(player.getUniqueId(), now + cooldownMillis);
         player.getWorld().playSound(spawn, Sound.ENTITY_WARDEN_LISTENING, 1.0f, 0.8f);
         player.sendActionBar("\u00a75The horn wakes a Singer...");
+    }
+
+    /** Mod parity: a Singer trades a Soul Block for a reward from the mod's weighted table. */
+    @EventHandler
+    public void onBarter(org.bukkit.event.player.PlayerInteractEntityEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND || !isSinger(event.getRightClicked())) return;
+        Player player = event.getPlayer();
+        ItemStack held = player.getInventory().getItemInMainHand();
+        if (held.getType() == Material.AIR || !held.hasItemMeta()
+                || !"soul_block".equals(held.getItemMeta().getPersistentDataContainer()
+                .get(itemKey, PersistentDataType.STRING))) return;
+        event.setCancelled(true);
+        Entity singer = event.getRightClicked();
+        long now = System.currentTimeMillis();
+        Long until = barterUntil.get(singer.getUniqueId());
+        if (until != null && now < until) return;
+        barterUntil.put(singer.getUniqueId(), now + 3000L);
+        if (player.getGameMode() != GameMode.CREATIVE) held.setAmount(held.getAmount() - 1);
+        singer.getWorld().playSound(singer.getLocation(), Sound.ENTITY_ALLAY_ITEM_GIVEN, 1.0f, 1.0f);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!singer.isValid()) return;
+            SingerBarter.Reward reward = SingerBarter.pick(java.util.concurrent.ThreadLocalRandom.current()
+                    .nextInt(SingerBarter.TOTAL_ROLL));
+            Material material = reward.material();
+            if (reward.randomWool()) {
+                var wools = Tag.WOOL.getValues().toArray(new Material[0]);
+                material = wools[java.util.concurrent.ThreadLocalRandom.current().nextInt(wools.length)];
+            }
+            int amount = reward.min() + java.util.concurrent.ThreadLocalRandom.current()
+                    .nextInt(reward.max() - reward.min() + 1);
+            Vector direction = player.getLocation().toVector().subtract(singer.getLocation().toVector()).setY(0);
+            if (direction.lengthSquared() < 0.001) direction = new Vector(1, 0, 0);
+            direction.normalize();
+            Location drop = singer.getLocation().add(direction.clone().multiply(0.6)).add(0, 1.2, 0);
+            singer.getWorld().dropItem(drop, new ItemStack(material, amount), item ->
+                    item.setVelocity(direction.clone().multiply(0.3).setY(0.2)));
+            SiftAdvancementGrant.grant(plugin, player, "pitch_perfect");
+        }, 40L);
     }
 
     @EventHandler
@@ -217,7 +259,7 @@ public final class ResonanceManager implements Listener {
     }
 
     private void applySingerPulse(LivingEntity singer, Player player) {
-        if (!plugin.getConfig().getBoolean("resonance.singer.attack-enabled", true)
+        if (!plugin.getConfig().getBoolean("resonance.singer.attack-enabled", false)
                 || player.getGameMode() == GameMode.CREATIVE
                 || player.getGameMode() == GameMode.SPECTATOR
                 || protectedByCharoite(player)) return;

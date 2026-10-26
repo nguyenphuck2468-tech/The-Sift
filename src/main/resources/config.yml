@@ -49,7 +49,9 @@ resonance:
     max-health: 40.0
     range: 16.0
     pulse-seconds: 5
-    attack-enabled: true
+    # The reference mod's Singer is peaceful and invulnerable; it trades Soul Blocks for rewards.
+    invulnerable: true
+    attack-enabled: false
     damage: 1.0
     slowness-seconds: 3
     slowness-amplifier: 0
@@ -86,7 +88,8 @@ rift:
   reward-drops: 3
   rift-key-chance: 0.3
   # A server-wide recovery period limits free Rift creation through the melody.
-  portal-song-cooldown-seconds: 1800
+  # Ignored: the reference mod has no cooldown between songs.
+  portal-song-cooldown-seconds: 0
   # Incomplete melodies expire after this many seconds without a note.
   portal-song-timeout-seconds: 60
 
@@ -185,3 +188,11 @@ sift-world:
 debug:
   chunk-generation-metrics:
     enabled: false
+
+ancient-city:
+  # Reference-mod portal: a rectangular Reinforced Deepslate frame (min 3x3) with an air-like interior.
+  enabled: true
+  scan-radius: 40
+  row-distance: 6
+  # When true, the melody only opens a portal at a frame (as in the mod).
+  require-frame: true

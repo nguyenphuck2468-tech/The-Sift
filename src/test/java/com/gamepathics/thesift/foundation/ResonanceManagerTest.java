@@ -30,6 +30,8 @@ class ResonanceManagerTest {
         plugin = MockBukkit.createMockPlugin("TheSift");
         plugin.getConfig().set("providers.strict", false);
         plugin.getConfig().set("resonance.singer.pulse-seconds", 1);
+        // The pulse mechanic is now opt-in (the reference mod's Singer is peaceful).
+        plugin.getConfig().set("resonance.singer.attack-enabled", true);
         manager = new ResonanceManager(plugin);
     }
 

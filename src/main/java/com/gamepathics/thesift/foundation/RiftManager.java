@@ -59,6 +59,8 @@ public final class RiftManager implements Listener {
     private final SiftDimensionManager dimensionManager;
     private long nextNaturalRiftAtMillis;
     private final AncientCityPortal ancientCity;
+    private final SonorousConsoleTracker consoles = new SonorousConsoleTracker();
+    private RiftInstance lastOpened;
 
     public RiftManager(JavaPlugin plugin) {
         this(plugin, new ProviderReadiness(plugin));
@@ -137,6 +139,7 @@ public final class RiftManager implements Listener {
         UUID id = UUID.randomUUID();
         RiftInstance rift = new RiftInstance(id, location, opener, portal);
         rifts.put(id, rift);
+        lastOpened = rift;
         rift.beginOpening();
         return true;
     }
@@ -206,12 +209,17 @@ public final class RiftManager implements Listener {
         if (travelling.contains(player.getUniqueId())) return;
         for (RiftInstance rift : rifts.values()) {
             if (rift.state != RiftState.ACTIVE || rift.exitCenter == null) continue;
-            if (nearPortal(event.getTo(), rift.center)) {
+            if (rift.inGate(event.getTo())) {
+                travel(player, rift.exitCenter);
+                return;
+            }
+            if (rift.gate == null && nearPortal(event.getTo(), rift.center)) {
                 travel(player, rift.exitCenter);
                 return;
             }
             if (nearPortal(event.getTo(), rift.exitCenter)) {
-                travel(player, rift.center);
+                if (rift.gateArrival != null) travelTo(player, rift.gateArrival);
+                else travel(player, rift.center);
                 return;
             }
         }
@@ -223,10 +231,13 @@ public final class RiftManager implements Listener {
     }
 
     private void travel(Entity entity, Location target) {
-        travelling.add(entity.getUniqueId());
         // Place travelers outside the destination trigger radius so the paired
         // rifts do not immediately bounce them back and forth.
-        Location destination = target.clone().add(3.5, 1, 0.5);
+        travelTo(entity, target.clone().add(3.5, 1, 0.5));
+    }
+
+    private void travelTo(Entity entity, Location destination) {
+        travelling.add(entity.getUniqueId());
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             if (!entity.isValid() || entity.isDead()) { travelling.remove(entity.getUniqueId()); return; }
             entity.teleport(destination);
@@ -254,7 +265,12 @@ public final class RiftManager implements Listener {
         else item.setAmount(item.getAmount() - 1);
     }
 
-    /** Sift portal interaction based on the reference mod's eight-note activation song. */
+    /**
+     * Sift portal interaction, ported from the reference mod: right-click cycles a Sonorous note 1-8,
+     * left-click plays it. Each console (a connected group of Sonorous note blocks) keeps a sliding
+     * window of its last eight notes; 1,3,7,6,5,2,4,8 ignites the Ancient City frame and the reverse
+     * sequence closes it.
+     */
     @EventHandler
     public void onPortalSong(PlayerInteractEvent event) {
         if (!plugin.getConfig().getBoolean("content.rift", true)
@@ -274,43 +290,132 @@ public final class RiftManager implements Listener {
         }
         if (event.getAction() != Action.LEFT_CLICK_BLOCK) return;
         event.setCancelled(true);
+        Player player = event.getPlayer();
         int played = noteBlock.getNote().getId() + 1;
-        long now = System.currentTimeMillis();
-        long timeoutMillis = Math.max(1L, plugin.getConfig().getLong("rift.portal-song-timeout-seconds", 60)) * 1000L;
-        long cooldownMillis = Math.max(0L, plugin.getConfig().getLong("rift.portal-song-cooldown-seconds", 1800)) * 1000L;
-        PortalSongTracker.Result result = portalSongTracker.play(event.getPlayer().getUniqueId(), played,
-                now, timeoutMillis, cooldownMillis);
-        if (result == PortalSongTracker.Result.COOLDOWN) {
-            event.setCancelled(true);
-            event.getPlayer().sendActionBar("§cThe Sonorous song is still recovering.");
+        player.playSound(block.getLocation(), "minecraft:block.note_block.harp", 0.8f,
+                (float) Math.pow(2.0, (played - 1) / 12.0));
+        block.getWorld().spawnParticle(Particle.NOTE, block.getLocation().add(0.5, 1.2, 0.5), 1,
+                0, 0, 0, (played - 1) / 24.0);
+        java.util.List<Block> console = findConsole(block);
+        Block anchor = console.stream()
+                .min(java.util.Comparator.<Block>comparingInt(Block::getY)
+                        .thenComparingInt(Block::getX).thenComparingInt(Block::getZ))
+                .orElse(block);
+        String key = block.getWorld().getName() + ":" + anchor.getX() + "," + anchor.getY() + "," + anchor.getZ();
+        SonorousConsoleTracker.Match match = consoles.record(key, new SonorousConsoleTracker.Note(
+                block.getWorld().getName(), block.getX(), block.getY(), block.getZ(), played));
+        if (match == SonorousConsoleTracker.Match.OPEN) beginIgnition(player, block, consoles.lastMatch());
+        else if (match == SonorousConsoleTracker.Match.CLOSE) closeGateNear(player, block);
+    }
+
+    /** Connected Sonorous note blocks (within 16 blocks of each other), like the mod's console group. */
+    private java.util.List<Block> findConsole(Block origin) {
+        java.util.Set<Block> found = new HashSet<>();
+        java.util.ArrayDeque<Block> queue = new java.util.ArrayDeque<>();
+        found.add(origin);
+        queue.add(origin);
+        World world = origin.getWorld();
+        while (!queue.isEmpty() && found.size() < 64) {
+            Block current = queue.poll();
+            for (int dx = -16; dx <= 16; dx++) {
+                for (int dy = -16; dy <= 16; dy++) {
+                    for (int dz = -16; dz <= 16; dz++) {
+                        int x = current.getX() + dx;
+                        int y = current.getY() + dy;
+                        int z = current.getZ() + dz;
+                        if (!world.isChunkLoaded(x >> 4, z >> 4)
+                                || world.getType(x, y, z) != Material.NOTE_BLOCK) continue;
+                        Block candidate = world.getBlockAt(x, y, z);
+                        if (canHandlePortalSong(candidate) && found.add(candidate)) queue.add(candidate);
+                    }
+                }
+            }
+        }
+        return new java.util.ArrayList<>(found);
+    }
+
+    private boolean sequenceIntact(java.util.List<SonorousConsoleTracker.Note> notes) {
+        for (SonorousConsoleTracker.Note note : notes) {
+            World world = Bukkit.getWorld(note.world());
+            if (world == null || !canHandlePortalSong(world.getBlockAt(note.x(), note.y(), note.z()))) return false;
+        }
+        return true;
+    }
+
+    /** Mod timeline: 0.5 s, colour burst; 1 s later the melody replays on its own; then the frame opens. */
+    private void beginIgnition(Player player, Block played, java.util.List<SonorousConsoleTracker.Note> notes) {
+        AncientCityPortal.Frame frame = ancientCity.findNearestFrame(played.getLocation());
+        if (frame == null && plugin.getConfig().getBoolean("ancient-city.require-frame", true)) {
+            player.sendActionBar("§7The song echoes, but no Reinforced Deepslate frame answers.");
             return;
         }
-        if (result == PortalSongTracker.Result.INCOMPLETE || result == PortalSongTracker.Result.COMPLETE) {
-            event.getPlayer().playSound(block.getLocation(), "minecraft:block.note_block.harp", 0.8f,
-                    (float) Math.pow(2.0, (played - 1) / 12.0));
-            if (result == PortalSongTracker.Result.COMPLETE) {
-                boolean asPortal = plugin.getConfig().getBoolean("rift.portal-song-opens-portal", true);
-                Location portalAt = block.getLocation().add(0.5, 1, 0.5);
-                Location frameAt = ancientCity.portalLocation(block);
-                if (frameAt != null) {
-                    portalAt = frameAt;
-                    asPortal = true;
-                }
-                if (openRift(portalAt, event.getPlayer(), asPortal)) {
-                    SiftAdvancementGrant.grant(plugin, event.getPlayer(), "sonorous_song");
-                    if (frameAt != null) {
-                        ancientCity.fireBeams(block, frameAt);
-                        SiftAdvancementGrant.grant(plugin, event.getPlayer(), "ancient_gate");
-                    }
-                    portalSongTracker.startCooldown(now, cooldownMillis);
-                    event.getPlayer().sendMessage("§5The Sonorous song awakens a Rift!");
-                    event.getPlayer().sendActionBar("§bThe Sonorous song is complete.");
-                } else event.getPlayer().sendActionBar("§cThe Rift could not open; check provider readiness.");
-            } else event.getPlayer().sendActionBar("§bSift portal song: "
-                    + portalSongTracker.progress(event.getPlayer().getUniqueId()) + "/8");
-        } else {
-            event.getPlayer().playSound(block.getLocation(), "minecraft:block.note_block.bass", 0.8f, 0.6f);
-            event.getPlayer().sendActionBar("§cWrong note; the Sift song resets.");
+        if (frame != null && hasGateAt(frame.bottomCenter())) {
+            player.sendActionBar("§7The portal is already open. Play the song backwards to close it.");
+            return;
+        }
+        java.util.List<Location> sources = new java.util.ArrayList<>();
+        for (SonorousConsoleTracker.Note note : notes) {
+            sources.add(new Location(Bukkit.getWorld(note.world()), note.x() + 0.5, note.y() + 1.2, note.z() + 0.5));
+        }
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (!sequenceIntact(notes)) return;
+            for (Location source : sources) {
+                source.getWorld().spawnParticle(Particle.END_ROD, source, 12, 0.3, 0.3, 0.3, 0.05);
+            }
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> autoplay(player, frame, played, notes, sources), 20L);
+        }, 10L);
+    }
+
+    private void autoplay(Player player, AncientCityPortal.Frame frame, Block played,
+                          java.util.List<SonorousConsoleTracker.Note> notes, java.util.List<Location> sources) {
+        if (!sequenceIntact(notes)) return;
+        for (int i = 0; i < notes.size(); i++) {
+            final int step = i;
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                SonorousConsoleTracker.Note note = notes.get(step);
+                Location at = sources.get(step);
+                at.getWorld().playSound(at, Sound.BLOCK_NOTE_BLOCK_HARP, 1.0f,
+                        (float) Math.pow(2.0, (note.index() - 1) / 12.0));
+                at.getWorld().spawnParticle(Particle.NOTE, at, 1, 0, 0, 0, (note.index() - 1) / 24.0);
+                if (step == notes.size() - 1) openGate(player, frame, played, sources);
+            }, i * 4L);
+        }
+    }
+
+    private void openGate(Player player, AncientCityPortal.Frame frame, Block played, java.util.List<Location> sources) {
+        Location at = frame != null ? frame.bottomCenter() : played.getLocation().add(0.5, 1, 0.5);
+        if (!openRift(at, player, true)) {
+            if (player.isOnline()) player.sendActionBar("§cThe Rift could not open; check provider readiness.");
+            return;
+        }
+        RiftInstance rift = lastOpened;
+        if (frame != null && rift != null) {
+            rift.setGate(frame.gate(), frame.arrival(frame.sideOf(played.getLocation())));
+            ancientCity.fireBeams(sources, at);
+            SiftAdvancementGrant.grant(plugin, player, "ancient_gate");
+        }
+        SiftAdvancementGrant.grant(plugin, player, "sonorous_song");
+        if (player.isOnline()) player.sendActionBar("§bThe Sonorous song is complete.");
+    }
+
+    private boolean hasGateAt(Location location) {
+        for (RiftInstance rift : rifts.values()) {
+            if (rift.gate != null && rift.state != RiftState.DORMANT && rift.center.getWorld() != null
+                    && rift.center.getWorld().equals(location.getWorld())
+                    && rift.center.distanceSquared(location) < 4.0) return true;
+        }
+        return false;
+    }
+
+    private void closeGateNear(Player player, Block block) {
+        double radius = Math.max(8, plugin.getConfig().getInt("ancient-city.scan-radius", 40));
+        for (RiftInstance rift : rifts.values()) {
+            if (rift.gate == null || rift.state != RiftState.ACTIVE || rift.center.getWorld() == null
+                    || !rift.center.getWorld().equals(block.getWorld())
+                    || rift.center.distanceSquared(block.getLocation()) > radius * radius) continue;
+            rift.beginClosing();
+            player.sendActionBar("§5The portal folds back into the deepslate.");
+            return;
         }
     }
 
@@ -332,6 +437,8 @@ public final class RiftManager implements Listener {
         private final Player opener;
         private final boolean portal;
         private Location exitCenter;
+        private org.bukkit.util.BoundingBox gate;
+        private Location gateArrival;
         private RiftState state = RiftState.DORMANT;
         private int stateTimer = 0;
         private int phase = 0;
@@ -345,6 +452,16 @@ public final class RiftManager implements Listener {
             this.center = center;
             this.opener = opener;
             this.portal = portal;
+        }
+
+        void setGate(org.bukkit.util.BoundingBox gate, Location arrival) {
+            this.gate = gate;
+            this.gateArrival = arrival;
+        }
+
+        boolean inGate(Location location) {
+            return gate != null && location.getWorld() != null && location.getWorld().equals(center.getWorld())
+                    && gate.clone().expand(0.3).contains(location.getX(), location.getY() + 0.9, location.getZ());
         }
 
         public void beginOpening() {
@@ -493,7 +610,7 @@ public final class RiftManager implements Listener {
                 int interval = Math.max(1, plugin.getConfig().getInt("rift.mob-spawn-interval-seconds", 60));
                 int pulseInterval = Math.max(1,
                         plugin.getConfig().getInt("rift.resonance-pulse-interval-seconds", 60));
-                if (stateTimer >= duration) beginClosing();
+                if (gate == null && stateTimer >= duration) beginClosing();
                 else {
                     if (!portal && stateTimer % interval == 0) {
                         spawnRiftMobs(Math.max(0, plugin.getConfig().getInt("rift.periodic-mobs", 1)));
@@ -507,6 +624,10 @@ public final class RiftManager implements Listener {
                         center.clone().add(0, 1, 0), 20, 2, 2, 2, 0.05);
             }
             // Passive ambient effects during active phase
+            if (state == RiftState.ACTIVE && gate != null) {
+                center.getWorld().spawnParticle(Particle.PORTAL, gate.getCenter().toLocation(center.getWorld()),
+                        10, gate.getWidthX() / 2.0, gate.getHeight() / 2.0, gate.getWidthZ() / 2.0, 0.1);
+            }
             if (state == RiftState.ACTIVE && ThreadLocalRandom.current().nextDouble() < 0.1) {
                 center.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, center.clone().add(0, 1, 0), 5, 1, 1, 1, 0.02);
             }
@@ -514,6 +635,19 @@ public final class RiftManager implements Listener {
 
         private void transportNearbyEntities() {
             if (state != RiftState.ACTIVE || exitCenter == null) return;
+            if (gate != null) {
+                for (Entity entity : center.getWorld().getNearbyEntities(gate.clone().expand(0.3))) {
+                    if (entity.isDead() || travelling.contains(entity.getUniqueId())) continue;
+                    travel(entity, exitCenter);
+                }
+                if (exitCenter.getWorld() != null) {
+                    for (Entity entity : exitCenter.getWorld().getNearbyEntities(exitCenter, 1.4, 1.8, 1.4)) {
+                        if (entity.isDead() || travelling.contains(entity.getUniqueId())) continue;
+                        travelTo(entity, gateArrival != null ? gateArrival : center.clone().add(3.5, 1, 0.5));
+                    }
+                }
+                return;
+            }
             transportFrom(center, exitCenter);
             transportFrom(exitCenter, center);
         }

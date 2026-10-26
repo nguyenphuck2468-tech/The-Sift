@@ -111,3 +111,16 @@ Still different or missing: Overgrown Willow wood set (cherry stand-in), sculk p
 | Biome carvers | The ten mod-named biomes now list the three mod carvers. |
 | Natural-spawn hooks | Singer (`overgrown_clearing`), Echo Golem (`siftslate_slopes`), Prism Warden (`overgrown_forest`), natural Rifts/The Sifter (`siftslate_peaks`), Ichor springs (`sift_wastes`) re-keyed from the prototype biomes. Compile and live behaviour **CHƯA CHẠY**. |
 | Biome `features` arrays, structures, lakes, willow trees, ores via placed features | Still **chưa làm** (empty). |
+
+## Port from the mod source (mielons-the-sift-neoforge-port, MIT, (c) 2026 Mielon)
+
+Compared against the NeoForge port source, these behaviours now follow the mod:
+
+- **Frame:** `PortalFrameScanner` algorithm (anchor walk, rectangular Reinforced Deepslate frame of at least 3x3, air-like interior), 40-block scan radius.
+- **Goat Horn:** after a 3 second delay a Singer appears at the frame's bottom centre (not if one is within 2 blocks) and awakens eight Sonorous Deepslate blocks in front of the frame.
+- **Melody:** per-console sliding window of the last eight notes (no reset on a wrong note), opening 1,3,7,6,5,2,4,8 and closing = reverse; no cooldown between songs. Timeline: burst after 0.5 s, automatic replay after 1 s more, then the frame opens. The portal is permanent until the closing melody is played (it is not persisted across restarts yet).
+- **Singer:** peaceful and invulnerable, trades Soul Blocks for the mod's 200-roll reward table (`SingerBarter`). The Wellspring disc is a vanilla disc stand-in. The old damaging pulse remains available as opt-in (`resonance.singer.attack-enabled`).
+
+Not ported: Singer soul-event phases (appear/roam/disappear), HORN/NOTE block modes (Paper has no block states for provider blocks), custom `SIFT_PORTAL` block (a gate bounding box with particles is used), GeckoLib animations, shader/sky rendering, mixins.
+
+Attribution: logic is re-implemented from the mod's MIT-licensed source; see its LICENSE and SOURCE_PROVENANCE.md (ImpSteve, Fuzja Jądrowa and others credited for individual assets).
