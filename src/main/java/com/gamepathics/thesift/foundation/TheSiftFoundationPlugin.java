@@ -23,6 +23,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     private RiftManager riftManager;
     private SiftDimensionManager siftDimensionManager;
     private SiftEcologyManager siftEcologyManager;
+    private SculkflowerManager sculkflowerManager;
     private SiftAdvancementManager advancementManager;
     private ProviderReadiness providerReadiness;
     private ProviderApiProbe providerApiProbe;
@@ -112,6 +113,8 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                     riftManager, sharedContent(), sharedMobFactory());
             getServer().getPluginManager().registerEvents(siftEcologyManager, this);
             siftEcologyManager.populateLoadedSpawnChunks();
+            sculkflowerManager = new SculkflowerManager(this, sharedContent());
+            getServer().getPluginManager().registerEvents(sculkflowerManager, this);
             advancementManager = new SiftAdvancementManager(this);
             getServer().getPluginManager().registerEvents(advancementManager, this);
         }
@@ -225,6 +228,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     private void refreshContentRecipes() {
         if (ichorContent != null) ichorContent.registerRecipes();
         if (siftiteContent != null) siftiteContent.registerRecipes();
+        if (sculkflowerManager != null) sculkflowerManager.registerRecipes();
     }
 
     private void reportProviderReadiness() {
