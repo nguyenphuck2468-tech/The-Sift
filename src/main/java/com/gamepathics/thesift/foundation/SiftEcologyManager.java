@@ -82,6 +82,12 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey darkSnifferWaveFlightTicksKey;
     private final NamespacedKey darkSnifferWaveIdKey;
     private final NamespacedKey darkSnifferWavePulledKey;
+    private final NamespacedKey wardenPettingTargetKey;
+    private final NamespacedKey wardenPettingSearchAtKey;
+    private final NamespacedKey wardenPettingApproachAtKey;
+    private final NamespacedKey wardenPettingStartKey;
+    private final NamespacedKey wardenPettingHeartAtKey;
+    private final NamespacedKey darkSnifferPettingWardenKey;
     /** Last herd anchor per world so spawned Sifters regroup instead of scattering (mod parity). */
     private final java.util.Map<org.bukkit.World, Location> sifterHerdAnchors = new ConcurrentHashMap<>();
     private final SiftMobFactory mobFactory;
@@ -133,6 +139,12 @@ public final class SiftEcologyManager implements Listener {
         this.darkSnifferWaveFlightTicksKey = new NamespacedKey(plugin, "dark_sniffer_wave_flight_ticks");
         this.darkSnifferWaveIdKey = new NamespacedKey(plugin, "dark_sniffer_wave_id");
         this.darkSnifferWavePulledKey = new NamespacedKey(plugin, "dark_sniffer_wave_pulled");
+        this.wardenPettingTargetKey = new NamespacedKey(plugin, "warden_petting_target");
+        this.wardenPettingSearchAtKey = new NamespacedKey(plugin, "warden_petting_search_at");
+        this.wardenPettingApproachAtKey = new NamespacedKey(plugin, "warden_petting_approach_at");
+        this.wardenPettingStartKey = new NamespacedKey(plugin, "warden_petting_start");
+        this.wardenPettingHeartAtKey = new NamespacedKey(plugin, "warden_petting_heart_at");
+        this.darkSnifferPettingWardenKey = new NamespacedKey(plugin, "dark_sniffer_petting_warden");
         // Shared instances are injected by the plugin lifecycle; fall back to local ones only
         // for standalone/test construction.
         this.mobFactory = sharedMobFactory != null ? sharedMobFactory : new SiftMobFactory(plugin);
@@ -145,8 +157,10 @@ public final class SiftEcologyManager implements Listener {
             tickBlubs();
             tickSifterHerds();
         }, 100L, 100L);
-        this.darkSnifferCombatTask = Bukkit.getScheduler().runTaskTimer(plugin,
-                this::tickDarkSnifferCombat, 1L, 1L);
+        this.darkSnifferCombatTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            tickDarkSnifferCombat();
+            tickWardenPetting();
+        }, 1L, 1L);
     }
 
     public void shutdown() {
@@ -1416,6 +1430,124 @@ public final class SiftEcologyManager implements Listener {
                 sift.playSound(entity.getLocation(), Sound.ENTITY_SNIFFER_SNIFFING, 1.0f, 0.7f);
             }
         }
+    }
+
+    /**
+     * Paper approximation of the reference mod's calm-Warden / Dark Sniffer bonding.
+     * The Bukkit API does not expose the Warden's complete internal anger/vibration memories,
+     * so we use its public target state as the calmness guard.
+     */
+    private void tickWardenPetting() {
+        World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
+        if (sift == null) return;
+        long now = System.currentTimeMillis();
+        for (Entity entity : sift.getEntities()) {
+            if (!(entity instanceof org.bukkit.entity.Warden warden) || !warden.isValid() || warden.isDead()) continue;
+            var pdc = warden.getPersistentDataContainer();
+            String targetId = pdc.get(wardenPettingTargetKey, PersistentDataType.STRING);
+            if (targetId != null) {
+                Entity candidate = null;
+                try {
+                    candidate = Bukkit.getEntity(UUID.fromString(targetId));
+                } catch (IllegalArgumentException ignored) {
+                    // Invalid persisted UUID: abandon this petting attempt.
+                }
+                boolean calm = warden.getTarget() == null;
+                if (!(candidate instanceof Mob darkSniffer) || !darkSniffer.isValid() || darkSniffer.isDead()
+                        || !darkSniffer.getWorld().equals(sift)
+                        || darkSniffer.getLocation().distanceSquared(warden.getLocation()) > 324.0
+                        || !"dark_sniffer".equals(darkSniffer.getPersistentDataContainer()
+                        .get(creatureKey, PersistentDataType.STRING)) || !calm) {
+                    stopWardenPetting(warden, candidate, false, now);
+                    continue;
+                }
+
+                var snifferPdc = darkSniffer.getPersistentDataContainer();
+                snifferPdc.set(darkSnifferPettingWardenKey, PersistentDataType.STRING, warden.getUniqueId().toString());
+                warden.lookAt(darkSniffer);
+                if (darkSniffer.getLocation().distanceSquared(warden.getLocation()) > 12.25) {
+                    Long approachAt = pdc.get(wardenPettingApproachAtKey, PersistentDataType.LONG);
+                    if (approachAt == null) {
+                        pdc.set(wardenPettingApproachAtKey, PersistentDataType.LONG, now);
+                        approachAt = now;
+                    }
+                    if (now - approachAt > 12_000L) {
+                        stopWardenPetting(warden, darkSniffer, false, now);
+                    } else {
+                        warden.getPathfinder().moveTo(darkSniffer, 0.55);
+                    }
+                } else {
+                    warden.getPathfinder().stopPathfinding();
+                    Long pettingAt = pdc.get(wardenPettingStartKey, PersistentDataType.LONG);
+                    if (pettingAt == null) {
+                        pdc.set(wardenPettingStartKey, PersistentDataType.LONG, now);
+                        pettingAt = now;
+                    }
+                    Long heartAt = pdc.get(wardenPettingHeartAtKey, PersistentDataType.LONG);
+                    if (heartAt == null || now - heartAt >= 1_000L) {
+                        sift.spawnParticle(Particle.HEART,
+                                darkSniffer.getLocation().add(0, 1.7, 0), 1, 0.18, 0.08, 0.18, 0);
+                        pdc.set(wardenPettingHeartAtKey, PersistentDataType.LONG, now);
+                    }
+                    if (now - pettingAt >= 5_000L) stopWardenPetting(warden, darkSniffer, true, now);
+                }
+                continue;
+            }
+
+            Long searchAt = pdc.get(wardenPettingSearchAtKey, PersistentDataType.LONG);
+            if (searchAt != null && now < searchAt) continue;
+            if (warden.getTarget() != null) continue;
+            // First search after 40–80 seconds; successful petting rests for two minutes.
+            if (searchAt == null) {
+                pdc.set(wardenPettingSearchAtKey, PersistentDataType.LONG,
+                        now + java.util.concurrent.ThreadLocalRandom.current().nextLong(40_000L, 80_001L));
+                continue;
+            }
+            Mob nearest = null;
+            double nearestDistance = 18.0 * 18.0;
+            for (Entity nearby : warden.getNearbyEntities(18, 10, 18)) {
+                if (!(nearby instanceof Mob mob) || mob.getType() != EntityType.SNIFFER || mob.isDead()
+                        || !"dark_sniffer".equals(mob.getPersistentDataContainer()
+                        .get(creatureKey, PersistentDataType.STRING))) continue;
+                var snifferPdc = mob.getPersistentDataContainer();
+                if (snifferPdc.has(darkSnifferCombatTargetKey, PersistentDataType.STRING)
+                        || snifferPdc.has(darkSnifferSonicWindupKey, PersistentDataType.LONG)
+                        || snifferPdc.has(darkSnifferWaveStartKey, PersistentDataType.LONG)
+                        || snifferPdc.has(darkSnifferPettingWardenKey, PersistentDataType.STRING)) continue;
+                double distance = mob.getLocation().distanceSquared(warden.getLocation());
+                if (distance < nearestDistance) {
+                    nearestDistance = distance;
+                    nearest = mob;
+                }
+            }
+            if (nearest == null) {
+                pdc.set(wardenPettingSearchAtKey, PersistentDataType.LONG, now + 15_000L);
+                continue;
+            }
+            pdc.set(wardenPettingTargetKey, PersistentDataType.STRING, nearest.getUniqueId().toString());
+            pdc.set(wardenPettingApproachAtKey, PersistentDataType.LONG, now);
+            pdc.remove(wardenPettingStartKey);
+            pdc.remove(wardenPettingHeartAtKey);
+            nearest.getPersistentDataContainer().set(darkSnifferPettingWardenKey,
+                    PersistentDataType.STRING, warden.getUniqueId().toString());
+        }
+    }
+
+    private void stopWardenPetting(org.bukkit.entity.Warden warden, Entity target, boolean completed, long now) {
+        if (target != null) {
+            var targetPdc = target.getPersistentDataContainer();
+            String owner = targetPdc.get(darkSnifferPettingWardenKey, PersistentDataType.STRING);
+            if (warden.getUniqueId().toString().equals(owner)) targetPdc.remove(darkSnifferPettingWardenKey);
+            if (target instanceof Mob mob) mob.getPathfinder().stopPathfinding();
+        }
+        var pdc = warden.getPersistentDataContainer();
+        pdc.remove(wardenPettingTargetKey);
+        pdc.remove(wardenPettingApproachAtKey);
+        pdc.remove(wardenPettingStartKey);
+        pdc.remove(wardenPettingHeartAtKey);
+        pdc.set(wardenPettingSearchAtKey, PersistentDataType.LONG,
+                now + (completed ? 120_000L : 30_000L));
+        warden.getPathfinder().stopPathfinding();
     }
 
     private boolean isDarkSnifferCombatTarget(LivingEntity target, Entity darkSniffer) {
