@@ -99,6 +99,14 @@ class DatapackIntegrityTest {
         Path tags = PROGRESSION.resolve("data/minecraft/tags/block");
         assertTrue(Files.exists(tags.resolve("soul_speed_blocks.json")),
                 "datapack must ship the soul_speed_blocks tag used by the mod-parity soul mechanic");
+        Path snifferDiggable = tags.resolve("sniffer_diggable_block.json");
+        assertTrue(Files.exists(snifferDiggable),
+                "datapack must extend the vanilla Sniffer diggable-block tag for Sculk");
+        JsonObject snifferTag = JsonParser.parseString(Files.readString(snifferDiggable)).getAsJsonObject();
+        assertFalse(snifferTag.get("replace").getAsBoolean(),
+                "Sniffer diggable blocks must extend rather than replace vanilla entries");
+        assertTrue(snifferTag.getAsJsonArray("values").toString().contains("minecraft:sculk"),
+                "Sculk must be a valid additional Sniffer dig target");
         // ancient_city_variants is datapack-facing only: it documents which deepslate variants
         // count as Ancient-City-adjacent for pack-driven mechanics (loot/advancements). The
         // Java portal scanner deliberately matches REINFORCED_DEEPSLATE directly and does NOT
