@@ -17,6 +17,10 @@ public final class SiftResourcePackListener implements Listener {
     public SiftResourcePackListener(JavaPlugin plugin, ResourcePackBridge bridge) {
         this.plugin = plugin;
         this.bridge = bridge;
+        // The resource-pack listener is registered for every enabled The Sift installation, so
+        // use its lifecycle hook to start the small Dark Sniffer digging observer without adding
+        // another registration path to the already-large foundation bootstrap class.
+        new DarkSnifferDiggingGiftListener(plugin);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
