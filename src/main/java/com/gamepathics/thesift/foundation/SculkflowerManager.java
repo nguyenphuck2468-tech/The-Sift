@@ -97,7 +97,7 @@ final class SculkflowerManager implements Listener {
         if (sift == null) return;
         for (org.bukkit.Chunk chunk : sift.getLoadedChunks()) {
             // Sample loaded chunks rather than scanning every block every tick.
-            for (int attempt = 0; attempt < 8; attempt++) {
+            for (int attempt = 0; attempt < 32; attempt++) {
                 int x = ThreadLocalRandom.current().nextInt(16);
                 int z = ThreadLocalRandom.current().nextInt(16);
                 int y = ThreadLocalRandom.current().nextInt(sift.getMinHeight(), sift.getMaxHeight());
