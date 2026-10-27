@@ -548,6 +548,17 @@ public final class SiftEcologyManager implements Listener {
                 + deferredDecorationRetries.get() + "; last: " + lastProviderPlacementFailure + ")";
     }
 
+    /**
+     * True when the bundled dimension datapack is enabled and its data-driven ore features are
+     * therefore generating ores itself. The Java stand-in veins must not double-generate on top.
+     * Fails closed (false = keep Java generation) if the pack cannot be queried yet.
+     */
+    private boolean dimensionOreFeaturesActive() {
+        return plugin instanceof TheSiftFoundationPlugin foundation
+                && foundation.datapackBridge() != null
+                && foundation.datapackBridge().isDimensionPackEnabled();
+    }
+
     private void generateCharoiteOre(Chunk chunk, Random random) {
         if (!plugin.getConfig().getBoolean("content.charoite_ore",
                 plugin.getConfig().getBoolean("charoite.enabled", true))
@@ -572,12 +583,18 @@ public final class SiftEcologyManager implements Listener {
 
     /** Ore veins required for ordinary survival progression in a biome set with no data-driven features. */
     private void generateSiftResources(Chunk chunk, Random random) {
+        boolean dataDriven = dimensionOreFeaturesActive();
         generateOreVeins(chunk, random, Material.IRON_ORE, 2, -24, 56, 5);
-        generateOreVeins(chunk, random, Material.COAL_ORE, 2, 8, 112, 7);
+        // The dimension datapack's siftslate_coal/diamond/emerald placed features cover these
+        // three ores when enabled; skip only their Java stand-ins so iron/copper/redstone/lapis/
+        // gold keep generating (the pack has no equivalent feature for those yet).
+        if (!dataDriven) {
+            generateOreVeins(chunk, random, Material.COAL_ORE, 2, 8, 112, 7);
+        }
         generateOreVeins(chunk, random, Material.COPPER_ORE, 1, -16, 80, 5);
         generateOreVeins(chunk, random, Material.REDSTONE_ORE, 1, -56, 16, 5);
         generateOreVeins(chunk, random, Material.LAPIS_ORE, 1, -40, 48, 3);
-        if (random.nextInt(4) == 0) generateOreVeins(chunk, random, Material.DIAMOND_ORE, 1, -58, 8, 3);
+        if (!dataDriven && random.nextInt(4) == 0) generateOreVeins(chunk, random, Material.DIAMOND_ORE, 1, -58, 8, 3);
         if (random.nextInt(8) == 0) generateOreVeins(chunk, random, Material.GOLD_ORE, 1, -48, 24, 4);
     }
 

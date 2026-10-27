@@ -120,6 +120,23 @@ public final class DatapackManagerBridge {
         sender.sendMessage(status());
     }
 
+    /**
+     * Whether the bundled dimension/worldgen pack is currently enabled on the running server.
+     * Used by {@link SiftEcologyManager} to skip Java stand-in ore veins when the data-driven
+     * siftslate ores (coal/diamond/emerald, and charoite/siftite once their feature JSONs exist)
+     * are generating instead. Fails closed: if the pack cannot be discovered yet, callers keep
+     * the legacy Java generation so a world never ends up with no ores at all.
+     */
+    public boolean isDimensionPackEnabled() {
+        try {
+            Datapack pack = findPack(plugin.getServer().getDatapackManager().getPacks(),
+                    "sift_dimension_datapack");
+            return pack != null && pack.isEnabled();
+        } catch (RuntimeException exception) {
+            return false;
+        }
+    }
+
     private static Datapack findPack(Collection<Datapack> packs, String name) {
         String needle = name.toLowerCase(Locale.ROOT);
         // Exact match first: substring matching let setEnabled("datapack", ...) hit every pack

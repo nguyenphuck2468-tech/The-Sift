@@ -29,6 +29,11 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     private DatapackManagerBridge datapackBridge;
     private ResourcePackBridge resourcePackBridge;
 
+    /** Bridge used by other managers (e.g. ore generation) to query bundled pack state. */
+    public DatapackManagerBridge datapackBridge() {
+        return datapackBridge;
+    }
+
     @Override
     public void onEnable() {
         datapackBridge = new DatapackManagerBridge(this);
