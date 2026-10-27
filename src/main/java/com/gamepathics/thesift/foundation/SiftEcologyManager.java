@@ -1613,29 +1613,32 @@ public final class SiftEcologyManager implements Listener {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
         if (sift == null) return;
         long now = System.currentTimeMillis();
-        // Corruption conversion: vanilla Sniffers that linger on sculk/soul ground in The Sift
-        // turn into a Dark Sniffer, mirroring the mod's "infected sniffer" transformation.
-        long cooldownMillis = Math.max(1, plugin.getConfig().getInt("mobs.dark-sniffer.corruption-ticks", 600)) * 50L;
+        // The source mod infects a Sniffer when it ENTERS its DIGGING state while
+        // the block beneath the point 2.25 blocks ahead of its head is sculk.
+        // Paper cannot inject into Sniffer.transitionTo(), so sample the state here;
+        // once infection starts, the saved timestamp persists even after digging ends.
+        long infectionMillis = Math.max(1, plugin.getConfig().getInt("mobs.dark-sniffer.corruption-ticks", 600)) * 50L;
         java.util.List<Entity> conversions = new java.util.ArrayList<>();
         for (Entity entity : sift.getEntities()) {
-            if (entity.getType() != EntityType.SNIFFER) continue;
+            if (!(entity instanceof org.bukkit.entity.Sniffer sniffer)) continue;
             var pdc = entity.getPersistentDataContainer();
             if (pdc.has(creatureKey, PersistentDataType.STRING)) continue; // already a Dark Sniffer
-            Long firstOnSculk = pdc.get(snifferCorruptionStartKey, PersistentDataType.LONG);
+            Long infectionStartedAt = pdc.get(snifferCorruptionStartKey, PersistentDataType.LONG);
             Location loc = entity.getLocation();
-            Block below = loc.getBlock().getRelative(0, -1, 0);
-            boolean onSculk = below.getType() == Material.SCULK || below.getType() == Material.SCULK_CATALYST
-                    || below.getType() == Material.SOUL_SAND || below.getType() == Material.SOUL_SOIL;
-            if (!onSculk) {
-                if (firstOnSculk != null) pdc.remove(snifferCorruptionStartKey);
+            if (infectionStartedAt == null) {
+                if (sniffer.getState() != org.bukkit.entity.Sniffer.State.DIGGING) continue;
+                Vector forward = loc.getDirection().setY(0).normalize();
+                if (forward.lengthSquared() < 0.0001) continue;
+                Location sniffedBlock = loc.clone().add(forward.multiply(2.25));
+                Block sculkBelowSnout = sniffedBlock.getBlock().getRelative(0, -1, 0);
+                if (sculkBelowSnout.getType() != Material.SCULK) continue;
+                infectionStartedAt = now;
+                pdc.set(snifferCorruptionStartKey, PersistentDataType.LONG, infectionStartedAt);
+                sift.spawnParticle(Particle.WITCH, loc.clone().add(0, 1.5, 0), 6, 0.4, 0.3, 0.4, 0.1);
                 continue;
             }
-            if (firstOnSculk == null) {
-                pdc.set(snifferCorruptionStartKey, PersistentDataType.LONG, now);
-                sift.spawnParticle(Particle.WITCH, loc.add(0, 1.5, 0), 6, 0.4, 0.3, 0.4, 0.1);
-                continue;
-            }
-            if (now - firstOnSculk >= cooldownMillis) conversions.add(entity);
+            // Infection is irreversible in the reference mod and is saved with the Sniffer.
+            if (now - infectionStartedAt >= infectionMillis) conversions.add(entity);
         }
         // Convert after iteration so removal never disturbs the live entity list mid-scan.
         // Spawn first: if a provider refuses the replacement, keep the original Sniffer alive.
