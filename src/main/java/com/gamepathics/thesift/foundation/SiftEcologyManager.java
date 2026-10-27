@@ -1676,12 +1676,46 @@ public final class SiftEcologyManager implements Listener {
         // Spawn first: if a provider refuses the replacement, keep the original Sniffer alive.
         for (Entity entity : conversions) {
             Location loc = entity.getLocation();
+            if (!(entity instanceof LivingEntity original)) continue;
+            double originalHealth = original.getHealth();
+            java.util.Set<UUID> nearbyBefore = new java.util.HashSet<>();
+            for (Entity nearby : loc.getWorld().getNearbyEntities(loc, 4, 4, 4)) {
+                nearbyBefore.add(nearby.getUniqueId());
+            }
             if (!summonCreature("dark_sniffer", loc)) {
                 plugin.getLogger().warning("Could not convert Sniffer to Dark Sniffer at "
                         + loc.getWorld().getName() + ":" + loc.getBlockX() + ":" + loc.getBlockY()
                         + ":" + loc.getBlockZ() + "; keeping the original Sniffer.");
                 continue;
             }
+            // summonCreature is a boolean public API; identify only the replacement spawned
+            // by this call so we can preserve the source mod's absolute-health conversion rule.
+            LivingEntity replacement = null;
+            double nearestDistance = Double.MAX_VALUE;
+            for (Entity nearby : loc.getWorld().getNearbyEntities(loc, 4, 4, 4)) {
+                if (!(nearby instanceof LivingEntity living) || nearbyBefore.contains(nearby.getUniqueId())) continue;
+                if (!"dark_sniffer".equals(nearby.getPersistentDataContainer()
+                        .get(creatureKey, PersistentDataType.STRING))) continue;
+                double distance = nearby.getLocation().distanceSquared(loc);
+                if (distance < nearestDistance) {
+                    nearestDistance = distance;
+                    replacement = living;
+                }
+            }
+            if (replacement == null) {
+                plugin.getLogger().warning("Dark Sniffer spawned but could not be identified at "
+                        + loc.getWorld().getName() + ":" + loc.getBlockX() + ":" + loc.getBlockY()
+                        + ":" + loc.getBlockZ() + "; keeping the original Sniffer to avoid data loss.");
+                continue;
+            }
+            if (replacement.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH) != null) {
+                replacement.setHealth(Math.max(0.1, Math.min(originalHealth,
+                        replacement.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getValue())));
+            }
+            replacement.setPersistent(original.isPersistent());
+            replacement.setRemoveWhenFarAway(original.getRemoveWhenFarAway());
+            if (original.getCustomName() != null) replacement.setCustomName(original.getCustomName());
+            replacement.setCustomNameVisible(original.isCustomNameVisible());
             entity.getPersistentDataContainer().remove(snifferCorruptionStartKey);
             entity.remove();
             sift.playSound(loc, Sound.ENTITY_SNIFFER_DIGGING, 0.8f, 0.6f);
