@@ -25,10 +25,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 final class DarkSnifferDiggingGiftListener implements Listener {
     private final JavaPlugin plugin;
     private final NamespacedKey creatureKey;
+    private final NamespacedKey snifferCorruptionStartKey;
 
     DarkSnifferDiggingGiftListener(JavaPlugin plugin) {
         this.plugin = plugin;
         this.creatureKey = new NamespacedKey(plugin, "sift_creature");
+        this.snifferCorruptionStartKey = new NamespacedKey(plugin, "sniffer_corruption_start");
     }
 
     /** Dark Sniffers cannot produce offspring, even if love mode was applied before conversion. */
@@ -51,11 +53,18 @@ final class DarkSnifferDiggingGiftListener implements Listener {
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onSnifferDrop(EntityDropItemEvent event) {
         Entity entity = event.getEntity();
-        if (!(entity instanceof Sniffer) || !"dark_sniffer".equals(
-                entity.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING))) return;
+        if (!(entity instanceof Sniffer)) return;
 
         Material droppedType = event.getItemDrop().getItemStack().getType();
         if (droppedType != Material.TORCHFLOWER_SEEDS && droppedType != Material.PITCHER_POD) return;
+
+        var pdc = entity.getPersistentDataContainer();
+        if (!"dark_sniffer".equals(pdc.get(creatureKey, PersistentDataType.STRING))) {
+            // The reference mod's infected-Sniffer digging loot table is empty. Keep the
+            // vanilla Sniffer from leaking seeds while its irreversible corruption is active.
+            if (pdc.has(snifferCorruptionStartKey, PersistentDataType.LONG)) event.setCancelled(true);
+            return;
+        }
 
         // Cancel the vanilla item before attempting resolution, so a strict install with
         // a missing provider definition never leaks the wrong vanilla seed into gameplay.
