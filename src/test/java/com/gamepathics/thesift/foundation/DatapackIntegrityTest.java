@@ -28,6 +28,28 @@ class DatapackIntegrityTest {
     );
 
     @Test
+    void sculkflowerResourcePackShipsEveryReferencedTexture() throws IOException {
+        Path assets = Path.of("src/main/resources/pack/assets/thesift");
+        Map<String, String> modelTextures = Map.of(
+                "models/block/sculkflower.json", "block/sculkflower",
+                "models/block/sculkflower_crop_stage0.json", "block/sculkflower_crop_stage0",
+                "models/block/sculkflower_crop_stage1.json", "block/sculkflower_crop_stage1",
+                "models/item/sculkflower_seeds.json", "item/sculkflower_seeds"
+        );
+        for (Map.Entry<String, String> entry : modelTextures.entrySet()) {
+            Path model = assets.resolve(entry.getKey());
+            assertTrue(Files.exists(model), "missing Sculkflower model: " + model);
+            JsonObject root = JsonParser.parseString(Files.readString(model)).getAsJsonObject();
+            JsonObject textures = root.getAsJsonObject("textures");
+            boolean found = textures.entrySet().stream()
+                    .anyMatch(texture -> ("thesift:" + entry.getValue()).equals(texture.getValue().getAsString()));
+            assertTrue(found, model + " must reference thesift:" + entry.getValue());
+            Path texture = assets.resolve("textures/" + entry.getValue() + ".png");
+            assertTrue(Files.exists(texture), model + " references missing texture " + texture);
+        }
+    }
+
+    @Test
     void allBundledDatapackJsonIsValid() throws IOException {
         for (Path pack : Set.of(PROGRESSION, DIMENSION)) {
             try (Stream<Path> paths = Files.walk(pack)) {
