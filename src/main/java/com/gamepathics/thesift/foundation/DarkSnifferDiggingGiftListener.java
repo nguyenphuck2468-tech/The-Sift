@@ -1,8 +1,9 @@
 package com.gamepathics.thesift.foundation;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Sniffer;
 import org.bukkit.event.EventHandler;
@@ -15,9 +16,9 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 /**
- * Replaces the vanilla Sniffer digging gift for Dark Sniffers with the reference-mod
- * Sculkflower Seeds loot. The event hook runs only when the vanilla Sniffer actually drops
- * its digging item, avoiding a timer-based approximation and preventing duplicate seeds.
+ * Replaces the vanilla Sniffer seed drop with the reference mod's Sculkflower Seeds
+ * for tagged Dark Sniffers. Intercepting the actual drop avoids guessing whether a
+ * DIGGING animation completed successfully and prevents duplicate rewards.
  */
 final class DarkSnifferDiggingGiftListener implements Listener {
     private final JavaPlugin plugin;
@@ -26,26 +27,30 @@ final class DarkSnifferDiggingGiftListener implements Listener {
     DarkSnifferDiggingGiftListener(JavaPlugin plugin) {
         this.plugin = plugin;
         this.creatureKey = new NamespacedKey(plugin, "sift_creature");
-        plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onDarkSnifferDrop(EntityDropItemEvent event) {
-        if (event.getEntityType() != EntityType.SNIFFER || !(event.getEntity() instanceof Sniffer sniffer)) return;
-        if (!"dark_sniffer".equals(sniffer.getPersistentDataContainer()
-                .get(creatureKey, PersistentDataType.STRING))) return;
+    public void onSnifferDrop(EntityDropItemEvent event) {
+        Entity entity = event.getEntity();
+        if (!(entity instanceof Sniffer) || !"dark_sniffer".equals(
+                entity.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING))) return;
 
-        Item dropped = event.getItemDrop();
-        ItemStack stack = dropped.getItemStack();
-        if (stack.getType() != Material.TORCHFLOWER_SEEDS) return;
+        Material droppedType = event.getItemDrop().getItemStack().getType();
+        if (droppedType != Material.TORCHFLOWER_SEEDS && droppedType != Material.PITCHER_POD) return;
 
+        // Cancel the vanilla item before attempting resolution, so a strict install with
+        // a missing provider definition never leaks the wrong vanilla seed into gameplay.
+        event.setCancelled(true);
         ItemStack gift = createGift();
         if (gift == null) {
-            plugin.getLogger().warning("Dark Sniffer digging loot could not create Sculkflower Seeds; keeping vanilla loot.");
+            plugin.getLogger().warning(
+                    "Dark Sniffer dug successfully, but provider item 'sculkflower_seeds' is unresolved; run /sift doctor.");
             return;
         }
 
-        dropped.setItemStack(gift);
+        Location location = event.getItemDrop().getLocation().clone();
+        Item dropped = location.getWorld().dropItem(location, gift);
+        dropped.setPickupDelay(10);
     }
 
     private ItemStack createGift() {
@@ -55,7 +60,6 @@ final class DarkSnifferDiggingGiftListener implements Listener {
             if (providerItem != null) return providerItem;
         }
 
-        // Strict production mode must never silently substitute a vanilla item for missing provider content.
         if (plugin.getConfig().getBoolean("providers.strict", true)) return null;
 
         // Development-only fallback while testing without a content provider.
