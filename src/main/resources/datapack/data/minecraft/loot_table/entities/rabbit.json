@@ -10,26 +10,16 @@
           "children": [
             {
               "type": "minecraft:item",
+              "name": "minecraft:rabbit_hide",
               "conditions": [
                 {
-                  "condition": "minecraft:reference",
-                  "name": "thesift:is_tamed_blub"
-                }
-              ],
-              "name": "minecraft:mutton",
-              "functions": [
-                {
-                  "function": "minecraft:set_components",
-                  "components": {
-                    "minecraft:custom_data": {"thesift:content": "blub_meat"},
-                    "minecraft:custom_name": {"text": "Blub Meat", "color": "light_purple", "italic": false}
+                  "condition": "minecraft:entity_properties",
+                  "entity": "this",
+                  "predicate": {
+                    "killed_by_player": true
                   }
                 }
-              ]
-            },
-            {
-              "type": "minecraft:item",
-              "name": "minecraft:rabbit_hide",
+              ],
               "functions": [{"function": "minecraft:set_count", "count": {"type": "minecraft:uniform", "min": 0, "max": 1}}]
             },
             {
