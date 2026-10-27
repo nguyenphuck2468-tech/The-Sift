@@ -7,12 +7,17 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -28,7 +33,11 @@ import java.util.zip.ZipOutputStream;
  * restart.</p>
  */
 public final class DatapackManagerBridge {
-    private static final List<String> BUNDLED_PACKS = List.of("dimension", "progression");
+    // Folder names must match src/main/resources exactly: "datapack" is the
+    // progression pack (advancements/loot tables), "sift_dimension_datapack"
+    // carries the dimension/worldgen JSON. The previous "dimension"/"progression"
+    // names never resolved, so staging silently did nothing.
+    private static final List<String> BUNDLED_PACKS = List.of("sift_dimension_datapack", "datapack");
 
     private final JavaPlugin plugin;
     private final Path stageRoot;
@@ -58,12 +67,36 @@ public final class DatapackManagerBridge {
 
     /** Enables/disables a staged or discovered pack by name and refreshes the datapack manager. */
     public boolean setEnabled(String name, boolean enabled) {
+        // Guard: disabling the dimension pack while the server runs can strand The Sift world
+        // (missing dimension registration). The check tests whether the bundled dimension pack
+        // itself is currently ENABLED - that is the real hazard. Enabling stays always-safe.
+        if (!enabled && isDimensionPackName(name)) {
+            var guardManager = plugin.getServer().getDatapackManager();
+            // The hazard only exists when the dimension pack is actually ENABLED right now.
+            // Checking mere discovery (findPack != null) refused to disable the pack even when
+            // it was already switched off, making the toggle unusable.
+            Datapack dimensionPack = findPack(guardManager.getPacks(), "sift_dimension_datapack");
+            boolean dimensionActive = dimensionPack != null && dimensionPack.isEnabled();
+            if (dimensionActive) {
+                plugin.getLogger().warning("Refusing to disable the dimension datapack ('" + name
+                        + "') at runtime because it is currently enabled and The Sift world may"
+                        + " depend on it. Unload/stop the server first, then edit the datapack"
+                        + " configuration.");
+                return false;
+            }
+        }
         var manager = plugin.getServer().getDatapackManager();
         Datapack pack = findPack(manager.getPacks(), name);
         if (pack == null) return false;
         pack.setEnabled(enabled);
         manager.refreshPacks();
         return true;
+    }
+
+    private static boolean isDimensionPackName(String name) {
+        String needle = name.toLowerCase(Locale.ROOT);
+        return needle.equals("sift_dimension_datapack") || needle.equals("thesift:dimension")
+                || needle.equals("dimension");
     }
 
     public String status() {
@@ -87,10 +120,34 @@ public final class DatapackManagerBridge {
         sender.sendMessage(status());
     }
 
+    /**
+     * Whether the bundled dimension/worldgen pack is currently enabled on the running server.
+     * Used by {@link SiftEcologyManager} to skip Java stand-in ore veins when the data-driven
+     * siftslate ores (coal/diamond/emerald, and charoite/siftite once their feature JSONs exist)
+     * are generating instead. Fails closed: if the pack cannot be discovered yet, callers keep
+     * the legacy Java generation so a world never ends up with no ores at all.
+     */
+    public boolean isDimensionPackEnabled() {
+        try {
+            Datapack pack = findPack(plugin.getServer().getDatapackManager().getPacks(),
+                    "sift_dimension_datapack");
+            return pack != null && pack.isEnabled();
+        } catch (RuntimeException exception) {
+            return false;
+        }
+    }
+
     private static Datapack findPack(Collection<Datapack> packs, String name) {
         String needle = name.toLowerCase(Locale.ROOT);
+        // Exact match first: substring matching let setEnabled("datapack", ...) hit every pack
+        // whose name contains "datapack", including other plugins' packs.
         for (Datapack pack : packs) {
-            if (pack.getName().toLowerCase(Locale.ROOT).contains(needle)) return pack;
+            if (pack.getName().toLowerCase(Locale.ROOT).equals(needle)) return pack;
+        }
+        // Then namespace-qualified form ("thesift:<name>") and folder-name suffix "<name>.zip".
+        for (Datapack pack : packs) {
+            String lower = pack.getName().toLowerCase(Locale.ROOT);
+            if (lower.equals("thesift:" + needle) || lower.equals(needle + ".zip")) return pack;
         }
         return null;
     }
@@ -101,14 +158,41 @@ public final class DatapackManagerBridge {
         if (url == null) return null;
         try {
             String external = url.toString();
-            URI uri = new URI(external.endsWith(marker) ? external.substring(0, external.length() - marker.length()) : external);
-            // Inside a jar we cannot walk the filesystem; staging then relies on the bootstrap
-            // discovery path which registers the pack directly from the jar URL.
-            return uri.getScheme().equals("jar") ? null : uri;
+            String rootPart = external.endsWith(marker)
+                    ? external.substring(0, external.length() - marker.length()) : external;
+            // Inside a jar the root URL looks like "jar:file:/…!/datapack". Walk it with a
+            // zip FileSystem instead of giving up: returning null here made staging a silent
+            // no-op on production (jar) installs.
+            if (rootPart.startsWith("jar:")) {
+                String spec = rootPart.substring("jar:".length());
+                int split = spec.indexOf("!/");
+                String jarUri = split < 0 ? spec : spec.substring(0, split);
+                String entryPath = split < 0 ? "" : spec.substring(split + 1);
+                FileSystem fs = jarFilesystems.computeIfAbsent(URI.create(jarUri), uri -> {
+                    try {
+                        Map<String, String> env = new HashMap<>();
+                        env.put("create", "false");
+                        return FileSystems.newFileSystem(uri, env);
+                    } catch (java.nio.file.FileSystemAlreadyExistsException alreadyOpen) {
+                        // Another component (e.g. the resource-pack bridge or the plugin loader)
+                        // already opened this jar; reuse that filesystem instead of silently
+                        // returning null and turning staging into a no-op on production installs.
+                        return FileSystems.getFileSystem(uri);
+                    } catch (IOException exception) {
+                        throw new UncheckedIOException(exception);
+                    }
+                });
+                Path path = entryPath.isEmpty() ? fs.getPath("/") : fs.getPath(entryPath);
+                return path.toUri();
+            }
+            return new URI(rootPart);
         } catch (Exception exception) {
             return null;
         }
     }
+
+    /** Open jar filesystems kept alive so staged paths stay readable for the JVM lifetime. */
+    private static final Map<URI, FileSystem> jarFilesystems = new java.util.concurrent.ConcurrentHashMap<>();
 
     private static void zipDirectory(Path base, Path output) throws IOException {
         Path temp = output.resolveSibling(output.getFileName() + ".tmp");

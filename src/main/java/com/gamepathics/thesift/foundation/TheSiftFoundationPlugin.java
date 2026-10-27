@@ -29,6 +29,11 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     private DatapackManagerBridge datapackBridge;
     private ResourcePackBridge resourcePackBridge;
 
+    /** Bridge used by other managers (e.g. ore generation) to query bundled pack state. */
+    public DatapackManagerBridge datapackBridge() {
+        return datapackBridge;
+    }
+
     @Override
     public void onEnable() {
         datapackBridge = new DatapackManagerBridge(this);
@@ -152,20 +157,32 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     }
 
     private void enforceDependencyMode() {
+        // providers.strict is honoured as configured: false enables the documented vanilla
+        // fallback for development/CI (see README and docs/TESTING.md). The mode only affects
+        // content resolution, never plugin lifecycle.
         if (!getConfig().getBoolean("providers.strict", true)) {
-            getLogger().warning("providers.strict: false is ignored; The Sift depends fully on provider plugins.");
+            getLogger().warning("providers.strict: false - vanilla fallback placement is active"
+                    + " (development mode; not recommended for production).");
         }
-        getConfig().set("providers.strict", true);
     }
 
     private void verifyRequiredPlugins() {
         if (!isEnabled() || !getConfig().getBoolean("requirements.enabled", true)) return;
         java.util.List<String> missing = RequiredPlugins.missing(getConfig(), this::requirementPresent);
         if (missing.isEmpty()) return;
-        getLogger().severe("The Sift is disabled because required plugins are missing:");
-        for (String line : missing) getLogger().severe(" - " + line);
-        getLogger().severe("Install them (or edit the 'requirements' section of config.yml) and restart the server.");
-        getServer().getPluginManager().disablePlugin(this);
+        // Soft-dependency policy: paper-plugin.yml declares every provider dependency as
+        // required:false and the README describes them as optional. We therefore warn loudly
+        // instead of disabling the plugin mid-session (a /sift reload must never take the
+        // plugin down). Set requirements.hard-stop: true to restore the old self-disable rule.
+        if (getConfig().getBoolean("requirements.hard-stop", false)) {
+            getLogger().severe("The Sift is disabled because required plugins are missing:");
+            for (String line : missing) getLogger().severe(" - " + line);
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+        getLogger().warning("Optional provider plugins are missing; some The Sift features stay"
+                + " degraded until they are installed:");
+        for (String line : missing) getLogger().warning(" - " + line);
     }
 
     private boolean requirementPresent(String token) {
@@ -296,6 +313,12 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                 resourcePackBridge.sendTo(player, force);
                 sender.sendMessage("The Sift resource pack sent to you (" + (force ? "forced" : "additive") + ").");
             } else {
+                // Broadcast only makes sense when delivery can actually happen.
+                if (!resourcePackBridge.canDeliver()) {
+                    sender.sendMessage("No resource-pack provider plugin detected and resource-pack.server-url"
+                            + " is empty; set an http(s) download URL or install a provider before broadcasting.");
+                    return true;
+                }
                 resourcePackBridge.broadcastToPlayers(sender, force);
             }
             return true;

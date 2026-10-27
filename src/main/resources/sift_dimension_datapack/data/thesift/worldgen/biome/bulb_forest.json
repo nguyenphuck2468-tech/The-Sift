@@ -36,7 +36,22 @@
     "grass_color": "#8ff0dc",
     "foliage_color": "#e6fbff"
   },
-  "features": [],
+  "features": [
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "thesift:siftslate_coal_ore",
+      "thesift:siftslate_coal_ore_surface",
+      "thesift:siftslate_diamond_ore",
+      "thesift:siftslate_emerald_ore",
+      "thesift:siftslate_charoite_ore",
+      "thesift:siftslate_siftite_ore"
+    ]
+  ],
   "has_precipitation": false,
   "temperature": 0.7
 }

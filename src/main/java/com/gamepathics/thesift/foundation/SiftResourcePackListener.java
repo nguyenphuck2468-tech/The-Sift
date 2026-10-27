@@ -21,7 +21,9 @@ public final class SiftResourcePackListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onJoin(PlayerJoinEvent event) {
-        if (!plugin.getConfig().getBoolean("resource-pack.auto-send", true)) return;
+        // Default off: auto-delivering at join without a working download URL (or provider)
+        // previously handed clients a broken file:// pack. Admins opt in once delivery works.
+        if (!plugin.getConfig().getBoolean("resource-pack.auto-send", false)) return;
         bridge.sendTo(event.getPlayer(), false);
     }
 }

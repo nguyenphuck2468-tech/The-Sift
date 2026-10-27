@@ -9,6 +9,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -47,13 +48,39 @@ public final class ResourcePackBridge {
         this.localZip = plugin.getDataFolder().toPath().resolve("pack").resolve("thesift-resource-pack.zip");
     }
 
-    /** Materializes the bundled pack (src/main/resources/pack) into the plugin data folder as a zip. */
+    /**
+     * Materializes the bundled pack (src/main/resources/pack) into the plugin data folder as a zip.
+     * Rebuilds whenever the jar is newer than the staged zip, so upgrading the plugin ships the
+     * updated pack instead of silently keeping the stale one cached in {@code cachedSha1}.
+     */
     public void prepare() {
         try {
             Files.createDirectories(localZip.getParent());
-            if (!Files.exists(localZip)) buildZipFromResources();
+            if (!isStagedZipCurrent()) {
+                buildZipFromResources();
+                cachedSha1 = null; // force re-hash after rebuild
+            }
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not stage the bundled resource pack: " + exception.getMessage());
+        }
+    }
+
+    private boolean isStagedZipCurrent() throws IOException {
+        if (!Files.exists(localZip)) return false;
+        Path jar = pluginJarPath();
+        if (jar == null) return true; // can't compare: keep existing zip
+        return Files.getLastModifiedTime(localZip).compareTo(Files.getLastModifiedTime(jar)) >= 0;
+    }
+
+    private Path pluginJarPath() {
+        try {
+            // JavaPlugin#getFile is protected; reach it reflectively (same package restriction).
+            Method getFile = JavaPlugin.class.getDeclaredMethod("getFile");
+            getFile.setAccessible(true);
+            Object file = getFile.invoke(plugin);
+            return file instanceof java.io.File f ? f.toPath() : null;
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
+            return null; // MockBukkit / unusual classloader: no comparable jar file
         }
     }
 
@@ -80,6 +107,17 @@ public final class ResourcePackBridge {
 
     private void sendTo(Player player, Plugin provider, boolean force) {
         if (provider != null && tryProviderSend(provider, player, force)) return;
+        // Native Paper delivery requires an http(s) URL the client can download; without a
+        // configured server-url we would hand out a file:// link every client rejects (and with
+        // setResourcePack(force) that can kick players at join). Skip quietly instead.
+        if (packUrlOrNull() == null) {
+            if (!detectedLogged) {
+                detectedLogged = true;
+                plugin.getLogger().info("resource-pack.server-url is empty and no provider plugin was"
+                        + " detected; native pack delivery is skipped until a download URL is configured.");
+            }
+            return;
+        }
         tryNativeSend(player, force);
     }
 
@@ -106,25 +144,97 @@ public final class ResourcePackBridge {
      * Reflective integration: look for common public entry points used by resource-pack manager
      * style plugins ({@code applyPacks(Player)}, {@code sendPack(Player, ...)}, or a singleton
      * {@code getInstance()}). If nothing matches, return false so the caller uses the native API.
+     *
+     * <p>The pack identity handed to provider plugins is the same UUID the native path derives
+     * from this plugin's name and the staged zip hash, so a re-send replaces the previous pack
+     * instead of stacking duplicates in the client's pack slot.</p>
      */
     private boolean tryProviderSend(Plugin provider, Player player, boolean force) {
+        // The provider path needs a real download URL; without one (empty packUrl()) skip it
+        // and let the caller fall through to the native check instead of invoking sendPack("").
+        if (packUrlOrNull() == null) return false;
         try {
             Object api = resolveApi(provider);
             if (api == null) return false;
+            byte[] hashBytes = parseSha1();
+            String packId = "thesift:" + plugin.getName();
             for (Method method : api.getClass().getMethods()) {
                 String m = method.getName().toLowerCase(Locale.ROOT);
                 if ((m.equals("applypacks") || m.equals("sendpack") || m.equals("sendresourcepack")
                         || m.equals("applypack")) && matchesPlayerSignature(method)) {
-                    if (m.startsWith("send")) method.invoke(api, player, packUrl(), sha1(), plugin.getName(), force);
-                    else method.invoke(api, player);
+                    if (m.startsWith("send")) {
+                        invokeProviderSend(method, api, player, hashBytes, packId, force);
+                    } else {
+                        method.invoke(api, player);
+                    }
                     return true;
                 }
             }
         } catch (ReflectiveOperationException | RuntimeException exception) {
             plugin.getLogger().fine("Provider " + provider.getName() + " could not deliver the pack ("
-                    + exception.getClass().getSimpleName() + "); using native API.");
+                    + describeReflectionFailure(exception) + "); using native API.");
         }
         return false;
+    }
+
+    /**
+     * Invokes a provider's send entry point with the argument shape it actually declares.
+     * Previously every {@code send*} method was called as {@code (Player, String url, String hex,
+     * String source, boolean force)} regardless of its signature: any provider whose second
+     * parameter was a byte[] hash (or with a different arity) threw IllegalArgumentException on
+     * every send, silently disabling provider delivery. We match the parameter types instead of
+     * guessing; if a required slot has no safe default we abort and fall back to the native API.
+     */
+    private void invokeProviderSend(Method method, Object api, Player player, byte[] hashBytes,
+                                    String packId, boolean force) throws ReflectiveOperationException {
+        Class<?>[] types = method.getParameterTypes();
+        Object[] args = new Object[types.length];
+        args[0] = player;
+        for (int i = 1; i < types.length; i++) {
+            Class<?> type = types[i];
+            if (type == String.class) {
+                args[i] = i == 1 ? packUrl() : (i == 3 ? packId : "");
+            } else if (type == byte[].class) {
+                args[i] = hashBytes;
+            } else if (type == boolean.class || type == Boolean.class) {
+                args[i] = force;
+            } else if (type == int.class || type == Integer.class) {
+                args[i] = 0;
+            } else if (type == long.class || Long.class == type) {
+                args[i] = 0L;
+            } else if (java.util.UUID.class == type) {
+                args[i] = packKey(packId);
+            } else if (Player.class.isAssignableFrom(type)) {
+                args[i] = player;
+            } else if (type.isPrimitive()) {
+                // Cannot fill an unknown primitive slot safely; let the caller use the native API.
+                throw new IllegalArgumentException("Unsupported provider parameter " + type.getName()
+                        + " at index " + i + " of " + method.getName());
+            } else {
+                args[i] = null; // remaining reference types: best-effort null
+            }
+        }
+        method.invoke(api, args);
+    }
+
+    /** Reflection failures surface wrapped in InvocationTargetException; report the real cause. */
+    private static String describeReflectionFailure(Throwable throwable) {
+        Throwable cause = throwable;
+        while (cause instanceof InvocationTargetException invocation && invocation.getCause() != null) {
+            cause = invocation.getCause();
+        }
+        return cause.getClass().getSimpleName();
+    }
+
+    /** Raw 20-byte SHA-1 digest of the staged zip, or null when unavailable. */
+    private byte[] parseSha1() {
+        String hash = sha1();
+        return hash.isEmpty() ? null : HexFormat.of().parseHex(hash);
+    }
+
+    /** Stable pack-slot key: same identity string always yields the same UUID (re-send replaces). */
+    private static java.util.UUID packKey(String identity) {
+        return java.util.UUID.nameUUIDFromBytes(identity.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     private boolean matchesPlayerSignature(Method method) {
@@ -147,17 +257,21 @@ public final class ResourcePackBridge {
     private void tryNativeSend(Player player, boolean force) {
         try {
             String hash = sha1();
+            // Paper expects the raw 20-byte SHA-1 digest, not the ASCII hex string.
+            byte[] hashBytes = hash.isEmpty() ? null : HexFormat.of().parseHex(hash);
             String prompt = plugin.getConfig().getString("resource-pack.prompt", "The Sift textures");
             if (force) {
                 // Paper 26.x: setResourcePack(UUID key, url, byte[] hash, prompt, force).
-                player.setResourcePack(java.util.UUID.nameUUIDFromBytes(
-                                ("thesift:" + hash).getBytes(java.nio.charset.StandardCharsets.UTF_8)),
-                        packUrl(), hash.getBytes(java.nio.charset.StandardCharsets.UTF_8), prompt, true);
+                // The key is derived from a stable identity string (same one tryProviderSend
+                // passes to provider plugins), so re-sends replace the pack instead of
+                // stacking duplicates in the client's resource-pack slot.
+                player.setResourcePack(packKey("thesift:" + plugin.getName()),
+                        packUrl(), hashBytes, prompt, true);
             } else {
                 // Paper 26.x: addResourcePack(UUID id, url, byte[] hash, prompt, inSlot).
-                player.addResourcePack(java.util.UUID.nameUUIDFromBytes(
-                                ("thesift:addon").getBytes(java.nio.charset.StandardCharsets.UTF_8)),
-                        packUrl(), hash.getBytes(java.nio.charset.StandardCharsets.UTF_8), prompt, true);
+                // Additive packs are never forced; they show in the server-resource-pack slot.
+                player.addResourcePack(packKey("thesift:" + plugin.getName() + ":addon"),
+                        packUrl(), hashBytes, prompt, false);
             }
         } catch (RuntimeException | LinkageError exception) {
             plugin.getLogger().warning("Native resource pack send failed for " + player.getName() + ": "
@@ -175,9 +289,22 @@ public final class ResourcePackBridge {
      * pack through a detected provider plugin that reads local files.
      */
     private String packUrl() {
+        String url = packUrlOrNull();
+        return url != null ? url : "";
+    }
+
+    /** The configured http(s) download URL, or null when none is set (native delivery disabled). */
+    private String packUrlOrNull() {
         String configured = plugin.getConfig().getString("resource-pack.server-url", "");
-        if (configured != null && !configured.isBlank()) return configured.trim();
-        return "file://" + localZip.toAbsolutePath();
+        if (configured == null || configured.isBlank()) return null;
+        String trimmed = configured.trim();
+        // file:// URLs are rejected by every client; treat them as unconfigured.
+        return trimmed.startsWith("http://") || trimmed.startsWith("https://") ? trimmed : null;
+    }
+
+    /** True when pack delivery can actually reach clients: a provider plugin, or an http(s) URL. */
+    public boolean canDeliver() {
+        return findProviderPlugin() != null || packUrlOrNull() != null;
     }
 
     // ------------------------------------------------------------------ hashing / staging
@@ -239,21 +366,61 @@ public final class ResourcePackBridge {
 
     /** Downloads a remote pack variant (e.g. CDN mirror) asynchronously; result cached in data folder. */
     public void fetchRemote(String url, Runnable onSuccess) {
+        // Guarded entry point: callers reach this from commands/config strings, so an invalid
+        // URL must fail as a warning like every other download error, not crash the caller.
+        URI endpoint;
+        try {
+            endpoint = URI.create(url);
+        } catch (IllegalArgumentException exception) {
+            plugin.getLogger().warning("Remote pack URL is malformed (" + exception.getMessage()
+                    + "); download skipped.");
+            return;
+        }
+        if (packUrlOrNull() == null && endpoint.getScheme() == null) {
+            plugin.getLogger().warning("Remote pack URL has no scheme ('" + url + "'); download skipped.");
+            return;
+        }
         plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
             try {
                 HttpResponse<byte[]> response = httpClient.send(
-                        HttpRequest.newBuilder(URI.create(url)).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
-                if (response.statusCode() == 200) {
-                    Files.createDirectories(localZip.getParent());
-                    Files.write(localZip, response.body());
-                    cachedSha1 = null;
-                    plugin.getServer().getScheduler().runTask(plugin, onSuccess);
-                } else {
-                    plugin.getLogger().warning("Remote pack download returned HTTP " + response.statusCode());
+                        HttpRequest.newBuilder(endpoint).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+                int status = response.statusCode();
+                if (status < 200 || status >= 300) {
+                    plugin.getLogger().warning("Remote pack download returned HTTP " + status);
+                    return;
                 }
+                byte[] body = response.body();
+                // A truncated or empty body would stage a corrupt zip whose SHA-1 then gets
+                // handed to clients; reject anything that cannot be opened as a zip archive.
+                try (java.util.zip.ZipFile probe = asTempZip(body)) {
+                    if (probe.stream().findAny().isEmpty()) {
+                        plugin.getLogger().warning("Remote pack download contains no entries; keeping the staged zip.");
+                        return;
+                    }
+                }
+                Files.createDirectories(localZip.getParent());
+                Path temp = localZip.resolveSibling(localZip.getFileName() + ".download.tmp");
+                Files.write(temp, body);
+                Files.move(temp, localZip, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                cachedSha1 = null;
+                plugin.getServer().getScheduler().runTask(plugin, onSuccess);
             } catch (Exception exception) {
                 plugin.getLogger().warning("Remote pack download failed: " + exception.getMessage());
             }
         });
+    }
+
+    /** Wraps a downloaded body in a temporary file so it can be probed as a zip, deleted on close. */
+    private java.util.zip.ZipFile asTempZip(byte[] body) throws IOException {
+        Path probe = Files.createTempFile("thesift-pack-probe", ".zip");
+        try {
+            Files.write(probe, body);
+            java.util.zip.ZipFile zip = new java.util.zip.ZipFile(probe.toFile());
+            probe.toFile().deleteOnExit();
+            return zip;
+        } catch (IOException | RuntimeException exception) {
+            Files.deleteIfExists(probe);
+            throw exception;
+        }
     }
 }

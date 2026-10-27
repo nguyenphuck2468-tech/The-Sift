@@ -9,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -85,6 +86,43 @@ class DatapackIntegrityTest {
                 }
             }
         }
+    }
+
+    @Test
+    void siftslateOreFeaturesAreWiredIntoEveryOreBearingBiome() throws IOException {
+        // Step index 6 is the "ore" generation step (after structure/carver/liquid/misc/
+        // feature/decoration). The Java stand-in veins in SiftEcologyManager skip themselves
+        // when this pack is enabled, so every biome that should contain ore MUST list these
+        // placed features here - otherwise disabling the Java fallback would leave it barren.
+        Map<String, Path> placedFeatures = resources(DIMENSION.resolve("data"), "worldgen/placed_feature");
+        Set<String> required = Set.of(
+                "thesift:siftslate_coal_ore", "thesift:siftslate_coal_ore_surface",
+                "thesift:siftslate_diamond_ore", "thesift:siftslate_emerald_ore",
+                "thesift:siftslate_charoite_ore", "thesift:siftslate_siftite_ore");
+        int oreBiomes = 0;
+        for (Path biome : jsonFiles(DIMENSION.resolve("data"))) {
+            String normalized = biome.toString().replace('\\', '/');
+            if (!normalized.contains("/worldgen/biome/")) continue;
+            JsonObject root = JsonParser.parseString(Files.readString(biome)).getAsJsonObject();
+            JsonArray stages = root.getAsJsonArray("features");
+            Set<String> referenced = new HashSet<>();
+            for (JsonElement stage : stages) {
+                for (JsonElement reference : stage.getAsJsonArray()) {
+                    referenced.add(resourceId(reference.getAsString()));
+                }
+            }
+            boolean hasAnyRequired = !Collections.disjoint(referenced, required);
+            if (!hasAnyRequired) continue;
+            oreBiomes++;
+            assertTrue(referenced.containsAll(required),
+                    biome + " lists some siftslate ore features but is missing "
+                            + required.stream().filter(id -> !referenced.contains(id)).toList());
+            for (String id : required) {
+                assertTrue(placedFeatures.containsKey(id), "missing placed feature JSON for " + id);
+            }
+        }
+        assertTrue(oreBiomes >= 10,
+                "expected at least 10 ore-bearing biomes after wiring ores into all 15, found " + oreBiomes);
     }
 
     private static Set<String> biomeIds(Path pack) throws IOException {
