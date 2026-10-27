@@ -10,6 +10,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDropItemEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
@@ -27,6 +28,17 @@ final class DarkSnifferDiggingGiftListener implements Listener {
     DarkSnifferDiggingGiftListener(JavaPlugin plugin) {
         this.plugin = plugin;
         this.creatureKey = new NamespacedKey(plugin, "sift_creature");
+    }
+
+    /** Dark Sniffers are not food-driven/breedable in the reference mod. */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onFeedDarkSniffer(PlayerInteractEntityEvent event) {
+        Entity entity = event.getRightClicked();
+        if (!(entity instanceof Sniffer) || !"dark_sniffer".equals(
+                entity.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING))) return;
+        if (event.getPlayer().getInventory().getItem(event.getHand()).getType() == Material.TORCHFLOWER_SEEDS) {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
