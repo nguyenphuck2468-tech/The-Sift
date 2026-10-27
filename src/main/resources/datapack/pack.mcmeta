@@ -2,6 +2,6 @@
   "pack": {
     "description": "The Sift progression (installed by the TheSift plugin)",
     "min_format": 101,
-    "max_format": 121
+    "max_format": 999
   }
 }
