@@ -2,9 +2,11 @@ package com.gamepathics.thesift.foundation;
 
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.inventory.CampfireRecipe;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.RecipeChoice;
+import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.AfterEach;
@@ -83,5 +85,59 @@ class SiftiteRecipeTest {
         vanillaClone.addIngredient(Material.NETHERITE_INGOT);
         assertFalse(probe.recipeIntendsTaggedItems(vanillaClone),
                 "material-only recipes stay guarded so tagged items cannot leak into vanilla crafts");
+    }
+
+    @Test
+    void mixedExactPlusMaterialRecipeDoesNotWhitelistOtherSlots() {
+        // P2 regression: a keyed recipe that intends ONE siftite item via ExactChoice must not
+        // be wholesale whitelisted — other matrix slots carrying different siftite-tagged items
+        // (here siftite_ingot in a plain AMETHYST_SHARD slot) still get blocked. The guard now
+        // matches per-slot against the recipe's own choices instead of trusting a single true.
+        NamespacedKey foreignKey = new NamespacedKey("thesift_datapack_sim", "mixed_recipe");
+        ItemStack output = content.item(Material.IRON_INGOT, "sim_output", "Simulated Output");
+        ShapedRecipe mixed = new ShapedRecipe(foreignKey, output);
+        mixed.shape("NI"); // N = intended exact siftite nugget, I = vanilla iron ingot slot
+        mixed.setIngredient('N', new RecipeChoice.ExactChoice(
+                content.item(Material.IRON_NUGGET, "siftite_nugget", "Siftite Nugget")));
+        mixed.setIngredient('I', Material.AMETHYST_SHARD);
+        server.addRecipe(mixed);
+
+        SiftiteContent.SiftiteGuardProbe probe =
+                new SiftiteContent.SiftiteGuardProbe(new NamespacedKey(plugin, "content"));
+        // Legacy whole-recipe whitelist would return true here; that is exactly the too-broad
+        // behaviour the per-slot rewrite removed. Keep the check covered for its callers.
+        assertTrue(probe.recipeIntendsTaggedItems(mixed));
+
+        // Per-slot semantics: the nugget choice accepts the tagged nugget, but NO declared
+        // choice accepts a siftite_ingot — so an ingot placed in the material slot stays guarded.
+        boolean anyChoiceAcceptsIngot = SiftiteContent.recipeChoices(mixed).stream()
+                .anyMatch(choice -> choice.test(
+                        content.item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot")));
+        assertFalse(anyChoiceAcceptsIngot,
+                "a mixed recipe must not implicitly accept unrelated siftite items");
+        boolean anyChoiceAcceptsNugget = SiftiteContent.recipeChoices(mixed).stream()
+                .anyMatch(choice -> choice.test(
+                        content.item(Material.IRON_NUGGET, "siftite_nugget", "Siftite Nugget")));
+        assertTrue(anyChoiceAcceptsNugget);
+    }
+
+    @Test
+    void blubCampfireRecipeOnlyAcceptsTaggedBlubMeat() {
+        // P1 regression: the campfire recipe must use an ExactChoice on the tagged blub_meat,
+        // never a bare MUTTON material choice that would let vanilla mutton cook into
+        // Cooked Blub Meat and race the vanilla campfire recipe.
+        Recipe registered = server.getRecipe(new NamespacedKey(plugin, "blub_campfire"));
+        assertInstanceOf(CampfireRecipe.class, registered);
+        CampfireRecipe campfire = (CampfireRecipe) registered;
+
+        RecipeChoice input = campfire.getInputChoice();
+        assertInstanceOf(RecipeChoice.ExactChoice.class, input);
+        assertTrue(input.test(content.item(Material.MUTTON, "blub_meat", "Blub Meat")),
+                "tagged blub_meat must cook on the campfire");
+        assertFalse(input.test(new ItemStack(Material.MUTTON)),
+                "plain vanilla mutton must NOT satisfy the Blub campfire ingredient");
+        assertEquals("cooked_blub_meat", campfire.getResult().getItemMeta().getPersistentDataContainer()
+                .get(new NamespacedKey(plugin, "content"),
+                        org.bukkit.persistence.PersistentDataType.STRING));
     }
 }

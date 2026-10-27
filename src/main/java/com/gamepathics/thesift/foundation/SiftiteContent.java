@@ -18,11 +18,16 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.inventory.PrepareSmithingEvent;
+import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -48,7 +53,8 @@ public final class SiftiteContent implements Listener {
     public void removeRecipes() {
         Server server = plugin.getServer();
         for (String key : java.util.List.of("charoite", "siftite_nugget", "siftite_ingot",
-                "siftite_upgrade_smithing_template", "smelt_raw_sifter_meat", "smelt_blub_meat")) {
+                "siftite_upgrade_smithing_template", "smelt_raw_sifter_meat", "smelt_blub_meat",
+                "blub_campfire")) {
             server.removeRecipe(new NamespacedKey(plugin, key));
         }
         for (String key : java.util.List.of("siftite_sword", "siftite_axe", "siftite_pickaxe",
@@ -61,7 +67,8 @@ public final class SiftiteContent implements Listener {
     public void registerRecipes() {
         Server server = plugin.getServer();
         for (String key : java.util.List.of("charoite", "siftite_nugget", "siftite_ingot",
-                "siftite_upgrade_smithing_template", "smelt_raw_sifter_meat", "smelt_blub_meat")) {
+                "siftite_upgrade_smithing_template", "smelt_raw_sifter_meat", "smelt_blub_meat",
+                "blub_campfire")) {
             server.removeRecipe(new NamespacedKey(plugin, key));
         }
         for (String key : java.util.List.of("siftite_sword", "siftite_axe", "siftite_pickaxe",
@@ -82,6 +89,13 @@ public final class SiftiteContent implements Listener {
                 item(Material.BEEF, "raw_sifter_meat", "Raw Sifter Meat"),
                 item(Material.COOKED_BEEF, "cooked_sifter_meat", "Cooked Sifter Meat"));
         registerFurnish("smelt_blub_meat",
+                item(Material.MUTTON, "blub_meat", "Blub Meat"),
+                item(Material.COOKED_MUTTON, "cooked_blub_meat", "Cooked Blub Meat"));
+        // Campfire parity for the Blub food chain. Registered in Java (not the bundled
+        // datapack) with an ExactChoice so ONLY the tagged blub_meat cooks here — a
+        // material-only datapack recipe on minecraft:mutton would let plain vanilla mutton
+        // produce Cooked Blub Meat and race the vanilla campfire recipe.
+        registerCampfire("blub_campfire",
                 item(Material.MUTTON, "blub_meat", "Blub Meat"),
                 item(Material.COOKED_MUTTON, "cooked_blub_meat", "Cooked Blub Meat"));
         if (enabled("siftite_nugget", "siftite.enabled")) {
@@ -330,40 +344,82 @@ public final class SiftiteContent implements Listener {
     /** Tagged Siftite materials must not be accepted by vanilla material-only recipes. */
     @EventHandler
     public void onPrepareCraft(PrepareItemCraftEvent event) {
-        if (isPluginRecipe(event.getRecipe())) {
+        org.bukkit.inventory.Recipe recipe = event.getRecipe();
+        if (isPluginRecipe(recipe)) {
             return;
         }
         // Recipes loaded from the bundled datapack are Keyed but not owned by this plugin,
-        // so isPluginRecipe() cannot whitelist them. Check the recipe's own ingredient choices:
-        // an ExactChoice naming a tagged item means the recipe was authored to accept it.
-        if (recipeIntendsTaggedItems(event.getRecipe(), idKey)) {
-            return;
+        // so isPluginRecipe() cannot whitelist them. Walk the matrix and only clear slots
+        // whose tagged item does NOT match one of the recipe's own ingredient choices —
+        // a single intended match must not open the whole recipe to every tagged item.
+        List<RecipeChoice> choices = recipeChoices(recipe);
+        ItemStack[] matrix = event.getInventory().getMatrix();
+        boolean changed = false;
+        for (int i = 0; i < matrix.length; i++) {
+            ItemStack ingredient = matrix[i];
+            if (!isSiftiteItem(ingredient)) continue;
+            if (choices.stream().anyMatch(choice -> choice != null && choice.test(ingredient))) continue;
+            matrix[i] = null;
+            changed = true;
         }
-        for (ItemStack ingredient : event.getInventory().getMatrix()) {
-            if (isSiftiteItem(ingredient)) {
-                event.getInventory().setResult(null);
-                return;
-            }
-        }
+        if (changed) event.getInventory().setMatrix(matrix);
     }
 
-    /** True when every exact-choice ingredient slot of a keyed recipe is already accounted for. */
-    static boolean recipeIntendsTaggedItems(org.bukkit.inventory.Recipe recipe, NamespacedKey idKey) {
-        if (!(recipe instanceof Keyed)) return false;
-        java.util.Collection<ItemStack> choices = new java.util.ArrayList<>();
+    /** Every RecipeChoice a keyed recipe declares, using the Paper 26.3 recipe APIs. */
+    static List<RecipeChoice> recipeChoices(org.bukkit.inventory.Recipe recipe) {
+        List<RecipeChoice> choices = new ArrayList<>();
         try {
-            if (recipe instanceof ShapedRecipe shaped) choices.addAll(shaped.getChoices());
-            else if (recipe instanceof ShapelessRecipe shapeless) choices.addAll(shapeless.getChoices());
-            else if (recipe instanceof FurnaceRecipe furnace && furnace.getIngredient() != null) {
-                choices.add(furnace.getIngredient());
+            if (recipe instanceof ShapedRecipe shaped) {
+                for (Map.Entry<Character, RecipeChoice> entry : shaped.getChoiceMap().entrySet()) {
+                    choices.add(entry.getValue());
+                }
+            } else if (recipe instanceof ShapelessRecipe shapeless) {
+                choices.addAll(shapeless.getChoiceList());
+            } else if (recipe instanceof CookingRecipe<?> cooking) {
+                // Covers FurnaceRecipe, CampfireRecipe, SmokingRecipe and BlastFurnaceRecipe:
+                // these expose their input through CookingRecipe#getInputChoice(), not a
+                // getIngredient() accessor (which does not exist on the Paper API).
+                RecipeChoice input = cooking.getInputChoice();
+                if (input != null) choices.add(input);
             }
         } catch (RuntimeException exception) {
+            return List.of();
+        }
+        return choices;
+    }
+
+    /** True when any ingredient choice of a keyed recipe explicitly names a siftite_-tagged item. */
+    static boolean recipeIntendsTaggedItems(org.bukkit.inventory.Recipe recipe, NamespacedKey idKey) {
+        if (!(recipe instanceof Keyed)) return false;
+        for (RecipeChoice choice : recipeChoices(recipe)) {
+            if (choice == null) continue;
+            // ExactChoice#getItemStack() is deprecated and PredicateChoice exposes no public
+            // display list, so probe the choice with representative stacks instead: a tagged
+            // siftite_ stack that satisfies the choice proves the recipe was authored for it.
+            if (choiceAcceptsTaggedItem(choice, idKey)) return true;
+        }
+        return false;
+    }
+
+    /** Checks an ExactChoice's own stacks, then probes Material choices with tagged stand-ins. */
+    private static boolean choiceAcceptsTaggedItem(RecipeChoice choice, NamespacedKey idKey) {
+        if (choice instanceof RecipeChoice.ExactChoice exact) {
+            for (ItemStack stack : exact.getChoices()) {
+                if (stack != null && stack.hasItemMeta()) {
+                    String id = stack.getItemMeta().getPersistentDataContainer().get(idKey, PersistentDataType.STRING);
+                    if (id != null && id.startsWith("siftite_")) return true;
+                }
+            }
             return false;
         }
-        for (ItemStack choice : choices) {
-            if (choice == null || !choice.hasItemMeta()) continue;
-            String id = choice.getItemMeta().getPersistentDataContainer().get(idKey, PersistentDataType.STRING);
-            if (id != null && id.startsWith("siftite_")) return true;
+        if (choice instanceof RecipeChoice.MaterialChoice material) {
+            for (Material candidate : material.getChoices()) {
+                ItemStack probe = new ItemStack(candidate);
+                ItemMeta meta = probe.getItemMeta();
+                meta.getPersistentDataContainer().set(idKey, PersistentDataType.STRING, "siftite_probe");
+                probe.setItemMeta(meta);
+                if (choice.test(probe)) return true;
+            }
         }
         return false;
     }
@@ -373,7 +429,7 @@ public final class SiftiteContent implements Listener {
         private final NamespacedKey idKey;
         SiftiteGuardProbe(NamespacedKey idKey) { this.idKey = idKey; }
         boolean recipeIntendsTaggedItems(org.bukkit.inventory.Recipe recipe) {
-            return recipeIntendsTaggedItems(recipe, idKey);
+            return SiftiteContent.recipeIntendsTaggedItems(recipe, idKey);
         }
     }
 
@@ -431,6 +487,17 @@ public final class SiftiteContent implements Listener {
         plugin.getServer().removeRecipe(recipeKey);
         FurnaceRecipe recipe = new FurnaceRecipe(recipeKey, output,
                 new RecipeChoice.ExactChoice(input), 0.35f, 10);
+        plugin.getServer().addRecipe(recipe);
+    }
+
+    /** Campfire twin of {@link #registerFurnish}: ExactChoice input so vanilla mutton cannot cook here. */
+    private void registerCampfire(String key, ItemStack input, ItemStack output) {
+        if (!plugin.getConfig().getBoolean("recipes.enabled", true)) return;
+        if (input == null || output == null) return;
+        NamespacedKey recipeKey = new NamespacedKey(plugin, key);
+        plugin.getServer().removeRecipe(recipeKey);
+        org.bukkit.inventory.CampfireRecipe recipe = new org.bukkit.inventory.CampfireRecipe(
+                recipeKey, output, new RecipeChoice.ExactChoice(input), 0.35f, 600);
         plugin.getServer().addRecipe(recipe);
     }
 

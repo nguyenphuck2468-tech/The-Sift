@@ -343,6 +343,10 @@ final class AncientCityPortal implements Listener {
         return onX != null ? onX : scanAxis(clicked, false);
     }
 
+    // Portal frames are anchored on Reinforced Deepslate only — the one block vanilla places
+    // as an Ancient Portal frame piece. The datapack's minecraft:ancient_city_variants tag is
+    // pack-facing (loot/advancement context) and deliberately NOT consulted here; widening
+    // this predicate to deepslate tiles/cobbled would match ordinary Ancient City flooring.
     private static boolean isFrame(Block block) {
         return block.getType() == Material.REINFORCED_DEEPSLATE;
     }

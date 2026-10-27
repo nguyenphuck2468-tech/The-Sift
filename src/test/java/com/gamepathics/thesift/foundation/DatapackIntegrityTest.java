@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DatapackIntegrityTest {
@@ -63,13 +64,23 @@ class DatapackIntegrityTest {
         Path tags = PROGRESSION.resolve("data/minecraft/tags/block");
         assertTrue(Files.exists(tags.resolve("soul_speed_blocks.json")),
                 "datapack must ship the soul_speed_blocks tag used by the mod-parity soul mechanic");
-        assertTrue(Files.exists(tags.resolve("ancient_city_variants.json")),
-                "datapack must ship the ancient_city_variants tag read by the portal frame scan");
+        // ancient_city_variants is datapack-facing only: it documents which deepslate variants
+        // count as Ancient-City-adjacent for pack-driven mechanics (loot/advancements). The
+        // Java portal scanner deliberately matches REINFORCED_DEEPSLATE directly and does NOT
+        // read this tag, so the test here only pins the tag's JSON shape.
+        Path ancientCityTag = tags.resolve("ancient_city_variants.json");
+        assertTrue(Files.exists(ancientCityTag),
+                "datapack must ship the ancient_city_variants block tag");
+        JsonObject ancientCityValues = JsonParser.parseString(Files.readString(ancientCityTag)).getAsJsonObject();
+        assertTrue(ancientCityValues.get("values").getAsJsonArray().toString().contains("deepslate"),
+                "ancient_city_variants must list deepslate variant entries");
         Path recipes = PROGRESSION.resolve("data/thesift/recipe");
         assertTrue(Files.exists(recipes.resolve("soul_block.json")),
                 "datapack must ship the Soul Block crafting recipe");
-        assertTrue(Files.exists(recipes.resolve("blub_campfire.json")),
-                "datapack must ship the Blub campfire-cooking recipe");
+        assertFalse(Files.exists(recipes.resolve("blub_campfire.json")),
+                "the Blub campfire recipe must NOT be a material-only datapack recipe: plain"
+                        + " vanilla mutton would cook into Cooked Blub Meat there; it is"
+                        + " registered in Java with an ExactChoice instead");
         for (Path root : Set.of(blockLoot, tags, recipes)) {
             try (Stream<Path> paths = Files.walk(root)) {
                 for (Path json : paths.filter(path -> path.toString().endsWith(".json")).toList()) {
