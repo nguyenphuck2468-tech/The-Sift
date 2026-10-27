@@ -70,7 +70,7 @@ final class SculkflowerManager implements Listener {
 
         Block block = event.getClickedBlock();
         int age = cropAge(block);
-        if (age < 0 || age >= 1) return;
+        if (age < 0) return;
         if (!grow(block, age + 1)) return;
 
         event.setCancelled(true);
@@ -105,7 +105,7 @@ final class SculkflowerManager implements Listener {
                 int y = ThreadLocalRandom.current().nextInt(sift.getMinHeight(), sift.getMaxHeight());
                 Block block = chunk.getBlock(x, y, z);
                 int age = cropAge(block);
-                if (age < 0 || age >= 1 || ThreadLocalRandom.current().nextInt(3) != 0) continue;
+                if (age < 0 || ThreadLocalRandom.current().nextInt(3) != 0) continue;
                 grow(block, age + 1);
             }
         }
