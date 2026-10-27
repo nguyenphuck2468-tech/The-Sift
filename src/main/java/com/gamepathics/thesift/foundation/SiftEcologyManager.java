@@ -3,6 +3,7 @@ package com.gamepathics.thesift.foundation;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Color;
+import org.bukkit.Difficulty;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -24,6 +25,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
@@ -1236,6 +1238,17 @@ public final class SiftEcologyManager implements Listener {
             var pdc = entity.getPersistentDataContainer();
             if (!"dark_sniffer".equals(pdc.get(creatureKey, PersistentDataType.STRING))) continue;
 
+            // The reference mob does not enter combat in Peaceful difficulty.
+            // Cancel any persisted pursuit/wind-up as soon as the world switches to Peaceful.
+            if (sift.getDifficulty() == Difficulty.PEACEFUL) {
+                clearDarkSnifferWave(pdc);
+                pdc.remove(darkSnifferCombatTargetKey);
+                pdc.remove(darkSnifferNoMeleeTicksKey);
+                sniffer.setTarget(null);
+                sniffer.getPathfinder().stopPathfinding();
+                continue;
+            }
+
             String targetId = pdc.get(darkSnifferSonicTargetKey, PersistentDataType.STRING);
             Long windupAt = pdc.get(darkSnifferSonicWindupKey, PersistentDataType.LONG);
             Long waveStart = pdc.get(darkSnifferWaveStartKey, PersistentDataType.LONG);
@@ -1480,6 +1493,22 @@ public final class SiftEcologyManager implements Listener {
             entity.remove();
             sift.playSound(loc, Sound.ENTITY_SNIFFER_DIGGING, 0.8f, 0.6f);
             sift.spawnParticle(Particle.LARGE_SMOKE, loc.clone().add(0, 1, 0), 20, 0.5, 0.6, 0.5, 0.05);
+        }
+    }
+
+    /**
+     * Reference-mod parity: Wardens never treat Dark Sniffers as valid targets.
+     * EntityTargetLivingEntityEvent covers normal AI target selection and retaliation;
+     * the Dark Sniffer is identified by our content tag rather than its vanilla entity type.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onWardenTargetDarkSniffer(EntityTargetLivingEntityEvent event) {
+        if (!(event.getEntity() instanceof org.bukkit.entity.Warden)) return;
+        LivingEntity target = event.getTarget();
+        if (target == null) return;
+        if ("dark_sniffer".equals(target.getPersistentDataContainer()
+                .get(creatureKey, PersistentDataType.STRING))) {
+            event.setCancelled(true);
         }
     }
 
