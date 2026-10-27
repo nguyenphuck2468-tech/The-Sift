@@ -64,6 +64,11 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey snifferCorruptionStartKey;
     private final NamespacedKey darkSnifferSonicAtKey;
     private final NamespacedKey darkSnifferSonicTargetKey;
+    private final NamespacedKey darkSnifferCombatTargetKey;
+    private final NamespacedKey darkSnifferTargetRefreshKey;
+    private final NamespacedKey darkSnifferPathRefreshKey;
+    private final NamespacedKey darkSnifferAttackAtKey;
+    private final NamespacedKey darkSnifferNoMeleeTicksKey;
     private final NamespacedKey darkSnifferSonicWindupKey;
     private final NamespacedKey darkSnifferWaveStartKey;
     private final NamespacedKey darkSnifferWaveOriginXKey;
@@ -110,6 +115,11 @@ public final class SiftEcologyManager implements Listener {
         this.snifferCorruptionStartKey = new NamespacedKey(plugin, "sniffer_corruption_start");
         this.darkSnifferSonicAtKey = new NamespacedKey(plugin, "dark_sniffer_sonic_at");
         this.darkSnifferSonicTargetKey = new NamespacedKey(plugin, "dark_sniffer_sonic_target");
+        this.darkSnifferCombatTargetKey = new NamespacedKey(plugin, "dark_sniffer_combat_target");
+        this.darkSnifferTargetRefreshKey = new NamespacedKey(plugin, "dark_sniffer_target_refresh");
+        this.darkSnifferPathRefreshKey = new NamespacedKey(plugin, "dark_sniffer_path_refresh");
+        this.darkSnifferAttackAtKey = new NamespacedKey(plugin, "dark_sniffer_attack_at");
+        this.darkSnifferNoMeleeTicksKey = new NamespacedKey(plugin, "dark_sniffer_no_melee_ticks");
         this.darkSnifferSonicWindupKey = new NamespacedKey(plugin, "dark_sniffer_sonic_windup");
         this.darkSnifferWaveStartKey = new NamespacedKey(plugin, "dark_sniffer_wave_start");
         this.darkSnifferWaveOriginXKey = new NamespacedKey(plugin, "dark_sniffer_wave_origin_x");
@@ -1309,27 +1319,100 @@ public final class SiftEcologyManager implements Listener {
                 continue;
             }
 
-            Long lastSonicAt = pdc.get(darkSnifferSonicAtKey, PersistentDataType.LONG);
-            if (lastSonicAt != null && now - lastSonicAt < 5_000L) continue;
-            Player target = null;
-            double nearestDistanceSquared = 32.0 * 32.0;
-            for (Entity nearby : sift.getNearbyEntities(entity.getLocation(), 32, 10, 32)) {
-                if (!(nearby instanceof Player player) || !player.isValid() || player.isDead()
-                        || player.getGameMode() == org.bukkit.GameMode.CREATIVE
-                        || player.getGameMode() == org.bukkit.GameMode.SPECTATOR) continue;
-                double distanceSquared = entity.getLocation().distanceSquared(player.getLocation());
-                if (distanceSquared < 25.0 || distanceSquared > nearestDistanceSquared) continue;
-                if (!sniffer.hasLineOfSight(player)) continue;
-                nearestDistanceSquared = distanceSquared;
-                target = player;
+            // Refresh the combat target periodically. Dark Sniffers hunt survival/adventure
+            // players and ordinary Sniffers, but never other Dark Sniffers.
+            String combatTargetId = pdc.get(darkSnifferCombatTargetKey, PersistentDataType.STRING);
+            Long refreshAt = pdc.get(darkSnifferTargetRefreshKey, PersistentDataType.LONG);
+            LivingEntity combatTarget = null;
+            if (combatTargetId != null) {
+                try {
+                    Entity found = Bukkit.getEntity(UUID.fromString(combatTargetId));
+                    if (found instanceof LivingEntity living && living.isValid() && !living.isDead()
+                            && living.getWorld().equals(sift) && entity.getLocation().distanceSquared(living.getLocation()) <= 32.0 * 32.0
+                            && isDarkSnifferCombatTarget(living, entity)) {
+                        combatTarget = living;
+                    }
+                } catch (IllegalArgumentException ignored) {
+                    // Invalid persisted UUID: clear it and acquire a fresh target below.
+                }
             }
-            if (target == null) continue;
-            pdc.set(darkSnifferSonicTargetKey, PersistentDataType.STRING, target.getUniqueId().toString());
-            pdc.set(darkSnifferSonicWindupKey, PersistentDataType.LONG, now);
-            pdc.remove(darkSnifferWaveStartKey);
-            sniffer.lookAt(target);
-            sift.playSound(entity.getLocation(), Sound.ENTITY_SNIFFER_SNIFFING, 1.0f, 0.7f);
+            if (combatTarget == null || refreshAt == null || now >= refreshAt) {
+                LivingEntity nearest = null;
+                double nearestDistanceSquared = 32.0 * 32.0;
+                for (Entity nearby : sift.getNearbyEntities(entity.getLocation(), 32, 12, 32)) {
+                    if (!(nearby instanceof LivingEntity living) || living == entity || living.isDead()
+                            || !isDarkSnifferCombatTarget(living, entity)) continue;
+                    double distanceSquared = entity.getLocation().distanceSquared(living.getLocation());
+                    if (distanceSquared < nearestDistanceSquared) {
+                        nearestDistanceSquared = distanceSquared;
+                        nearest = living;
+                    }
+                }
+                combatTarget = nearest;
+                pdc.set(darkSnifferTargetRefreshKey, PersistentDataType.LONG, now + 500L);
+                if (combatTarget == null) {
+                    pdc.remove(darkSnifferCombatTargetKey);
+                    pdc.remove(darkSnifferNoMeleeTicksKey);
+                    sniffer.setTarget(null);
+                    continue;
+                }
+                pdc.set(darkSnifferCombatTargetKey, PersistentDataType.STRING, combatTarget.getUniqueId().toString());
+            }
+            sniffer.setTarget(combatTarget);
+            sniffer.lookAt(combatTarget);
+
+            double targetDistanceSquared = entity.getLocation().distanceSquared(combatTarget.getLocation());
+            int noMeleeTicks = pdc.getOrDefault(darkSnifferNoMeleeTicksKey, PersistentDataType.INTEGER, 0);
+            if (targetDistanceSquared > 3.15 * 3.15) {
+                noMeleeTicks = Math.min(8, noMeleeTicks + 1);
+                pdc.set(darkSnifferNoMeleeTicksKey, PersistentDataType.INTEGER, noMeleeTicks);
+                Long pathAt = pdc.get(darkSnifferPathRefreshKey, PersistentDataType.LONG);
+                if (pathAt == null || now >= pathAt) {
+                    sniffer.getPathfinder().moveTo(combatTarget, 1.2);
+                    pdc.set(darkSnifferPathRefreshKey, PersistentDataType.LONG, now + 300L);
+                }
+            } else {
+                pdc.set(darkSnifferNoMeleeTicksKey, PersistentDataType.INTEGER, 0);
+                sniffer.getPathfinder().stopPathfinding();
+                Long attackAt = pdc.get(darkSnifferAttackAtKey, PersistentDataType.LONG);
+                if (attackAt == null || now - attackAt >= 1_200L) {
+                    combatTarget.damage(7.0, sniffer);
+                    Vector knockback = combatTarget.getLocation().toVector()
+                            .subtract(entity.getLocation().toVector());
+                    knockback.setY(0);
+                    if (knockback.lengthSquared() > 0.0001) {
+                        knockback.normalize().multiply(0.75);
+                        knockback.setY(0.25);
+                        combatTarget.setVelocity(combatTarget.getVelocity().add(knockback));
+                    }
+                    pdc.set(darkSnifferAttackAtKey, PersistentDataType.LONG, now);
+                    sniffer.getWorld().playSound(sniffer.getLocation(), Sound.ENTITY_SNIFFER_HURT, 0.8f, 0.75f);
+                }
+            }
+
+            // Sonic Sniff is a ranged attack used only after the Dark Sniffer has failed
+            // to reach melee range for eight ticks, matching the reference mob's combat loop.
+            Long lastSonicAt = pdc.get(darkSnifferSonicAtKey, PersistentDataType.LONG);
+            boolean sonicReady = lastSonicAt == null || now - lastSonicAt >= 5_000L;
+            if (combatTarget instanceof Player player && targetDistanceSquared >= 25.0
+                    && noMeleeTicks >= 8 && sonicReady && sniffer.hasLineOfSight(player)) {
+                pdc.set(darkSnifferSonicTargetKey, PersistentDataType.STRING, player.getUniqueId().toString());
+                pdc.set(darkSnifferSonicWindupKey, PersistentDataType.LONG, now);
+                pdc.remove(darkSnifferWaveStartKey);
+                sniffer.getPathfinder().stopPathfinding();
+                sift.playSound(entity.getLocation(), Sound.ENTITY_SNIFFER_SNIFFING, 1.0f, 0.7f);
+            }
         }
+    }
+
+    private boolean isDarkSnifferCombatTarget(LivingEntity target, Entity darkSniffer) {
+        if (target instanceof Player player) {
+            return player.isOnline() && player.getGameMode() != org.bukkit.GameMode.CREATIVE
+                    && player.getGameMode() != org.bukkit.GameMode.SPECTATOR;
+        }
+        return target.getType() == EntityType.SNIFFER && target != darkSniffer
+                && !"dark_sniffer".equals(target.getPersistentDataContainer()
+                .get(creatureKey, PersistentDataType.STRING));
     }
 
     private static double distanceSquaredToSegment(Vector point, Vector start, Vector end) {
