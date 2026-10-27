@@ -1252,6 +1252,16 @@ public final class SiftEcologyManager implements Listener {
             var pdc = entity.getPersistentDataContainer();
             if (!"dark_sniffer".equals(pdc.get(creatureKey, PersistentDataType.STRING))) continue;
 
+            // Petting temporarily suppresses combat and digging behavior for this stand-in.
+            if (pdc.has(darkSnifferPettingWardenKey, PersistentDataType.STRING)) {
+                clearDarkSnifferWave(pdc);
+                pdc.remove(darkSnifferCombatTargetKey);
+                pdc.remove(darkSnifferNoMeleeTicksKey);
+                sniffer.setTarget(null);
+                sniffer.getPathfinder().stopPathfinding();
+                continue;
+            }
+
             // The reference mob does not enter combat in Peaceful difficulty.
             // Cancel any persisted pursuit/wind-up as soon as the world switches to Peaceful.
             if (sift.getDifficulty() == Difficulty.PEACEFUL) {
