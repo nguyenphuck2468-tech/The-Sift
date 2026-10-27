@@ -36,9 +36,10 @@ final class DarkSnifferDiggingGiftListener implements Listener {
         Entity entity = event.getRightClicked();
         if (!(entity instanceof Sniffer) || !"dark_sniffer".equals(
                 entity.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING))) return;
-        if (event.getPlayer().getInventory().getItem(event.getHand()).getType() == Material.TORCHFLOWER_SEEDS) {
-            event.setCancelled(true);
-        }
+        ItemStack held = event.getHand() == org.bukkit.inventory.EquipmentSlot.HAND
+                ? event.getPlayer().getInventory().getItemInMainHand()
+                : event.getPlayer().getInventory().getItemInOffHand();
+        if (held.getType() == Material.TORCHFLOWER_SEEDS) event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
