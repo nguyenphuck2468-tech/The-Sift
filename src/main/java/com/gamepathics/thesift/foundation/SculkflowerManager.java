@@ -15,6 +15,8 @@ import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.RecipeChoice;
+import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -40,6 +42,17 @@ final class SculkflowerManager implements Listener {
         this.content = content;
         this.contentKey = new NamespacedKey(plugin, "content");
         Bukkit.getScheduler().runTaskTimer(plugin, this::tickGrowth, 40L, GROWTH_INTERVAL_TICKS);
+    }
+
+    /** Register the reference Sculkflower -> Light Blue Dye recipe with provider-backed item matching. */
+    void registerRecipes() {
+        NamespacedKey key = new NamespacedKey(plugin, "light_blue_dye_from_sculkflower");
+        plugin.getServer().removeRecipe(key);
+        ItemStack input = flower();
+        if (input == null) return;
+        ShapelessRecipe recipe = new ShapelessRecipe(key, new ItemStack(Material.LIGHT_BLUE_DYE));
+        recipe.addIngredient(RecipeChoice.exactChoice(input));
+        plugin.getServer().addRecipe(recipe);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
