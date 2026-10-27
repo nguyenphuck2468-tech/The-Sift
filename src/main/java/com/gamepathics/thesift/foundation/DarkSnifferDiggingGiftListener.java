@@ -55,9 +55,10 @@ final class DarkSnifferDiggingGiftListener implements Listener {
             if (providerItem != null) return providerItem;
         }
 
-        // Development fallback: keep the gameplay functional before a provider definition
-        // for sculkflower_seeds exists. Strict provider mode still reports the missing ID,
-        // while the bundled pack supplies the client-side model.
+        // Strict production mode must never silently substitute a vanilla item for missing provider content.
+        if (plugin.getConfig().getBoolean("providers.strict", true)) return null;
+
+        // Development-only fallback while testing without a content provider.
         ItemStack fallback = new ItemStack(Material.TORCHFLOWER_SEEDS);
         ItemMeta meta = fallback.getItemMeta();
         meta.setDisplayName("§5Sculkflower Seeds");
