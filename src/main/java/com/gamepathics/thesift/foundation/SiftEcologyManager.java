@@ -64,6 +64,7 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey blubOwnerKey;
     private final NamespacedKey spearThrowAtKey;
     private final NamespacedKey snifferCorruptionStartKey;
+    private final NamespacedKey snifferFleePathAtKey;
     private final NamespacedKey darkSnifferSonicAtKey;
     private final NamespacedKey darkSnifferSonicTargetKey;
     private final NamespacedKey darkSnifferCombatTargetKey;
@@ -121,6 +122,7 @@ public final class SiftEcologyManager implements Listener {
         this.blubOwnerKey = new NamespacedKey(plugin, "blub_owner");
         this.spearThrowAtKey = new NamespacedKey(plugin, "spear_last_throw");
         this.snifferCorruptionStartKey = new NamespacedKey(plugin, "sniffer_corruption_start");
+        this.snifferFleePathAtKey = new NamespacedKey(plugin, "sniffer_flee_path_at");
         this.darkSnifferSonicAtKey = new NamespacedKey(plugin, "dark_sniffer_sonic_at");
         this.darkSnifferSonicTargetKey = new NamespacedKey(plugin, "dark_sniffer_sonic_target");
         this.darkSnifferCombatTargetKey = new NamespacedKey(plugin, "dark_sniffer_combat_target");
@@ -1248,9 +1250,39 @@ public final class SiftEcologyManager implements Listener {
         if (sift == null) return;
         long now = System.currentTimeMillis();
         for (Entity entity : sift.getEntities()) {
-            if (!(entity instanceof Mob sniffer) || entity.getType() != EntityType.SNIFFER) continue;
+            if (entity.getType() != EntityType.SNIFFER || !(entity instanceof Mob sniffer)) continue;
             var pdc = entity.getPersistentDataContainer();
-            if (!"dark_sniffer".equals(pdc.get(creatureKey, PersistentDataType.STRING))) continue;
+            if (!"dark_sniffer".equals(pdc.get(creatureKey, PersistentDataType.STRING))) {
+                // Reference behavior: ordinary Sniffers flee from a Dark Sniffer within 20 blocks.
+                // Refresh the destination at most every 750 ms to avoid restarting pathfinding each tick.
+                Entity threat = null;
+                double nearestThreatDistance = 20.0 * 20.0;
+                for (Entity nearby : entity.getNearbyEntities(20, 20, 20)) {
+                    if (nearby.getType() != EntityType.SNIFFER
+                            || !"dark_sniffer".equals(nearby.getPersistentDataContainer()
+                            .get(creatureKey, PersistentDataType.STRING))) continue;
+                    double distance = entity.getLocation().distanceSquared(nearby.getLocation());
+                    if (distance < nearestThreatDistance) {
+                        nearestThreatDistance = distance;
+                        threat = nearby;
+                    }
+                }
+                if (threat != null) {
+                    Long lastFleePath = pdc.get(snifferFleePathAtKey, PersistentDataType.LONG);
+                    if (lastFleePath == null || now - lastFleePath >= 750L || sniffer.getPathfinder().hasPath() == false) {
+                        Vector away = entity.getLocation().toVector().subtract(threat.getLocation().toVector());
+                        away.setY(0);
+                        if (away.lengthSquared() < 0.0001) away = new Vector(1, 0, 0);
+                        Location destination = entity.getLocation().clone().add(away.normalize().multiply(12));
+                        if (sniffer.getPathfinder().moveTo(destination, 1.25)) {
+                            pdc.set(snifferFleePathAtKey, PersistentDataType.LONG, now);
+                        }
+                    }
+                } else if (pdc.has(snifferFleePathAtKey, PersistentDataType.LONG)) {
+                    pdc.remove(snifferFleePathAtKey);
+                }
+                continue;
+            }
 
             // Petting temporarily suppresses combat. Clear orphaned ownership if the
             // Warden unloaded, died, or abandoned this target before cleanup could run.
