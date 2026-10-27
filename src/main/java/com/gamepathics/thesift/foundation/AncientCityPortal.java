@@ -287,25 +287,28 @@ final class AncientCityPortal implements Listener {
         int oy = origin.getBlockY();
         int oz = origin.getBlockZ();
         // Pass 1: cheap snapshot sweep to collect distinct Reinforced Deepslate anchors.
+        // Chunk#getBlockSnapshot()/ChunkSnapshot#getMinY() do not exist on the Paper API; the
+        // supported call is Chunk#getChunkSnapshot(). Its getBlockType(x, y, z) takes a WORLD
+        // height (it offsets by the section minimum internally), so we pass world Y directly —
+        // iterating raw section indices would only ever cover a 16-layer sliver of the range.
         Set<Long> anchors = new HashSet<>();
         int minY = Math.max(world.getMinHeight(), oy - radius);
         int maxY = Math.min(world.getMaxHeight() - 1, oy + radius);
         for (int cx = (ox - radius) >> 4; cx <= (ox + radius) >> 4; cx++) {
             for (int cz = (oz - radius) >> 4; cz <= (oz + radius) >> 4; cz++) {
                 if (!world.isChunkLoaded(cx, cz)) continue;
-                org.bukkit.ChunkSnapshot snapshot = world.getChunkAt(cx, cz).getBlockSnapshot();
+                org.bukkit.ChunkSnapshot snapshot = world.getChunkAt(cx, cz).getChunkSnapshot();
                 int baseX = cx << 4, baseZ = cz << 4;
                 for (int lx = 0; lx < 16; lx++) {
                     for (int lz = 0; lz < 16; lz++) {
                         int dx = baseX + lx - ox, dz = baseZ + lz - oz;
                         double planar = (double) dx * dx + (double) dz * dz;
                         if (planar > limit) continue;
-                        int maxLy = Math.min(15, maxY - snapshot.getMinY());
-                        for (int ly = Math.max(0, minY - snapshot.getMinY()); ly <= maxLy; ly++) {
-                            int dy = snapshot.getMinY() + ly - oy;
+                        for (int y = minY; y <= maxY; y++) {
+                            int dy = y - oy;
                             if (planar + (double) dy * dy > limit) continue;
-                            if (snapshot.getBlockType(lx, ly, lz) != Material.REINFORCED_DEEPSLATE) continue;
-                            anchors.add(packCoords(baseX + lx, snapshot.getMinY() + ly, baseZ + lz));
+                            if (snapshot.getBlockType(lx, y, lz) != Material.REINFORCED_DEEPSLATE) continue;
+                            anchors.add(packCoords(baseX + lx, y - minY, baseZ + lz));
                         }
                     }
                 }
@@ -316,7 +319,9 @@ final class AncientCityPortal implements Listener {
         double bestDistance = Double.MAX_VALUE;
         Set<String> seen = new HashSet<>();
         for (long packed : anchors) {
-            int x = unpackX(packed), y = unpackY(packed), z = unpackZ(packed);
+            int x = org.bukkit.util.BlockUtil.decodeX(packed);
+            int y = org.bukkit.util.BlockUtil.decodeY(packed);
+            int z = org.bukkit.util.BlockUtil.decodeZ(packed);
             Block block = world.getBlockAt(x, y, z);
             if (block.getType() != Material.REINFORCED_DEEPSLATE) continue; // stale snapshot guard
             Frame candidate = scan(block);
@@ -332,16 +337,6 @@ final class AncientCityPortal implements Listener {
         }
         return best;
     }
-
-    private static long packCoords(int x, int y, int z) {
-        return ((long) x << 36) ^ ((long) y << 20) ^ (long) z & 0xFFFFFL;
-    }
-
-    private static int unpackX(long packed) { return (int) (packed >> 36); }
-
-    private static int unpackY(long packed) { return (int) (packed << 28 >> 48); }
-
-    private static int unpackZ(long packed) { return (int) (packed << 44 >> 44); }
 
     Frame scan(Block clicked) {
         Frame onX = scanAxis(clicked, true);

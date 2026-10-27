@@ -72,7 +72,11 @@ public final class DatapackManagerBridge {
         // itself is currently ENABLED - that is the real hazard. Enabling stays always-safe.
         if (!enabled && isDimensionPackName(name)) {
             var guardManager = plugin.getServer().getDatapackManager();
-            boolean dimensionActive = findPack(guardManager.getPacks(), "sift_dimension_datapack") != null;
+            // The hazard only exists when the dimension pack is actually ENABLED right now.
+            // Checking mere discovery (findPack != null) refused to disable the pack even when
+            // it was already switched off, making the toggle unusable.
+            Datapack dimensionPack = findPack(guardManager.getPacks(), "sift_dimension_datapack");
+            boolean dimensionActive = dimensionPack != null && dimensionPack.isEnabled();
             if (dimensionActive) {
                 plugin.getLogger().warning("Refusing to disable the dimension datapack ('" + name
                         + "') at runtime because it is currently enabled and The Sift world may"
