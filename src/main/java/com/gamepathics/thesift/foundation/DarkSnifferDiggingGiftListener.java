@@ -9,6 +9,7 @@ import org.bukkit.entity.Sniffer;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityBreedEvent;
 import org.bukkit.event.entity.EntityDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.ItemStack;
@@ -30,12 +31,17 @@ final class DarkSnifferDiggingGiftListener implements Listener {
         this.creatureKey = new NamespacedKey(plugin, "sift_creature");
     }
 
+    /** Dark Sniffers cannot produce offspring, even if love mode was applied before conversion. */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onBreedDarkSniffer(EntityBreedEvent event) {
+        if (isDarkSniffer(event.getMother()) || isDarkSniffer(event.getFather())) event.setCancelled(true);
+    }
+
     /** Dark Sniffers are not food-driven/breedable in the reference mod. */
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onFeedDarkSniffer(PlayerInteractEntityEvent event) {
         Entity entity = event.getRightClicked();
-        if (!(entity instanceof Sniffer) || !"dark_sniffer".equals(
-                entity.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING))) return;
+        if (!isDarkSniffer(entity)) return;
         ItemStack held = event.getHand() == org.bukkit.inventory.EquipmentSlot.HAND
                 ? event.getPlayer().getInventory().getItemInMainHand()
                 : event.getPlayer().getInventory().getItemInOffHand();
@@ -64,6 +70,11 @@ final class DarkSnifferDiggingGiftListener implements Listener {
         Location location = event.getItemDrop().getLocation().clone();
         Item dropped = location.getWorld().dropItem(location, gift);
         dropped.setPickupDelay(10);
+    }
+
+    private boolean isDarkSniffer(Entity entity) {
+        return entity instanceof Sniffer && "dark_sniffer".equals(
+                entity.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING));
     }
 
     private ItemStack createGift() {
