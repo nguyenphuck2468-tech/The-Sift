@@ -59,4 +59,29 @@ class SiftiteRecipeTest {
         plugin.getConfig().set("integrations.items.provider", "missing-provider");
         assertNull(content.item(Material.AMETHYST_SHARD, "charoite", "Charoite"));
     }
+
+    @Test
+    void datapackStyleExactChoiceRecipePassesTheCraftGuard() {
+        // Simulates a recipe loaded from the bundled progression datapack: it is Keyed but
+        // NOT owned by this plugin's namespace, and its ingredient ExactChoice carries the
+        // tagged siftite_ingot. Without the intent check in onPrepareCraft, the guard would
+        // blank out this recipe's result because the matrix contains a siftite_-tagged item.
+        NamespacedKey foreignKey = new NamespacedKey("thesift_datapack_sim", "siftite_ingot_from_nuggets");
+        ItemStack output = content.item(Material.IRON_INGOT, "sim_output", "Simulated Output");
+        ShapelessRecipe foreignRecipe = new ShapelessRecipe(foreignKey, output);
+        foreignRecipe.addIngredient(new RecipeChoice.ExactChoice(
+                content.item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot")));
+        server.addRecipe(foreignRecipe);
+
+        SiftiteContent.SiftiteGuardProbe probe =
+                new SiftiteContent.SiftiteGuardProbe(new NamespacedKey(plugin, "content"));
+        assertTrue(probe.recipeIntendsTaggedItems(foreignRecipe),
+                "datapack recipes whose exact-choice ingredients carry our tags must be whitelisted");
+        // A plain vanilla material-only recipe must still be guarded.
+        ShapelessRecipe vanillaClone = new ShapelessRecipe(
+                new NamespacedKey("other_plugin", "plain"), output);
+        vanillaClone.addIngredient(Material.NETHERITE_INGOT);
+        assertFalse(probe.recipeIntendsTaggedItems(vanillaClone),
+                "material-only recipes stay guarded so tagged items cannot leak into vanilla crafts");
+    }
 }

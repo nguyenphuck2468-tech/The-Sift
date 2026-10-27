@@ -333,11 +333,47 @@ public final class SiftiteContent implements Listener {
         if (isPluginRecipe(event.getRecipe())) {
             return;
         }
+        // Recipes loaded from the bundled datapack are Keyed but not owned by this plugin,
+        // so isPluginRecipe() cannot whitelist them. Check the recipe's own ingredient choices:
+        // an ExactChoice naming a tagged item means the recipe was authored to accept it.
+        if (recipeIntendsTaggedItems(event.getRecipe(), idKey)) {
+            return;
+        }
         for (ItemStack ingredient : event.getInventory().getMatrix()) {
             if (isSiftiteItem(ingredient)) {
                 event.getInventory().setResult(null);
                 return;
             }
+        }
+    }
+
+    /** True when every exact-choice ingredient slot of a keyed recipe is already accounted for. */
+    static boolean recipeIntendsTaggedItems(org.bukkit.inventory.Recipe recipe, NamespacedKey idKey) {
+        if (!(recipe instanceof Keyed)) return false;
+        java.util.Collection<ItemStack> choices = new java.util.ArrayList<>();
+        try {
+            if (recipe instanceof ShapedRecipe shaped) choices.addAll(shaped.getChoices());
+            else if (recipe instanceof ShapelessRecipe shapeless) choices.addAll(shapeless.getChoices());
+            else if (recipe instanceof FurnaceRecipe furnace && furnace.getIngredient() != null) {
+                choices.add(furnace.getIngredient());
+            }
+        } catch (RuntimeException exception) {
+            return false;
+        }
+        for (ItemStack choice : choices) {
+            if (choice == null || !choice.hasItemMeta()) continue;
+            String id = choice.getItemMeta().getPersistentDataContainer().get(idKey, PersistentDataType.STRING);
+            if (id != null && id.startsWith("siftite_")) return true;
+        }
+        return false;
+    }
+
+    /** Test seam: exposes the datapack-recipe whitelist check without a live plugin instance. */
+    static final class SiftiteGuardProbe {
+        private final NamespacedKey idKey;
+        SiftiteGuardProbe(NamespacedKey idKey) { this.idKey = idKey; }
+        boolean recipeIntendsTaggedItems(org.bukkit.inventory.Recipe recipe) {
+            return recipeIntendsTaggedItems(recipe, idKey);
         }
     }
 

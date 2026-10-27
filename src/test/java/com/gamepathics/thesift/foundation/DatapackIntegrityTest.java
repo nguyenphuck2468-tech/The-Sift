@@ -54,6 +54,40 @@ class DatapackIntegrityTest {
     }
 
     @Test
+    void progressionPackShipsBlockLootTablesTagsAndRecipes() throws IOException {
+        Path blockLoot = PROGRESSION.resolve("data/thesift/loot_table/block");
+        assertTrue(Files.exists(blockLoot.resolve("soul_block.json")),
+                "datapack must bundle the Soul Block loot table (tagged drop)");
+        assertTrue(Files.exists(blockLoot.resolve("sonorous_deepslate.json")),
+                "datapack must bundle the Sonorous Deepslate loot table (tagged drop)");
+        Path tags = PROGRESSION.resolve("data/minecraft/tags/block");
+        assertTrue(Files.exists(tags.resolve("soul_speed_blocks.json")),
+                "datapack must ship the soul_speed_blocks tag used by the mod-parity soul mechanic");
+        assertTrue(Files.exists(tags.resolve("ancient_city_variants.json")),
+                "datapack must ship the ancient_city_variants tag read by the portal frame scan");
+        Path recipes = PROGRESSION.resolve("data/thesift/recipe");
+        assertTrue(Files.exists(recipes.resolve("soul_block.json")),
+                "datapack must ship the Soul Block crafting recipe");
+        assertTrue(Files.exists(recipes.resolve("blub_campfire.json")),
+                "datapack must ship the Blub campfire-cooking recipe");
+        for (Path root : Set.of(blockLoot, tags, recipes)) {
+            try (Stream<Path> paths = Files.walk(root)) {
+                for (Path json : paths.filter(path -> path.toString().endsWith(".json")).toList()) {
+                    JsonObject parsed = JsonParser.parseString(Files.readString(json)).getAsJsonObject();
+                    if (root.equals(recipes)) {
+                        assertTrue(parsed.has("type"), "recipe must declare its type: " + json);
+                    } else if (root.equals(tags)) {
+                        assertTrue(parsed.has("values"), "tag must declare values: " + json);
+                    } else {
+                        assertEquals("minecraft:block", parsed.get("type").getAsString(),
+                                "block loot tables must be typed minecraft:block: " + json);
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     void biomeIdsHaveOneOwnerAndProgressionKeepsAdvancements() throws IOException {
         Set<String> progressionBiomes = biomeIds(PROGRESSION);
         Set<String> dimensionBiomes = biomeIds(DIMENSION);

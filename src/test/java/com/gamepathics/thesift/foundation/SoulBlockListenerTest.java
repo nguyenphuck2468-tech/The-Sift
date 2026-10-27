@@ -83,6 +83,27 @@ class SoulBlockListenerTest {
                 player, true, EquipmentSlot.HAND);
     }
 
+    @Test
+    void soulBlockLootTableCarriesTheContentTagUsedByTheBreakHandler() throws Exception {
+        // The bundled block loot table must produce exactly the PDC shape that
+        // SiftiteContent.isSiftiteItem / SoulBlockListener read (key thesift:content).
+        java.nio.file.Path loot = java.nio.file.Path.of(
+                "src/main/resources/datapack/data/thesift/loot_table/block/soul_block.json");
+        com.google.gson.JsonObject table = com.google.gson.JsonParser
+                .parseString(java.nio.file.Files.readString(loot)).getAsJsonObject();
+        String entryName = table.getAsJsonArray("pools").get(0).getAsJsonObject()
+                .getAsJsonArray("entries").get(0).getAsJsonObject().get("name").getAsString();
+        assertEquals("minecraft:soul_sand", entryName,
+                "Soul Block stands in for SOUL_SAND; the loot entry must match");
+        String tag = table.getAsJsonArray("pools").get(0).getAsJsonObject()
+                .getAsJsonArray("entries").get(0).getAsJsonObject()
+                .getAsJsonArray("functions").get(0).getAsJsonObject()
+                .getAsJsonObject("components").getAsJsonObject("minecraft:custom_data")
+                .get("thesift:content").getAsString();
+        assertEquals("soul_block", tag,
+                "loot drop must carry the same content id the Java listener expects");
+    }
+
     private static final class FixtureItemProvider implements SiftItemProvider {
         @Override public String getProviderId() { return "fixture-items"; }
         @Override public ItemStack createItem(String contentId) {

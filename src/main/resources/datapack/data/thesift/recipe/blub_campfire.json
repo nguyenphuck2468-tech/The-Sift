@@ -1,0 +1,15 @@
+{
+  "type": "minecraft:campfire_cooking",
+  "category": "food",
+  "ingredient": "minecraft:mutton",
+  "result": {
+    "count": 1,
+    "id": "minecraft:cooked_mutton",
+    "components": {
+      "minecraft:custom_data": {"thesift:content": "cooked_blub_meat"},
+      "minecraft:custom_name": {"text": "Cooked Blub Meat", "color": "gold", "italic": false}
+    }
+  },
+  "experience": 0.35,
+  "cookingtime": 600
+}
