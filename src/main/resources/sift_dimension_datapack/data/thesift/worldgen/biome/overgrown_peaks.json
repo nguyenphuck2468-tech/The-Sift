@@ -47,7 +47,9 @@
       "thesift:siftslate_coal_ore",
       "thesift:siftslate_coal_ore_surface",
       "thesift:siftslate_diamond_ore",
-      "thesift:siftslate_emerald_ore"
+      "thesift:siftslate_emerald_ore",
+      "thesift:siftslate_charoite_ore",
+      "thesift:siftslate_siftite_ore"
     ],
     [],
     [],

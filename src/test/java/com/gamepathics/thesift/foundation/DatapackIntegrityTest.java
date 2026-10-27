@@ -97,7 +97,8 @@ class DatapackIntegrityTest {
         Map<String, Path> placedFeatures = resources(DIMENSION.resolve("data"), "worldgen/placed_feature");
         Set<String> required = Set.of(
                 "thesift:siftslate_coal_ore", "thesift:siftslate_coal_ore_surface",
-                "thesift:siftslate_diamond_ore", "thesift:siftslate_emerald_ore");
+                "thesift:siftslate_diamond_ore", "thesift:siftslate_emerald_ore",
+                "thesift:siftslate_charoite_ore", "thesift:siftslate_siftite_ore");
         int oreBiomes = 0;
         for (Path biome : jsonFiles(DIMENSION.resolve("data"))) {
             String normalized = biome.toString().replace('\\', '/');

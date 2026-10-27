@@ -560,6 +560,9 @@ public final class SiftEcologyManager implements Listener {
     }
 
     private void generateCharoiteOre(Chunk chunk, Random random) {
+        // Data-driven replacement: the dimension datapack's siftslate_charoite_ore placed feature
+        // covers this when enabled; skip the Java stand-in so the two do not double-generate.
+        if (dimensionOreFeaturesActive()) return;
         if (!plugin.getConfig().getBoolean("content.charoite_ore",
                 plugin.getConfig().getBoolean("charoite.enabled", true))
                 || !plugin.getConfig().getBoolean("content.charoite", true)
@@ -635,6 +638,9 @@ public final class SiftEcologyManager implements Listener {
     }
 
     private void generateSiftiteOre(Chunk chunk, Random random) {
+        // Data-driven replacement: the dimension datapack's siftslate_siftite_ore placed feature
+        // covers this when enabled; skip the Java stand-in so the two do not double-generate.
+        if (dimensionOreFeaturesActive()) return;
         if (!plugin.getConfig().getBoolean("content.siftite_ore",
                 plugin.getConfig().getBoolean("siftite.enabled", true))
                 || !plugin.getConfig().getBoolean("content.siftite", true)
