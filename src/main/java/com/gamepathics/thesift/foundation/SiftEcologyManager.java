@@ -186,7 +186,15 @@ public final class SiftEcologyManager implements Listener {
         long seed = chunk.getWorld().getSeed() ^ ((long) chunk.getX() * 341873128712L)
                 ^ ((long) chunk.getZ() * 132897987541L);
         Random random = new Random(seed);
-        Biome biome = chunk.getBlock(8, Math.max(1, chunk.getWorld().getMinHeight()), 8).getBiome();
+        // Sample the surface biome, not the world's bottom Y. Modern 3D biome noise can
+        // assign a cave biome at minHeight even when the surface belongs to an overgrown
+        // forest or another Sift biome; using that sample misroutes all chunk decoration.
+        int sampleX = chunk.getX() * 16 + 8;
+        int sampleZ = chunk.getZ() * 16 + 8;
+        int surfaceY = chunk.getWorld().getHighestBlockYAt(sampleX, sampleZ);
+        surfaceY = Math.max(chunk.getWorld().getMinHeight(),
+                Math.min(surfaceY, chunk.getWorld().getMaxHeight() - 1));
+        Biome biome = chunk.getBlock(8, surfaceY, 8).getBiome();
         String key = biome.getKey().toString().toLowerCase(Locale.ROOT);
 
         // In strict mode only provider-owned blocks and mobs are content. The
