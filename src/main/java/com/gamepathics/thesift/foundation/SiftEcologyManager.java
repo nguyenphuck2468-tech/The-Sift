@@ -1241,14 +1241,19 @@ public final class SiftEcologyManager implements Listener {
             if (now - firstOnSculk >= cooldownMillis) conversions.add(entity);
         }
         // Convert after iteration so removal never disturbs the live entity list mid-scan.
+        // Spawn first: if a provider refuses the replacement, keep the original Sniffer alive.
         for (Entity entity : conversions) {
             Location loc = entity.getLocation();
+            if (!summonCreature("dark_sniffer", loc)) {
+                plugin.getLogger().warning("Could not convert Sniffer to Dark Sniffer at "
+                        + loc.getWorld().getName() + ":" + loc.getBlockX() + ":" + loc.getBlockY()
+                        + ":" + loc.getBlockZ() + "; keeping the original Sniffer.");
+                continue;
+            }
             entity.getPersistentDataContainer().remove(snifferCorruptionStartKey);
             entity.remove();
-            if (summonCreature("dark_sniffer", loc)) {
-                sift.playSound(loc, Sound.ENTITY_SNIFFER_DIGGING, 0.8f, 0.6f);
-                sift.spawnParticle(Particle.LARGE_SMOKE, loc.add(0, 1, 0), 20, 0.5, 0.6, 0.5, 0.05);
-            }
+            sift.playSound(loc, Sound.ENTITY_SNIFFER_DIGGING, 0.8f, 0.6f);
+            sift.spawnParticle(Particle.LARGE_SMOKE, loc.clone().add(0, 1, 0), 20, 0.5, 0.6, 0.5, 0.05);
         }
     }
 
