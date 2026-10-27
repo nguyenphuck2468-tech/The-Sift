@@ -108,7 +108,7 @@ final class AncientCityPortal implements Listener {
 
     // ---- Goat Horn -> Singer + awakening ------------------------------------------------------
 
-    @EventHandler(priority = EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onGoatHorn(PlayerInteractEvent event) {
         if (!enabled() || event.getHand() != EquipmentSlot.HAND) return;
         if (event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
@@ -130,6 +130,8 @@ final class AncientCityPortal implements Listener {
     }
 
     private void trySummon(Player player, Location origin) {
+        // The summon fires 3 s after the horn; the player may have logged off by then.
+        if (!player.isOnline()) return;
         if (!enabled() || origin.getWorld() == null) return;
         Frame frame = findNearestFrame(origin);
         if (frame == null) return;
@@ -252,44 +254,94 @@ final class AncientCityPortal implements Listener {
 
     // ---- Frame detection (port of PortalFrameScanner) --------------------------------------------
 
-    /** Nearest valid frame within the scan radius of {@code origin}, or null. */
+    /**
+     * Nearest valid frame within the scan radius of {@code origin}, or null.
+     *
+     * Performance notes (review fix): the bulk type sweep runs on {@link org.bukkit.ChunkSnapshot}s
+     * instead of live block access, candidate anchors are deduplicated before the expensive
+     * anchor-walk {@code scan()} so one frame costs at most two scans instead of one per border
+     * block, and results are cached per chunk region for a few seconds so spamming Goat Horns is
+     * nearly free. The cache stores nullable frames; a miss-negative is also remembered.
+     */
     Frame findNearestFrame(Location origin) {
         World world = origin.getWorld();
         if (world == null) return null;
         int radius = scanRadius();
+        String cacheKey = world.getUID() + ":" + (origin.getBlockX() >> 4) + ":" + (origin.getBlockZ() >> 4);
+        FrameCacheEntry cached = frameCache.get(cacheKey);
+        long now = System.currentTimeMillis();
+        if (cached != null && cached.expiresMillis > now) return cached.frame;
+        Frame found = searchFrames(world, origin, radius);
+        frameCache.put(cacheKey, new FrameCacheEntry(found, now + FRAME_CACHE_MILLIS));
+        if (frameCache.size() > 64) frameCache.entrySet().removeIf(e -> e.getValue().expiresMillis <= now);
+        return found;
+    }
+
+    private static final long FRAME_CACHE_MILLIS = 3_000L;
+    private record FrameCacheEntry(Frame frame, long expiresMillis) {}
+    private final Map<String, FrameCacheEntry> frameCache = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private Frame searchFrames(World world, Location origin, int radius) {
         double limit = (double) radius * radius;
         int ox = origin.getBlockX();
         int oy = origin.getBlockY();
         int oz = origin.getBlockZ();
-        Frame best = null;
-        double bestDistance = Double.MAX_VALUE;
-        Set<String> seen = new HashSet<>();
+        // Pass 1: cheap snapshot sweep to collect distinct Reinforced Deepslate anchors.
+        Set<Long> anchors = new HashSet<>();
         int minY = Math.max(world.getMinHeight(), oy - radius);
         int maxY = Math.min(world.getMaxHeight() - 1, oy + radius);
-        for (int dx = -radius; dx <= radius; dx++) {
-            for (int dz = -radius; dz <= radius; dz++) {
-                int x = ox + dx;
-                int z = oz + dz;
-                if (!world.isChunkLoaded(x >> 4, z >> 4)) continue;
-                for (int y = minY; y <= maxY; y++) {
-                    int dy = y - oy;
-                    if ((double) dx * dx + (double) dy * dy + (double) dz * dz > limit) continue;
-                    if (world.getType(x, y, z) != Material.REINFORCED_DEEPSLATE) continue;
-                    Frame candidate = scan(world.getBlockAt(x, y, z));
-                    if (candidate == null) continue;
-                    Location centre = candidate.bottomCenter();
-                    if (!seen.add(centre.getBlockX() + "," + centre.getBlockY() + "," + centre.getBlockZ()
-                            + (candidate.alongX() ? "x" : "z"))) continue;
-                    double distance = centre.distanceSquared(origin);
-                    if (distance <= limit && distance < bestDistance) {
-                        bestDistance = distance;
-                        best = candidate;
+        for (int cx = (ox - radius) >> 4; cx <= (ox + radius) >> 4; cx++) {
+            for (int cz = (oz - radius) >> 4; cz <= (oz + radius) >> 4; cz++) {
+                if (!world.isChunkLoaded(cx, cz)) continue;
+                org.bukkit.ChunkSnapshot snapshot = world.getChunkAt(cx, cz).getBlockSnapshot();
+                int baseX = cx << 4, baseZ = cz << 4;
+                for (int lx = 0; lx < 16; lx++) {
+                    for (int lz = 0; lz < 16; lz++) {
+                        int dx = baseX + lx - ox, dz = baseZ + lz - oz;
+                        double planar = (double) dx * dx + (double) dz * dz;
+                        if (planar > limit) continue;
+                        int maxLy = Math.min(15, maxY - snapshot.getMinY());
+                        for (int ly = Math.max(0, minY - snapshot.getMinY()); ly <= maxLy; ly++) {
+                            int dy = snapshot.getMinY() + ly - oy;
+                            if (planar + (double) dy * dy > limit) continue;
+                            if (snapshot.getBlockType(lx, ly, lz) != Material.REINFORCED_DEEPSLATE) continue;
+                            anchors.add(packCoords(baseX + lx, snapshot.getMinY() + ly, baseZ + lz));
+                        }
                     }
                 }
             }
         }
+        // Pass 2: only deduplicated anchors get the full anchor-walk scan.
+        Frame best = null;
+        double bestDistance = Double.MAX_VALUE;
+        Set<String> seen = new HashSet<>();
+        for (long packed : anchors) {
+            int x = unpackX(packed), y = unpackY(packed), z = unpackZ(packed);
+            Block block = world.getBlockAt(x, y, z);
+            if (block.getType() != Material.REINFORCED_DEEPSLATE) continue; // stale snapshot guard
+            Frame candidate = scan(block);
+            if (candidate == null) continue;
+            Location centre = candidate.bottomCenter();
+            if (!seen.add(centre.getBlockX() + "," + centre.getBlockY() + "," + centre.getBlockZ()
+                    + (candidate.alongX() ? "x" : "z"))) continue;
+            double distance = centre.distanceSquared(origin);
+            if (distance <= limit && distance < bestDistance) {
+                bestDistance = distance;
+                best = candidate;
+            }
+        }
         return best;
     }
+
+    private static long packCoords(int x, int y, int z) {
+        return ((long) x << 36) ^ ((long) y << 20) ^ (long) z & 0xFFFFFL;
+    }
+
+    private static int unpackX(long packed) { return (int) (packed >> 36); }
+
+    private static int unpackY(long packed) { return (int) (packed << 28 >> 48); }
+
+    private static int unpackZ(long packed) { return (int) (packed << 44 >> 44); }
 
     Frame scan(Block clicked) {
         Frame onX = scanAxis(clicked, true);

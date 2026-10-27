@@ -68,15 +68,18 @@ public final class DatapackManagerBridge {
     /** Enables/disables a staged or discovered pack by name and refreshes the datapack manager. */
     public boolean setEnabled(String name, boolean enabled) {
         // Guard: disabling the dimension pack while the server runs can strand The Sift world
-        // (missing dimension registration). The check is deliberately narrow: it only refuses
-        // when a The Sift world is actually loaded. Enabling stays always-safe.
-        if (!enabled && name.toLowerCase(Locale.ROOT).contains("sift")
-                && plugin.getServer().getWorlds().stream()
-                        .anyMatch(w -> w != null && w.getName().toLowerCase(Locale.ROOT).contains("the_sift"))) {
-            plugin.getLogger().warning("Refusing to disable the dimension datapack ('" + name
-                    + "') at runtime because a The Sift world is loaded. Unload/stop the server first,"
-                    + " then edit the datapack configuration.");
-            return false;
+        // (missing dimension registration). The check tests whether the bundled dimension pack
+        // itself is currently ENABLED - that is the real hazard. Enabling stays always-safe.
+        if (!enabled && isDimensionPackName(name)) {
+            var guardManager = plugin.getServer().getDatapackManager();
+            boolean dimensionActive = findPack(guardManager.getPacks(), "sift_dimension_datapack") != null;
+            if (dimensionActive) {
+                plugin.getLogger().warning("Refusing to disable the dimension datapack ('" + name
+                        + "') at runtime because it is currently enabled and The Sift world may"
+                        + " depend on it. Unload/stop the server first, then edit the datapack"
+                        + " configuration.");
+                return false;
+            }
         }
         var manager = plugin.getServer().getDatapackManager();
         Datapack pack = findPack(manager.getPacks(), name);
@@ -84,6 +87,12 @@ public final class DatapackManagerBridge {
         pack.setEnabled(enabled);
         manager.refreshPacks();
         return true;
+    }
+
+    private static boolean isDimensionPackName(String name) {
+        String needle = name.toLowerCase(Locale.ROOT);
+        return needle.equals("sift_dimension_datapack") || needle.equals("thesift:dimension")
+                || needle.equals("dimension");
     }
 
     public String status() {
@@ -109,8 +118,15 @@ public final class DatapackManagerBridge {
 
     private static Datapack findPack(Collection<Datapack> packs, String name) {
         String needle = name.toLowerCase(Locale.ROOT);
+        // Exact match first: substring matching let setEnabled("datapack", ...) hit every pack
+        // whose name contains "datapack", including other plugins' packs.
         for (Datapack pack : packs) {
-            if (pack.getName().toLowerCase(Locale.ROOT).contains(needle)) return pack;
+            if (pack.getName().toLowerCase(Locale.ROOT).equals(needle)) return pack;
+        }
+        // Then namespace-qualified form ("thesift:<name>") and folder-name suffix "<name>.zip".
+        for (Datapack pack : packs) {
+            String lower = pack.getName().toLowerCase(Locale.ROOT);
+            if (lower.equals("thesift:" + needle) || lower.equals(needle + ".zip")) return pack;
         }
         return null;
     }
@@ -136,6 +152,11 @@ public final class DatapackManagerBridge {
                         Map<String, String> env = new HashMap<>();
                         env.put("create", "false");
                         return FileSystems.newFileSystem(uri, env);
+                    } catch (java.nio.file.FileSystemAlreadyExistsException alreadyOpen) {
+                        // Another component (e.g. the resource-pack bridge or the plugin loader)
+                        // already opened this jar; reuse that filesystem instead of silently
+                        // returning null and turning staging into a no-op on production installs.
+                        return FileSystems.getFileSystem(uri);
                     } catch (IOException exception) {
                         throw new UncheckedIOException(exception);
                     }

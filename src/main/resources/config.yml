@@ -158,10 +158,13 @@ compatibility:
   minecraft-target: "26.3"
 
 requirements:
-  # The Sift depends fully on provider plugins. If a rule below is unmet on the first server tick the
-  # plugin disables itself and logs what is missing. Tokens are plugin names, or service:item,
-  # service:block, service:mob for plugins that register SiftItemProvider/SiftBlockProvider/SiftMobProvider.
+  # The Sift depends on provider plugins for real content, but they are SOFT dependencies
+  # (paper-plugin.yml declares required: false). Missing providers only log a warning and
+  # degrade features; the plugin keeps running. Set hard-stop: true to make the plugin
+  # disable itself instead. Tokens are plugin names, or service:item, service:block,
+  # service:mob for plugins that register SiftItemProvider/SiftBlockProvider/SiftMobProvider.
   enabled: true
+  hard-stop: false
   all-of:
     - ModelEngine
   any-of:
@@ -170,7 +173,9 @@ requirements:
     mobs: [MythicMobs, ItemsAdder, EliteMobs, "service:mob"]
 
 providers:
-  # Always enforced: dimension access is denied until all mandatory IDs resolve. Setting false is ignored.
+  # true (default): dimension access is denied until every mandatory ID resolves through a
+  # provider backend. false: development/CI mode with vanilla fallback placement (logged as a
+  # warning at startup). Honouring this flag matches README/docs/TESTING.md.
   strict: true
   bedrock-enabled: false
 

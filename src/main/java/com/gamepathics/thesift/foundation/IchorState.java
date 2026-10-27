@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.HashMap;
 import java.util.Map;
@@ -166,7 +167,9 @@ public final class IchorState {
 
     public void shutdown() {
         saveTask.cancel();
-        save();
+        // Synchronous write on the main thread is correct here: the async scheduler may already
+        // be gone during onDisable, and this is the last chance to persist state.
+        saveNow();
     }
 
     private void load() {
@@ -194,7 +197,13 @@ public final class IchorState {
         }
     }
 
-    private synchronized void save() {
+    /**
+     * Periodic async persistence. The write itself runs WITHOUT holding the state monitor, so
+     * main-thread readers ({@link #level}/{@link #block}) are never blocked by file IO; only a
+     * short lock takes the snapshot. The file is written to a temp path and moved atomically so a
+     * crash mid-save cannot corrupt ichor-state.yml.
+     */
+    private void save() {
         final Map<String, Integer> cauldronSnapshot;
         final Map<String, String> blockSnapshot;
         final long savedRevision;
@@ -208,13 +217,31 @@ public final class IchorState {
         config.set("cauldrons", cauldronSnapshot);
         config.set("blocks", blockSnapshot);
         try {
-            config.save(storageFile);
+            Path target = storageFile.toPath();
+            Path parent = target.getParent();
+            if (parent != null) Files.createDirectories(parent);
+            Path temp = Files.createTempFile(parent, "ichor-state", ".tmp");
+            try {
+                Files.writeString(temp, config.saveToString());
+                try {
+                    Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                } catch (AtomicMoveNotSupportedException exception) {
+                    Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
+                }
+            } finally {
+                Files.deleteIfExists(temp);
+            }
             synchronized (this) {
                 if (revision == savedRevision) dirty = false;
             }
         } catch (IOException e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to save Ichor state", e);
         }
+    }
+
+    /** Synchronous variant used only from {@link #shutdown()} on the main thread. */
+    private void saveNow() {
+        save();
     }
 
     private synchronized void markDirty() {
