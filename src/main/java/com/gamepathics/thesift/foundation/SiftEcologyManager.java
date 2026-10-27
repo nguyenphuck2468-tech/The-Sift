@@ -1252,14 +1252,30 @@ public final class SiftEcologyManager implements Listener {
             var pdc = entity.getPersistentDataContainer();
             if (!"dark_sniffer".equals(pdc.get(creatureKey, PersistentDataType.STRING))) continue;
 
-            // Petting temporarily suppresses combat and digging behavior for this stand-in.
-            if (pdc.has(darkSnifferPettingWardenKey, PersistentDataType.STRING)) {
-                clearDarkSnifferWave(pdc);
-                pdc.remove(darkSnifferCombatTargetKey);
-                pdc.remove(darkSnifferNoMeleeTicksKey);
-                sniffer.setTarget(null);
-                sniffer.getPathfinder().stopPathfinding();
-                continue;
+            // Petting temporarily suppresses combat. Clear orphaned ownership if the
+            // Warden unloaded, died, or abandoned this target before cleanup could run.
+            String pettingWardenId = pdc.get(darkSnifferPettingWardenKey, PersistentDataType.STRING);
+            if (pettingWardenId != null) {
+                Entity pettingWarden = null;
+                try {
+                    pettingWarden = Bukkit.getEntity(UUID.fromString(pettingWardenId));
+                } catch (IllegalArgumentException ignored) {
+                    // Invalid persisted UUID: treat the petting claim as orphaned.
+                }
+                boolean stillPetting = pettingWarden instanceof org.bukkit.entity.Warden warden
+                        && warden.isValid() && !warden.isDead()
+                        && entity.getUniqueId().toString().equals(warden.getPersistentDataContainer()
+                        .get(wardenPettingTargetKey, PersistentDataType.STRING));
+                if (!stillPetting) {
+                    pdc.remove(darkSnifferPettingWardenKey);
+                } else {
+                    clearDarkSnifferWave(pdc);
+                    pdc.remove(darkSnifferCombatTargetKey);
+                    pdc.remove(darkSnifferNoMeleeTicksKey);
+                    sniffer.setTarget(null);
+                    sniffer.getPathfinder().stopPathfinding();
+                    continue;
+                }
             }
 
             // The reference mob does not enter combat in Peaceful difficulty.
