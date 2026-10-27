@@ -243,7 +243,7 @@ public final class SiftEcologyManager implements Listener {
         } else if ((key.endsWith("shattered_peaks") || key.endsWith("siftslate_peaks")) && random.nextInt(120) == 0) {
             // Spire Tyrant variant: crimson-named Sifter boss in the peaks; killing it grants
             // the bundled "tyrant" advancement (see SiftAdvancementManager.onCreatureDeath).
-            boolean tyrant = plugin.getConfig().getBoolean("content.spire_tyrant", true)
+            boolean tyrant = plugin.getConfig().getBoolean("content.spire_tyrant", false)
                     && random.nextBoolean();
             spawnBoss(chunk, EntityType.RAVAGER,
                     tyrant ? "Spire Tyrant" : "The Sifter",
@@ -266,7 +266,7 @@ public final class SiftEcologyManager implements Listener {
         if ((biome.endsWith("bulb_forest") || biome.endsWith("overgrown_forest")) && random.nextInt(160) == 0)
             spawnBoss(chunk, EntityType.WARDEN, "Prism Warden", "prism_warden", 180.0, 28.0);
         else if ((biome.endsWith("shattered_peaks") || biome.endsWith("siftslate_peaks")) && random.nextInt(120) == 0) {
-            boolean tyrant = plugin.getConfig().getBoolean("content.spire_tyrant", true)
+            boolean tyrant = plugin.getConfig().getBoolean("content.spire_tyrant", false)
                     && random.nextBoolean();
             spawnBoss(chunk, EntityType.RAVAGER,
                     tyrant ? "Spire Tyrant" : "The Sifter",
@@ -905,13 +905,16 @@ public final class SiftEcologyManager implements Listener {
                     "heart_of_the_sift", "Heart of the Sift"));
             event.getDrops().add(content.item(Material.AMETHYST_SHARD,
                     "sift_shard", "Sift Shard"));
-            // Crimson Keep token: makes the advancement icon item (thesift:spire_fragment)
-            // obtainable in survival; killing a Spire Tyrant drops two of them.
-            int fragments = "spire_tyrant".equals(id) ? 2 : 1;
-            for (int i = 0; i < fragments; i++) {
-                ItemStack fragment = content.item(Material.AMETHYST_SHARD,
-                        "spire_fragment", "Spire Fragment");
-                if (fragment != null) event.getDrops().add(fragment);
+            // Spire Fragment is a fan-made token for the bundled tyrant.json advancement icon.
+            // The reference mod has no such item; admins can disable the whole variant with
+            // content.spire_tyrant (default off), which also removes this drop.
+            if (plugin.getConfig().getBoolean("content.spire_tyrant", false)) {
+                int fragments = "spire_tyrant".equals(id) ? 2 : 1;
+                for (int i = 0; i < fragments; i++) {
+                    ItemStack fragment = content.item(Material.AMETHYST_SHARD,
+                            "spire_fragment", "Spire Fragment");
+                    if (fragment != null) event.getDrops().add(fragment);
+                }
             }
         }
         // Reference-mod parity (Sifter): drops raw_sifter_meat, which smelts to cooked_sifter_meat.

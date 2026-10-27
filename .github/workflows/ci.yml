@@ -17,10 +17,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: "⚙️ Setup Python Environment"
+        # No cache: the repository has no requirements.txt/pyproject.toml, and
+        # setup-python's pip cache fails the job outright when it cannot find a
+        # dependency file to hash.
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-          cache: "pip"
+          cache: ""
 
       - name: "🔍 Pre-check: Terrain Datapack References"
         run: |

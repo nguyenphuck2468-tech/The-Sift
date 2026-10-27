@@ -19,21 +19,26 @@ those paths only.
 
 Beyond the terrain data above, several gameplay behaviours were re-implemented
 by reading the reference mod's source/datapack (Copyright (c) 2026 Mielon, MIT
-License): the Singer barter reward table, the creature frame detector used for
-mob tagging, the Soul Block music-piece selection, mob stat lines (Echo Golem
-health, Blub taming), advancement trigger mapping, and ore/feature placement
-data derived in commit "port ore features" (all per the MIT attribution
-requirement — the copyright and permission notice must be kept with any final
-NOTICE/LICENSE). These are clean-room-style ports of observable behaviour plus
-direct datapack JSON reuse where noted; they carry the same MIT obligation as
-the terrain files.
+License): the Singer barter reward table (`SingerBarter`), the Soul Block /
+Ancient City portal frame scanner (`PortalFrameScanner`) that detects an
+arranged frame ring to open the gate, the portal song/console note-sequence
+logic (`PortalSongTracker`), mob stat lines (Echo Golem health, Blub taming),
+advancement trigger mapping, and ore/feature placement data derived in commit
+"port ore features" (all per the MIT attribution requirement — the copyright
+and permission notice must be kept with any final NOTICE/LICENSE). These are
+clean-room-style ports of observable behaviour plus direct datapack JSON reuse
+where noted; they carry the same MIT obligation as the terrain files.
 
 ## Original fan-made content (NOT from the reference mod)
 
 The following exist only in this plugin and must never be described as mod
-parity: the Spire Tyrant boss variant and its Crimson Keep references (the
-reference mod contains no such creature or structure), Prism Warden, Rift Key,
-Sifter-herd tuning constants, and all config keys introduced for them.
+parity: the Spire Tyrant boss variant, its Spire Fragment drop and the bundled
+`thesift:tyrant` advancement (the reference mod contains no such creature,
+item or advancement — it has no Crimson Keep either), the Echo Golem resonance
+heal pulse (`echo-golem.heal-enabled`, default off), Prism Warden, Rift Key,
+Sifter-herd tuning constants, and all config keys introduced for them. The
+Spire Tyrant spawn variant is additionally disabled by default
+(`content.spire_tyrant: false`).
 
 ## Verified third-party material included
 

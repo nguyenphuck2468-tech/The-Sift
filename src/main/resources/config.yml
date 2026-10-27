@@ -40,10 +40,11 @@ content:
   blub: true
   # Triển khai một phần: Sifter spawn theo đàn + drop đã hoạt động; chưa có cơ chế sàng lọc item như mod.
   sifter: true
-  # Biến thể boss "Spire Tyrant" (tên đỏ, cùng statline với The Sifter) randomly thay thế
-  # The Sifter trong shattered/siftslate peaks; tiêu diệt sẽ mở advancement thesift:tyrant.
-  # Lưu ý: structure Crimson Keep của mod gốc chưa được port.
-  spire_tyrant: true
+  # Fan-made, KHÔNG có trong mod gốc (Arta48/Mielons-The-Sift không có "Spire Tyrant" hay
+  # Crimson Keep; advancement thesift:tyrant cũng là fan-made). Biến thể boss randomly thay
+  # thế The Sifter trong shattered/siftslate peaks. Mặc định TẮT để giữ parity — bật nếu
+  # muốn nội dung tự chế này xuất hiện trong spawn.
+  spire_tyrant: false
   rift: true
   sift_dimension: true
 
@@ -80,8 +81,12 @@ echo-golem:
   slowness-amplifier: 1
   mining-fatigue-seconds: 6
   mining-fatigue-amplifier: 2
+  # Fan-made (KHÔNG có trong mod gốc): nhịp hồi máu cho chủ sở hữu. Mặc định TẮT để giữ
+  # parity; bật lên nếu muốn cơ chế cộng hưởng tự chế này hoạt động.
+  heal-enabled: false
   heal-amount: 4.0
-  # Chủ sở hữu mang Charoite nhận hồi máu từ nhịp cộng hưởng ngay cả ngoài tầm gần.
+  # Khi heal-enabled=true, người mang Charoite nhận tầm hồi máu gấp đôi (vẫn giới hạn bán
+  # kính, không xuyên toàn thế giới).
   charoite-protection: true
   drop-siftite: true
 

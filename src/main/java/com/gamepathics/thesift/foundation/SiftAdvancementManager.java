@@ -91,10 +91,11 @@ public final class SiftAdvancementManager implements Listener {
             // Spire Tyrant only.
             case "the_sifter", "sifter" -> grant(killer, "sifter");
             case "dark_sniffer" -> grant(killer, "sniffer_hunter");
-            // NOT mod parity: the reference mod (Arta48/Mielons-The-Sift) has no "Spire Tyrant"
-            // creature and no Crimson Keep; its bundled "tyrant" advancement is a fan-made hook.
-            // This plugin adds an original spire_tyrant variant so that advancement is obtainable
-            // in survival play instead of dead content. See docs/mod-gap-analysis.md.
+            // Fan-made content, NOT mod parity: the reference mod (Arta48/Mielons-The-Sift)
+            // has no "Spire Tyrant" creature, no Crimson Keep, and no "tyrant" advancement.
+            // The variant ships disabled by default (content.spire_tyrant); killing one still
+            // grants sifter + tyrant so the bundled fan-made advancement stays obtainable
+            // when admins opt in.
             case "spire_tyrant" -> grant(killer, "sifter", "tyrant");
             default -> { }
         }

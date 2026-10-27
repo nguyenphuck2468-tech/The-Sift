@@ -145,6 +145,9 @@ public final class ResourcePackBridge {
      * {@code getInstance()}). If nothing matches, return false so the caller uses the native API.
      */
     private boolean tryProviderSend(Plugin provider, Player player, boolean force) {
+        // The provider path needs a real download URL; without one (empty packUrl()) skip it
+        // and let the caller fall through to the native check instead of invoking sendPack("").
+        if (packUrlOrNull() == null) return false;
         try {
             Object api = resolveApi(provider);
             if (api == null) return false;
