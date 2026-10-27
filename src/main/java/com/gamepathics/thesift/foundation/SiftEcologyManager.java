@@ -68,6 +68,10 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey darkSnifferSonicAtKey;
     private final NamespacedKey darkSnifferSonicTargetKey;
     private final NamespacedKey darkSnifferCombatTargetKey;
+    private final NamespacedKey darkSnifferHomeXKey;
+    private final NamespacedKey darkSnifferHomeYKey;
+    private final NamespacedKey darkSnifferHomeZKey;
+    private final NamespacedKey darkSnifferIdlePathAtKey;
     private final NamespacedKey darkSnifferTargetRefreshKey;
     private final NamespacedKey darkSnifferPathRefreshKey;
     private final NamespacedKey darkSnifferAttackAtKey;
@@ -126,6 +130,10 @@ public final class SiftEcologyManager implements Listener {
         this.darkSnifferSonicAtKey = new NamespacedKey(plugin, "dark_sniffer_sonic_at");
         this.darkSnifferSonicTargetKey = new NamespacedKey(plugin, "dark_sniffer_sonic_target");
         this.darkSnifferCombatTargetKey = new NamespacedKey(plugin, "dark_sniffer_combat_target");
+        this.darkSnifferHomeXKey = new NamespacedKey(plugin, "dark_sniffer_home_x");
+        this.darkSnifferHomeYKey = new NamespacedKey(plugin, "dark_sniffer_home_y");
+        this.darkSnifferHomeZKey = new NamespacedKey(plugin, "dark_sniffer_home_z");
+        this.darkSnifferIdlePathAtKey = new NamespacedKey(plugin, "dark_sniffer_idle_path_at");
         this.darkSnifferTargetRefreshKey = new NamespacedKey(plugin, "dark_sniffer_target_refresh");
         this.darkSnifferPathRefreshKey = new NamespacedKey(plugin, "dark_sniffer_path_refresh");
         this.darkSnifferAttackAtKey = new NamespacedKey(plugin, "dark_sniffer_attack_at");
@@ -1439,6 +1447,36 @@ public final class SiftEcologyManager implements Listener {
                     pdc.remove(darkSnifferCombatTargetKey);
                     pdc.remove(darkSnifferNoMeleeTicksKey);
                     sniffer.setTarget(null);
+                    // Mirror the mod's home anchor and calm wandering rather than leaving
+                    // idle Dark Sniffers frozen after their first spawn or combat encounter.
+                    Location home;
+                    Double homeX = pdc.get(darkSnifferHomeXKey, PersistentDataType.DOUBLE);
+                    Double homeY = pdc.get(darkSnifferHomeYKey, PersistentDataType.DOUBLE);
+                    Double homeZ = pdc.get(darkSnifferHomeZKey, PersistentDataType.DOUBLE);
+                    if (homeX == null || homeY == null || homeZ == null) {
+                        home = entity.getLocation();
+                        pdc.set(darkSnifferHomeXKey, PersistentDataType.DOUBLE, home.getX());
+                        pdc.set(darkSnifferHomeYKey, PersistentDataType.DOUBLE, home.getY());
+                        pdc.set(darkSnifferHomeZKey, PersistentDataType.DOUBLE, home.getZ());
+                    } else {
+                        home = new Location(sift, homeX, homeY, homeZ);
+                    }
+                    double homeDistance = entity.getLocation().distanceSquared(home);
+                    Long idlePathAt = pdc.get(darkSnifferIdlePathAtKey, PersistentDataType.LONG);
+                    if (homeDistance > 10000.0) {
+                        if (!sniffer.getPathfinder().hasPath()) {
+                            sniffer.getPathfinder().moveTo(home, 0.1);
+                            pdc.set(darkSnifferIdlePathAtKey, PersistentDataType.LONG, now + 1500L);
+                        }
+                    } else if (idlePathAt == null || now >= idlePathAt || !sniffer.getPathfinder().hasPath()) {
+                        if (java.util.concurrent.ThreadLocalRandom.current().nextInt(30) == 0) {
+                            Location wander = entity.getLocation().clone().add(
+                                    java.util.concurrent.ThreadLocalRandom.current().nextDouble(-12, 13), 0,
+                                    java.util.concurrent.ThreadLocalRandom.current().nextDouble(-12, 13));
+                            sniffer.getPathfinder().moveTo(wander, 0.1);
+                        }
+                        pdc.set(darkSnifferIdlePathAtKey, PersistentDataType.LONG, now + 1500L);
+                    }
                     continue;
                 }
                 pdc.set(darkSnifferCombatTargetKey, PersistentDataType.STRING, combatTarget.getUniqueId().toString());
