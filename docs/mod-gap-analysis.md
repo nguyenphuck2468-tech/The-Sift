@@ -102,3 +102,10 @@ Mod còn có: Warden-Dark Sniffer (mixin), RiftMobAvoidance (mob tránh Rift), S
 5. **Họ block** (Willow, Siftslate, thực vật sculk): định nghĩa cho Nexo/ItemsAdder/Oraxen qua `generateProviderDefinitions`.
 6. **Cấu trúc NBT** và **resource pack** (model, texture, âm thanh, đĩa nhạc): cần xử lý phân phối pack và credit tác giả đóng góp (ImpSteve, Fuzja Jądrowa, Echo_Dev...).
 7. **Ichor fluid thật, Rift theo mod, ngày/đêm**: cần thiết kế riêng vì Paper không có block/fluid tuỳ chỉnh.
+
+## 9. Cập nhật: advancement
+
+Bộ advancement của plugin đã được thay bằng 22 advancement của mod (xem README, mục "Advancement coverage").
+Đã gỡ các advancement không có trong mod (`prismatic`, `matriarch`, `tyrant`, `warden`, `storm`, `shard`, `shard_gear`,
+`sifter`, `rift_key`, ...). Kiểm tra mã nguồn mod: không có Spire Tyrant, Crimson Keep, Prism Warden hay Matriarch,
+nên các dòng "parity" trước đó về Spire Tyrant không dựa trên mod này.

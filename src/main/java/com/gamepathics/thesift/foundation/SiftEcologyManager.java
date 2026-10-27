@@ -1130,7 +1130,6 @@ public final class SiftEcologyManager implements Listener {
             sift.spawnParticle(Particle.DUST, at.clone().add(0, 2, 0), 18,
                     2.5, 1.5, 2.5, ichor);
             if (player.getLocation().getBlock().getLightFromSky() > 0) {
-                SiftAdvancementGrant.grant(plugin, player, "ichor_wanderer");
                 player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 120, 0, true, false, true));
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 120, 0, true, false, true));
             }
@@ -1227,7 +1226,6 @@ public final class SiftEcologyManager implements Listener {
             consumeOne(player, hand);
             pdc.set(blubOwnerKey, PersistentDataType.STRING, player.getUniqueId().toString());
             if (target instanceof LivingEntity living) living.setRemoveWhenFarAway(false);
-            SiftAdvancementGrant.grant(plugin, player, "matriarch");
             player.sendMessage("\u00a7dThe Blub accepts your Soul Block and follows you.");
             event.setCancelled(true);
         } else if (ownerId != null && ownerId.equals(player.getUniqueId().toString())) {

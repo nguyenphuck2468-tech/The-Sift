@@ -360,15 +360,6 @@ public final class ResonanceManager implements Listener {
             bar.removeAll();
             bar.setVisible(false);
         }
-        Player killer = event.getEntity().getKiller();
-        // Parity: the reference mod's Singer is invulnerable outside its soul event. The plugin
-        // lifts that invulnerability during a soul-event window (see onBarter/onSingerDamaged),
-        // so singer_silenced is granted when the killer defeated it inside such a window, or
-        // outright when a server opts out of invulnerability (resonance.singer.invulnerable: false).
-        boolean soulEventKill = inSoulEvent(event.getEntity().getUniqueId());
-        if (!plugin.getConfig().getBoolean("resonance.singer.invulnerable", true) || soulEventKill) {
-            SiftAdvancementGrant.grant(plugin, killer, "singer_silenced");
-        }
         soulEventUntil.remove(event.getEntity().getUniqueId());
         if (plugin.getConfig().getBoolean("resonance.singer.drop-charoite", true)) {
             ItemStack drop = content.forId("charoite");

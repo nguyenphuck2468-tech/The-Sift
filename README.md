@@ -65,18 +65,18 @@ Charoite holders.
 
 ### Advancement coverage
 
-The bundled progression datapack ships 21 advancements. All twenty-one are now
-granted by real gameplay events (world entry, pickups, crafting, consumption,
-enchanting, boss/creature kills, Rift travel, portal song, Singer barter). In
-particular `thesift:tyrant` ("Crimson Conqueror") was previously unobtainable
-because no creature ever carried a matching ID; the ecology spawner now
-introduces a crimson-named **Spire Tyrant** variant of the Sifter boss in the
-shattered/siftslate peaks (config: `content.spire_tyrant`, default on), and
-killing it grants the advancement plus Spire Fragment drops. Caveat kept from
-the reference mod: the Tyrant canonically dwells in the Crimson Keep structure,
-which this plugin does not generate yet — so the advancement text remains
-aspirational even though it is obtainable. Structure parity is tracked in
-`docs/mod-gap-analysis.md`.
+The bundled progression datapack mirrors the reference mod's 22 advancements (`root`, 3 under `story/`, 18
+under the main tab), ported from its MIT-licensed source with the mod's own titles and descriptions. Biome and
+Ancient City visits use vanilla triggers; the rest are awarded by gameplay events.
+
+Wired: `root`, `story/brave_the_unknown`, `story/fallen_civilization`, `story/song_of_the_past`, `rifter`,
+`rift_resonance`, `blood_of_the_gods` (approximated by Ichor bottles), `certified_sifter`, `kinda_purpleish`,
+`sifted_nugget`, `cover_me_in_siftite`, `keep_inventory`, `better_enchanter`, `pitch_perfect`.
+
+Not wired yet because the mechanic does not exist in the plugin: `like_father_and_son`, `friend_of_the_sift`,
+`food_chain`, `false_alarm`, `smells_creepy`, `planting_the_dark`, `spicewood` (and `blub`, which depends on
+the Blub bond being awarded from the taming code). Earlier plugin-only advancements (Prismatic, Matriarch,
+Tyrant, ...) were removed because they have no counterpart in the mod. See `docs/mod-gap-analysis.md`.
 
 ### Spawn eggs (mod parity)
 

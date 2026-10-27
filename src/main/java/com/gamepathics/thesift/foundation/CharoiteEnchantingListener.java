@@ -50,7 +50,7 @@ public final class CharoiteEnchantingListener implements Listener {
         meta.getPersistentDataContainer().set(charoiteEnchantedKey, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         event.setItem(item);
-        SiftAdvancementGrant.grant(plugin, event.getEnchanter(), "charoite_enchanting");
+        SiftAdvancementGrant.grant(plugin, event.getEnchanter(), "better_enchanter");
     }
 
     @EventHandler
