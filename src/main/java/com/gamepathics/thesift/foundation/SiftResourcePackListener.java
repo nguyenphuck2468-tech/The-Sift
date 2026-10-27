@@ -18,9 +18,10 @@ public final class SiftResourcePackListener implements Listener {
         this.plugin = plugin;
         this.bridge = bridge;
         // The resource-pack listener is registered for every enabled The Sift installation, so
-        // use its lifecycle hook to start the small Dark Sniffer digging observer without adding
-        // another registration path to the already-large foundation bootstrap class.
+        // use its lifecycle hook to start the small gameplay observers without another bootstrap path.
         new DarkSnifferDiggingGiftListener(plugin);
+        new SculkflowerManager(plugin, plugin instanceof TheSiftFoundationPlugin foundation
+                ? foundation.siftiteContent() : new SiftiteContent(plugin));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
