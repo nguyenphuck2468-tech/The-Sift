@@ -113,7 +113,7 @@ final class SculkflowerManager implements Listener {
         for (org.bukkit.Chunk chunk : sift.getLoadedChunks()) {
             // Sample columns, not random Y coordinates: choosing a uniform Y across a
             // modern world's full height almost never lands on a crop block.
-            for (int attempt = 0; attempt < 32; attempt++) {
+            for (int attempt = 0; attempt < 8; attempt++) {
                 int x = ThreadLocalRandom.current().nextInt(16);
                 int z = ThreadLocalRandom.current().nextInt(16);
                 Block crop = null;
