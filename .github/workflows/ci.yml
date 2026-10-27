@@ -2,7 +2,10 @@ name: "CI Build & Test"
 
 on:
   push:
-    branches: [main, mielon-parity]
+    # Run on every branch push so CI reflects each commit immediately, even
+    # when a PR is blocked by merge conflicts (pull_request events do not
+    # fire for conflicted PRs). Only ignore the bot's internal snapshot refs.
+    branches-ignore: ['qwen-code-*']
   pull_request: {}
 
 jobs:
