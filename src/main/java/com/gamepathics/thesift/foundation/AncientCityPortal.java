@@ -279,6 +279,8 @@ final class AncientCityPortal implements Listener {
 
     private static final long FRAME_CACHE_MILLIS = 3_000L;
     private record FrameCacheEntry(Frame frame, long expiresMillis) {}
+    /** A world-block position used to deduplicate frame anchors found by the snapshot sweep. */
+    private record Pos(int x, int y, int z) {}
     private final Map<String, FrameCacheEntry> frameCache = new java.util.concurrent.ConcurrentHashMap<>();
 
     private Frame searchFrames(World world, Location origin, int radius) {
@@ -291,7 +293,8 @@ final class AncientCityPortal implements Listener {
         // supported call is Chunk#getChunkSnapshot(). Its getBlockType(x, y, z) takes a WORLD
         // height (it offsets by the section minimum internally), so we pass world Y directly —
         // iterating raw section indices would only ever cover a 16-layer sliver of the range.
-        Set<Long> anchors = new HashSet<>();
+        // Anchors are plain world coordinates; a record keeps them exact (no packing sign/order bugs).
+        Set<Pos> anchors = new HashSet<>();
         int minY = Math.max(world.getMinHeight(), oy - radius);
         int maxY = Math.min(world.getMaxHeight() - 1, oy + radius);
         for (int cx = (ox - radius) >> 4; cx <= (ox + radius) >> 4; cx++) {
@@ -308,7 +311,7 @@ final class AncientCityPortal implements Listener {
                             int dy = y - oy;
                             if (planar + (double) dy * dy > limit) continue;
                             if (snapshot.getBlockType(lx, y, lz) != Material.REINFORCED_DEEPSLATE) continue;
-                            anchors.add(packCoords(baseX + lx, y - minY, baseZ + lz));
+                            anchors.add(new Pos(baseX + lx, y, baseZ + lz));
                         }
                     }
                 }
@@ -318,11 +321,8 @@ final class AncientCityPortal implements Listener {
         Frame best = null;
         double bestDistance = Double.MAX_VALUE;
         Set<String> seen = new HashSet<>();
-        for (long packed : anchors) {
-            int x = org.bukkit.util.BlockUtil.decodeX(packed);
-            int y = org.bukkit.util.BlockUtil.decodeY(packed);
-            int z = org.bukkit.util.BlockUtil.decodeZ(packed);
-            Block block = world.getBlockAt(x, y, z);
+        for (Pos p : anchors) {
+            Block block = world.getBlockAt(p.x(), p.y(), p.z());
             if (block.getType() != Material.REINFORCED_DEEPSLATE) continue; // stale snapshot guard
             Frame candidate = scan(block);
             if (candidate == null) continue;
