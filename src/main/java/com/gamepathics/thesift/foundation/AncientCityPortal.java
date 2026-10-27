@@ -133,7 +133,7 @@ final class AncientCityPortal implements Listener {
         if (!enabled() || origin.getWorld() == null) return;
         Frame frame = findNearestFrame(origin);
         if (frame == null) return;
-        SiftAdvancementGrant.grant(plugin, player, "singer_awake");
+        SiftAdvancementGrant.grant(plugin, player, "story/song_of_the_past");
         Location spawn = frame.bottomCenter();
         if (!hasSingerNear(spawn, 2.0) && singerSpawner != null) {
             LivingEntity singer = singerSpawner.apply(spawn);

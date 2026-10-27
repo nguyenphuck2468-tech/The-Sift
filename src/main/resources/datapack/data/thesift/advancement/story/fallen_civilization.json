@@ -1,0 +1,34 @@
+{
+  "parent": "minecraft:story/smelt_iron",
+  "display": {
+    "icon": {
+      "id": "minecraft:reinforced_deepslate"
+    },
+    "title": "Fallen Civilization",
+    "description": "Visit an Ancient City",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "ancient_city": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": {
+          "entity": "this",
+          "predicate": {
+            "minecraft:location": {
+              "structures": "minecraft:ancient_city"
+            }
+          },
+          "type": "minecraft:entity_properties"
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "ancient_city"
+    ]
+  ]
+}

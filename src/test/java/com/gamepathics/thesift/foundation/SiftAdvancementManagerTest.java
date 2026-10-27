@@ -46,12 +46,12 @@ class SiftAdvancementManagerTest {
     }
 
     @Test
-    void pickingUpRiftKeyRequestsItsAdvancement() {
+    void pickingUpCharoiteRequestsKindaPurpleish() {
         var player = server.addPlayer();
-        Item key = player.getWorld().dropItem(player.getLocation(),
-                new RiftManager(plugin).createRiftKey());
-        EntityPickupItemEvent event = new EntityPickupItemEvent(player, key, 0);
-        NamespacedKey advancementKey = new NamespacedKey(plugin, "rift_key");
+        Item charoite = player.getWorld().dropItem(player.getLocation(),
+                new SiftiteContent(plugin).item(Material.AMETHYST_SHARD, "charoite", "Charoite"));
+        EntityPickupItemEvent event = new EntityPickupItemEvent(player, charoite, 0);
+        NamespacedKey advancementKey = new NamespacedKey(plugin, "kinda_purpleish");
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
             bukkit.when(() -> Bukkit.getAdvancement(advancementKey)).thenReturn(null);
@@ -62,7 +62,7 @@ class SiftAdvancementManagerTest {
     }
 
     @Test
-    void craftingSiftiteTemplateDoesNotRequestGearAdvancement() {
+    void craftingSiftiteTemplateDoesNotRequestTheArmorSetAdvancement() {
         var player = server.addPlayer();
         SiftiteContent items = new SiftiteContent(plugin);
         Recipe recipe = mock(Recipe.class);
@@ -71,70 +71,18 @@ class SiftAdvancementManagerTest {
         CraftItemEvent event = mock(CraftItemEvent.class);
         when(event.getRecipe()).thenReturn(recipe);
         when(event.getWhoClicked()).thenReturn(player);
-        NamespacedKey gearAdvancement = new NamespacedKey(plugin, "shard_gear");
+        NamespacedKey setAdvancement = new NamespacedKey(plugin, "cover_me_in_siftite");
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
-            bukkit.when(() -> Bukkit.getAdvancement(gearAdvancement)).thenReturn(null);
+            bukkit.when(() -> Bukkit.getAdvancement(setAdvancement)).thenReturn(null);
             manager.onCraft(event);
 
-            bukkit.verify(() -> Bukkit.getAdvancement(gearAdvancement), never());
+            bukkit.verify(() -> Bukkit.getAdvancement(setAdvancement), never());
         }
     }
 
     @Test
-    void killingTheSifterDoesNotRequestOtherBossAdvancements() {
-        var killer = server.addPlayer();
-        LivingEntity dead = mock(LivingEntity.class);
-        PersistentDataContainer pdc = mock(PersistentDataContainer.class);
-        NamespacedKey creatureKey = new NamespacedKey(plugin, "sift_creature");
-        when(dead.getPersistentDataContainer()).thenReturn(pdc);
-        when(pdc.get(eq(creatureKey), eq(PersistentDataType.STRING))).thenReturn("the_sifter");
-        when(dead.getKiller()).thenReturn(killer);
-        EntityDeathEvent event = mock(EntityDeathEvent.class);
-        when(event.getEntity()).thenReturn(dead);
-        NamespacedKey sifterAdvancement = new NamespacedKey(plugin, "sifter");
-        NamespacedKey matriarchAdvancement = new NamespacedKey(plugin, "matriarch");
-
-        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
-            bukkit.when(() -> Bukkit.getAdvancement(sifterAdvancement)).thenReturn(null);
-            bukkit.when(() -> Bukkit.getAdvancement(matriarchAdvancement)).thenReturn(null);
-            manager.onCreatureDeath(event);
-
-            bukkit.verify(() -> Bukkit.getAdvancement(sifterAdvancement));
-            bukkit.verify(() -> Bukkit.getAdvancement(matriarchAdvancement), never());
-        }
-    }
-
-    @Test
-    void killingSpireTyrantRequestsTyrantAdvancement() {
-        // Parity fix: the bundled "tyrant" advancement was unobtainable until a creature
-        // carried a matching ID; SiftEcologyManager now spawns "spire_tyrant".
-        var killer = server.addPlayer();
-        LivingEntity dead = mock(LivingEntity.class);
-        PersistentDataContainer pdc = mock(PersistentDataContainer.class);
-        NamespacedKey creatureKey = new NamespacedKey(plugin, "sift_creature");
-        when(dead.getPersistentDataContainer()).thenReturn(pdc);
-        when(pdc.get(eq(creatureKey), eq(PersistentDataType.STRING))).thenReturn("spire_tyrant");
-        when(dead.getKiller()).thenReturn(killer);
-        EntityDeathEvent event = mock(EntityDeathEvent.class);
-        when(event.getEntity()).thenReturn(dead);
-        NamespacedKey tyrantAdvancement = new NamespacedKey(plugin, "tyrant");
-        NamespacedKey sifterAdvancement = new NamespacedKey(plugin, "sifter");
-
-        try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
-            bukkit.when(() -> Bukkit.getAdvancement(tyrantAdvancement)).thenReturn(null);
-            bukkit.when(() -> Bukkit.getAdvancement(sifterAdvancement)).thenReturn(null);
-            manager.onCreatureDeath(event);
-
-            // Parity design: the Spire Tyrant is a Sifter variant, so killing it grants BOTH
-            // "sifter" and "tyrant" (see SiftAdvancementManager.onCreatureDeath).
-            bukkit.verify(() -> Bukkit.getAdvancement(tyrantAdvancement));
-            bukkit.verify(() -> Bukkit.getAdvancement(sifterAdvancement));
-        }
-    }
-
-    @Test
-    void drinkingIchorThroughCustomInteractionRequestsStormAdvancement() {
+    void drinkingIchorThroughCustomInteractionRequestsBloodOfTheGods() {
         var player = server.addPlayer();
         IchorContent ichor = new IchorContent(plugin);
         ItemStack bottle = ichor.ichorBottle();
@@ -142,16 +90,16 @@ class SiftAdvancementManagerTest {
         IchorListener ichorListener = new IchorListener(plugin, ichor, mock(IchorState.class));
         server.getPluginManager().registerEvents(ichorListener, plugin);
         server.getPluginManager().registerEvents(manager, plugin);
-        NamespacedKey stormAdvancement = new NamespacedKey(plugin, "storm");
+        NamespacedKey advancementKey = new NamespacedKey(plugin, "blood_of_the_gods");
 
         try (MockedStatic<Bukkit> bukkit = mockStatic(Bukkit.class, CALLS_REAL_METHODS)) {
-            bukkit.when(() -> Bukkit.getAdvancement(stormAdvancement)).thenReturn(null);
+            bukkit.when(() -> Bukkit.getAdvancement(advancementKey)).thenReturn(null);
             PlayerInteractEvent event = new PlayerInteractEvent(player, Action.RIGHT_CLICK_AIR,
                     bottle, null, org.bukkit.block.BlockFace.SELF, EquipmentSlot.HAND);
             server.getPluginManager().callEvent(event);
 
             assertTrue(event.isCancelled(), "IchorListener should use its custom consumption path");
-            bukkit.verify(() -> Bukkit.getAdvancement(stormAdvancement));
+            bukkit.verify(() -> Bukkit.getAdvancement(advancementKey));
         }
     }
 }

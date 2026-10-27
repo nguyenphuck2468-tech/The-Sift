@@ -215,7 +215,6 @@ public final class RiftManager implements Listener {
         int y = sift.getHighestBlockYAt(x, z) + 1;
         if (openRift(new Location(sift, x + 0.5, y, z + 0.5), target)) {
             target.sendMessage("\u00a75A Rift tears open somewhere nearby...");
-            SiftAdvancementGrant.grant(plugin, target, "tear_in_the_sky");
         }
     }
 
@@ -263,7 +262,7 @@ public final class RiftManager implements Listener {
             entity.teleport(destination);
             if (entity instanceof Player player) {
                 player.sendMessage("§5The Rift carries you between worlds.");
-                SiftAdvancementGrant.grant(plugin, player, "between_worlds");
+                SiftAdvancementGrant.grant(plugin, player, "rifter");
             }
             plugin.getServer().getScheduler().runTaskLater(plugin,
                     () -> travelling.remove(entity.getUniqueId()), 20L);
@@ -412,9 +411,7 @@ public final class RiftManager implements Listener {
         if (frame != null && rift != null) {
             rift.setGate(frame.gate(), frame.arrival(frame.sideOf(played.getLocation())));
             ancientCity.fireBeams(sources, at);
-            SiftAdvancementGrant.grant(plugin, player, "ancient_gate");
         }
-        SiftAdvancementGrant.grant(plugin, player, "sonorous_song");
         if (player.isOnline()) player.sendActionBar("§bThe Sonorous song is complete.");
     }
 
@@ -436,6 +433,26 @@ public final class RiftManager implements Listener {
             rift.beginClosing();
             player.sendActionBar("§5The portal folds back into the deepslate.");
             return;
+        }
+    }
+
+    /** Mod advancement "Rift Resonance": play the Rift disc in a jukebox near an active Rift. */
+    @EventHandler
+    public void onRiftDisc(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK || event.getClickedBlock() == null
+                || event.getClickedBlock().getType() != Material.JUKEBOX) return;
+        ItemStack held = event.getItem();
+        if (held == null || !held.hasItemMeta()
+                || !"rift_disc".equals(held.getItemMeta().getPersistentDataContainer()
+                .get(new NamespacedKey(plugin, "content"), PersistentDataType.STRING))) return;
+        Location at = event.getClickedBlock().getLocation();
+        for (RiftInstance rift : rifts.values()) {
+            if (rift.state == RiftState.ACTIVE && rift.center.getWorld() != null
+                    && rift.center.getWorld().equals(at.getWorld())
+                    && rift.center.distanceSquared(at) <= 48.0 * 48.0) {
+                SiftAdvancementGrant.grant(plugin, event.getPlayer(), "rift_resonance");
+                return;
+            }
         }
     }
 

@@ -1,0 +1,190 @@
+{
+  "parent": "thesift:blood_of_the_gods",
+  "display": {
+    "icon": {
+      "id": "minecraft:paper",
+      "components": {
+        "minecraft:item_model": "thesift:siftite_boots"
+      }
+    },
+    "title": "Certified Sifter",
+    "description": "Explore all Sift biomes",
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "sift_wastes": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": {
+          "entity": "this",
+          "predicate": {
+            "minecraft:location": {
+              "biomes": "thesift:sift_wastes"
+            }
+          },
+          "type": "minecraft:entity_properties"
+        }
+      }
+    },
+    "sift_deep_dark": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": {
+          "entity": "this",
+          "predicate": {
+            "minecraft:location": {
+              "biomes": "thesift:sift_deep_dark"
+            }
+          },
+          "type": "minecraft:entity_properties"
+        }
+      }
+    },
+    "ichor_snowy_peaks": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": {
+          "entity": "this",
+          "predicate": {
+            "minecraft:location": {
+              "biomes": "thesift:ichor_snowy_peaks"
+            }
+          },
+          "type": "minecraft:entity_properties"
+        }
+      }
+    },
+    "siftslate_slopes": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": {
+          "entity": "this",
+          "predicate": {
+            "minecraft:location": {
+              "biomes": "thesift:siftslate_slopes"
+            }
+          },
+          "type": "minecraft:entity_properties"
+        }
+      }
+    },
+    "siftslate_peaks": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": {
+          "entity": "this",
+          "predicate": {
+            "minecraft:location": {
+              "biomes": "thesift:siftslate_peaks"
+            }
+          },
+          "type": "minecraft:entity_properties"
+        }
+      }
+    },
+    "overgrown_slopes": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": {
+          "entity": "this",
+          "predicate": {
+            "minecraft:location": {
+              "biomes": "thesift:overgrown_slopes"
+            }
+          },
+          "type": "minecraft:entity_properties"
+        }
+      }
+    },
+    "overgrown_peaks": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": {
+          "entity": "this",
+          "predicate": {
+            "minecraft:location": {
+              "biomes": "thesift:overgrown_peaks"
+            }
+          },
+          "type": "minecraft:entity_properties"
+        }
+      }
+    },
+    "overgrown_forest_slopes": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": {
+          "entity": "this",
+          "predicate": {
+            "minecraft:location": {
+              "biomes": "thesift:overgrown_forest_slopes"
+            }
+          },
+          "type": "minecraft:entity_properties"
+        }
+      }
+    },
+    "overgrown_forest": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": {
+          "entity": "this",
+          "predicate": {
+            "minecraft:location": {
+              "biomes": "thesift:overgrown_forest"
+            }
+          },
+          "type": "minecraft:entity_properties"
+        }
+      }
+    },
+    "overgrown_clearing": {
+      "trigger": "minecraft:location",
+      "conditions": {
+        "player": {
+          "entity": "this",
+          "predicate": {
+            "minecraft:location": {
+              "biomes": "thesift:overgrown_clearing"
+            }
+          },
+          "type": "minecraft:entity_properties"
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "sift_wastes"
+    ],
+    [
+      "sift_deep_dark"
+    ],
+    [
+      "ichor_snowy_peaks"
+    ],
+    [
+      "siftslate_slopes"
+    ],
+    [
+      "siftslate_peaks"
+    ],
+    [
+      "overgrown_slopes"
+    ],
+    [
+      "overgrown_peaks"
+    ],
+    [
+      "overgrown_forest_slopes"
+    ],
+    [
+      "overgrown_forest"
+    ],
+    [
+      "overgrown_clearing"
+    ]
+  ]
+}

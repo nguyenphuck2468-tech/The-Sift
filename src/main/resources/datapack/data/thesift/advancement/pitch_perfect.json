@@ -1,23 +1,26 @@
 {
+  "parent": "thesift:friend_of_the_sift",
+  "display": {
+    "icon": {
+      "id": "minecraft:paper",
+      "components": {
+        "minecraft:item_model": "thesift:singer_spawn_egg"
+      }
+    },
+    "title": "Pitch Perfect",
+    "description": "Barter with a Singer using a Soul Block",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
   "criteria": {
     "done": {
       "trigger": "minecraft:impossible"
     }
   },
-  "display": {
-    "icon": {
-      "id": "minecraft:amethyst_shard"
-    },
-    "title": "Pitch Perfect",
-    "description": "Trade a Soul Block with a Singer",
-    "frame": "goal",
-    "show_toast": true,
-    "announce_to_chat": true
-  },
   "requirements": [
     [
       "done"
     ]
-  ],
-  "parent": "thesift:singer_awake"
+  ]
 }
