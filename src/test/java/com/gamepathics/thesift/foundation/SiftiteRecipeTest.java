@@ -65,26 +65,53 @@ class SiftiteRecipeTest {
     @Test
     void datapackStyleExactChoiceRecipePassesTheCraftGuard() {
         // Simulates a recipe loaded from the bundled progression datapack: it is Keyed but
-        // NOT owned by this plugin's namespace, and its ingredient ExactChoice carries the
-        // tagged siftite_ingot. Without the intent check in onPrepareCraft, the guard would
-        // blank out this recipe's result because the matrix contains a siftite_-tagged item.
+        // NOT owned by this plugin, and its ingredient ExactChoice carries the tagged
+        // siftite_ingot. The guard must not blank out this recipe's result: because the
+        // tagged item satisfies the recipe's own declared choice, the per-slot check in
+        // onPrepareCraft leaves the matrix untouched (verified here through MockBukkit's
+        // CraftInventoryView-based crafting inventory, which runs PrepareItemCraftEvent).
         NamespacedKey foreignKey = new NamespacedKey("thesift_datapack_sim", "siftite_ingot_from_nuggets");
         ItemStack output = content.item(Material.IRON_INGOT, "sim_output", "Simulated Output");
         ShapelessRecipe foreignRecipe = new ShapelessRecipe(foreignKey, output);
-        foreignRecipe.addIngredient(new RecipeChoice.ExactChoice(
-                content.item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot")));
+        ItemStack taggedIngot = content.item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot");
+        foreignRecipe.addIngredient(new RecipeChoice.ExactChoice(taggedIngot));
         server.addRecipe(foreignRecipe);
 
-        SiftiteContent.SiftiteGuardProbe probe =
-                new SiftiteContent.SiftiteGuardProbe(new NamespacedKey(plugin, "content"));
-        assertTrue(probe.recipeIntendsTaggedItems(foreignRecipe),
-                "datapack recipes whose exact-choice ingredients carry our tags must be whitelisted");
-        // A plain vanilla material-only recipe must still be guarded.
+        NamespacedKey idKey = new NamespacedKey(plugin, "content");
+        assertFalse(SiftiteContent.recipeIntendsTaggedItems(foreignRecipe, idKey),
+                "recipes with deliberate non-material choices are left to Bukkit matching, not the leak heuristic");
+
+        org.bukkit.inventory.CraftingInventory grid =
+                (org.bukkit.inventory.CraftingInventory) server.createInventory(
+                        null, org.bukkit.inventory.InventoryType.WORKBENCH, "sim");
+        grid.setMatrix(new ItemStack[]{taggedIngot});
+        server.getScheduler().performTicks(1);
+        assertNotNull(grid.getResult(), "exact-choice datapack recipe must produce a result");
+        assertEquals("sim_output", grid.getResult().getItemMeta().getPersistentDataContainer()
+                .get(idKey, org.bukkit.persistence.PersistentDataType.STRING),
+                "tagged siftite ingot satisfying the recipe's ExactChoice must craft, not be blocked");
+
+        // A plain vanilla material-only recipe must still be flagged by the leak heuristic:
+        // its MaterialChoice compares bare material type, so a siftite-tagged stand-in of
+        // the same material slips in unless the per-slot guard blocks it at craft time.
         ShapelessRecipe vanillaClone = new ShapelessRecipe(
                 new NamespacedKey("other_plugin", "plain"), output);
         vanillaClone.addIngredient(Material.NETHERITE_INGOT);
-        assertFalse(probe.recipeIntendsTaggedItems(vanillaClone),
-                "material-only recipes stay guarded so tagged items cannot leak into vanilla crafts");
+        assertTrue(SiftiteContent.recipeIntendsTaggedItems(vanillaClone, idKey),
+                "material-only recipes that would accept a tagged stand-in stay flagged for the guard");
+
+        // End-to-end P0 regression: the tagged ingot in the vanilla-shaped NETHERITE_INGOT
+        // craft gets blanked by the guard, so no netherite ingot may ever come out.
+        org.bukkit.inventory.CraftingInventory leaky =
+                (org.bukkit.inventory.CraftingInventory) server.createInventory(
+                        null, org.bukkit.inventory.InventoryType.WORKBENCH, "leak");
+        leaky.setMatrix(new ItemStack[]{
+                taggedIngot, taggedIngot, taggedIngot,
+                taggedIngot, taggedIngot, taggedIngot,
+                taggedIngot, taggedIngot, taggedIngot});
+        server.getScheduler().performTicks(1);
+        assertNull(leaky.getResult(),
+                "a siftite-tagged item must never satisfy a vanilla material-only recipe");
     }
 
     @Test
@@ -96,17 +123,15 @@ class SiftiteRecipeTest {
         NamespacedKey foreignKey = new NamespacedKey("thesift_datapack_sim", "mixed_recipe");
         ItemStack output = content.item(Material.IRON_INGOT, "sim_output", "Simulated Output");
         ShapedRecipe mixed = new ShapedRecipe(foreignKey, output);
-        mixed.shape("NI"); // N = intended exact siftite nugget, I = vanilla iron ingot slot
-        mixed.setIngredient('N', new RecipeChoice.ExactChoice(
-                content.item(Material.IRON_NUGGET, "siftite_nugget", "Siftite Nugget")));
+        mixed.shape("NI"); // N = intended exact siftite nugget, I = amethyst shard slot
+        ItemStack taggedNugget = content.item(Material.IRON_NUGGET, "siftite_nugget", "Siftite Nugget");
+        mixed.setIngredient('N', new RecipeChoice.ExactChoice(taggedNugget));
         mixed.setIngredient('I', Material.AMETHYST_SHARD);
         server.addRecipe(mixed);
 
-        SiftiteContent.SiftiteGuardProbe probe =
-                new SiftiteContent.SiftiteGuardProbe(new NamespacedKey(plugin, "content"));
-        // Legacy whole-recipe whitelist would return true here; that is exactly the too-broad
-        // behaviour the per-slot rewrite removed. Keep the check covered for its callers.
-        assertTrue(probe.recipeIntendsTaggedItems(mixed));
+        NamespacedKey idKey = new NamespacedKey(plugin, "content");
+        // Mixed choices are hand-authored too — no wholesale whitelist via the leak heuristic.
+        assertFalse(SiftiteContent.recipeIntendsTaggedItems(mixed, idKey));
 
         // Per-slot semantics: the nugget choice accepts the tagged nugget, but NO declared
         // choice accepts a siftite_ingot — so an ingot placed in the material slot stays guarded.
@@ -116,9 +141,27 @@ class SiftiteRecipeTest {
         assertFalse(anyChoiceAcceptsIngot,
                 "a mixed recipe must not implicitly accept unrelated siftite items");
         boolean anyChoiceAcceptsNugget = SiftiteContent.recipeChoices(mixed).stream()
-                .anyMatch(choice -> choice.test(
-                        content.item(Material.IRON_NUGGET, "siftite_nugget", "Siftite Nugget")));
+                .anyMatch(choice -> choice.test(taggedNugget));
         assertTrue(anyChoiceAcceptsNugget);
+
+        // End-to-end: correct ingredients craft fine...
+        org.bukkit.inventory.CraftingInventory good =
+                (org.bukkit.inventory.CraftingInventory) server.createInventory(
+                        null, org.bukkit.inventory.InventoryType.WORKBENCH, "mixed-good");
+        good.setMatrix(new ItemStack[]{taggedNugget, new ItemStack(Material.AMETHYST_SHARD)});
+        server.getScheduler().performTicks(1);
+        assertNotNull(good.getResult(), "intended exact + material combination must craft");
+
+        // ...but swapping the nugget for a DIFFERENT siftite item in the exact slot gets blocked.
+        org.bukkit.inventory.CraftingInventory bad =
+                (org.bukkit.inventory.CraftingInventory) server.createInventory(
+                        null, org.bukkit.inventory.InventoryType.WORKBENCH, "mixed-bad");
+        bad.setMatrix(new ItemStack[]{
+                content.item(Material.IRON_NUGGET, "siftite_scrap", "Siftite Scrap"),
+                new ItemStack(Material.AMETHYST_SHARD)});
+        server.getScheduler().performTicks(1);
+        assertNull(bad.getResult(),
+                "a tagged item that matches no declared choice must not craft the foreign recipe");
     }
 
     @Test

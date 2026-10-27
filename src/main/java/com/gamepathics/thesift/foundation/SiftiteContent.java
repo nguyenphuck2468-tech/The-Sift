@@ -52,15 +52,15 @@ public final class SiftiteContent implements Listener {
     /** Unregisters every recipe this plugin owns (called from onDisable so a reload does not leave ghost recipes). */
     public void removeRecipes() {
         Server server = plugin.getServer();
-        for (String key : java.util.List.of("charoite", "siftite_nugget", "siftite_ingot",
-                "siftite_upgrade_smithing_template", "smelt_raw_sifter_meat", "smelt_blub_meat",
-                "blub_campfire")) {
-            server.removeRecipe(new NamespacedKey(plugin, key));
+        // Sweep by ownership, not a hand-maintained list: any siftite tool/armor recipe added
+        // later used to survive disable/reload as a ghost because it was missing below.
+        // Copy first — mutating the recipe manager while iterating its live view is unsafe.
+        java.util.List<org.bukkit.inventory.Recipe> owned = new ArrayList<>();
+        for (org.bukkit.inventory.Recipe recipe : server.recipeIterator()) {
+            if (isOwnRecipe(recipe)) owned.add(recipe);
         }
-        for (String key : java.util.List.of("siftite_sword", "siftite_axe", "siftite_pickaxe",
-                "siftite_shovel", "siftite_hoe", "siftite_helmet", "siftite_chestplate",
-                "siftite_leggings", "siftite_boots")) {
-            server.removeRecipe(new NamespacedKey(plugin, key));
+        for (org.bukkit.inventory.Recipe recipe : owned) {
+            server.removeRecipe(recipe);
         }
     }
 
@@ -341,28 +341,33 @@ public final class SiftiteContent implements Listener {
         plugin.getServer().addRecipe(recipe);
     }
 
-    /** Tagged Siftite materials must not be accepted by vanilla material-only recipes. */
+    /** Tagged Siftite materials must not be accepted by recipes that don't declare them. */
     @EventHandler
     public void onPrepareCraft(PrepareItemCraftEvent event) {
         org.bukkit.inventory.Recipe recipe = event.getRecipe();
-        if (isPluginRecipe(recipe)) {
+        if (isOwnRecipe(recipe)) {
             return;
         }
-        // Recipes loaded from the bundled datapack are Keyed but not owned by this plugin,
-        // so isPluginRecipe() cannot whitelist them. Walk the matrix and only clear slots
-        // whose tagged item does NOT match one of the recipe's own ingredient choices —
-        // a single intended match must not open the whole recipe to every tagged item.
+        // Per-slot guard: a tagged siftite item may only stay in the grid when it satisfies
+        // one of THIS recipe's own declared ingredient choices. MaterialChoice compares bare
+        // material type, so a siftite_ingot dropped into a vanilla NETHERITE_INGOT craft fails
+        // every declared choice and gets blanked — no wholesale whitelist, no leak.
+        //
+        // IMPORTANT: we never write nulls back into the matrix. PrepareItemCraftEvent fires
+        // for EVERY candidate recipe matching the grid; clearing slots here would physically
+        // delete the player's ingredients whenever any unrelated foreign recipe is evaluated
+        // (review P1: "mất nguyên liệu"). Blanking only the RESULT keeps items intact while
+        // still preventing the undesired craft from producing anything.
         List<RecipeChoice> choices = recipeChoices(recipe);
         ItemStack[] matrix = event.getInventory().getMatrix();
-        boolean changed = false;
+        boolean blocked = false;
         for (int i = 0; i < matrix.length; i++) {
             ItemStack ingredient = matrix[i];
             if (!isSiftiteItem(ingredient)) continue;
             if (choices.stream().anyMatch(choice -> choice != null && choice.test(ingredient))) continue;
-            matrix[i] = null;
-            changed = true;
+            blocked = true;
         }
-        if (changed) event.getInventory().setMatrix(matrix);
+        if (blocked) event.getInventory().setResult(null);
     }
 
     /** Every RecipeChoice a keyed recipe declares, using the Paper 26.3 recipe APIs. */
@@ -388,71 +393,51 @@ public final class SiftiteContent implements Listener {
         return choices;
     }
 
-    /** True when any ingredient choice of a keyed recipe explicitly names a siftite_-tagged item. */
+    /**
+     * Leak heuristic (review P2): true when a recipe declares ONLY bare MaterialChoices
+     * while still accepting some siftite-tagged stand-in item — i.e. a vanilla/material-only
+     * recipe that siftite items could sneak into (plain NETHERITE_INGOT crafts, other
+     * plugins' recipes on shared materials). Recipes that declare any non-material choice
+     * (ExactChoice, PredicateChoice, TagChoice) were authored around specific items and rely
+     * on exact matching instead. This predicate documents/pins the leak surface; the actual
+     * enforcement is the per-slot ownership-aware guard in onPrepareCraft, which blanks any
+     * tagged slot that satisfies no declared choice of a recipe not owned by this plugin.
+     */
     static boolean recipeIntendsTaggedItems(org.bukkit.inventory.Recipe recipe, NamespacedKey idKey) {
-        if (!(recipe instanceof Keyed)) return false;
-        for (RecipeChoice choice : recipeChoices(recipe)) {
+        List<RecipeChoice> choices = recipeChoices(recipe);
+        if (choices.isEmpty()) return false;
+        for (RecipeChoice choice : choices) {
             if (choice == null) continue;
-            // ExactChoice#getItemStack() is deprecated and PredicateChoice exposes no public
-            // display list, so probe the choice with representative stacks instead: a tagged
-            // siftite_ stack that satisfies the choice proves the recipe was authored for it.
-            if (choiceAcceptsTaggedItem(choice, idKey)) return true;
+            // Any non-material choice means the recipe matches specific items exactly —
+            // it is not a material-only leak vector.
+            if (!(choice instanceof RecipeChoice.MaterialChoice)) return false;
+        }
+        // Material-only recipe: would ANY of its choices swallow a siftite-tagged item?
+        for (RecipeChoice choice : choices) {
+            if (choice != null && choice.test(taggedStandIn(choice, idKey))) return true;
         }
         return false;
     }
 
     /**
-     * Checks an ExactChoice's own stacks directly, and falls back to probing the choice with
-     * representative tagged stand-in stacks. The direct ExactChoice#getChoices() read can come
-     * back empty on server implementations that normalise the display list (MockBukkit does),
-     * so the probe is what makes this check portable: a tagged siftite_ stack that satisfies
-     * the choice proves the recipe was authored for it.
+     * Builds a siftite-tagged stand-in for one declared choice: same material the choice
+     * accepts (first candidate of a MaterialChoice), carrying the {@code siftite_probe}
+     * content id, so we can ask the choice directly whether it would let a tagged item
+     * through. Falls back to AIR (test returns false) when the choice names no material.
      */
-    private static boolean choiceAcceptsTaggedItem(RecipeChoice choice, NamespacedKey idKey) {
-        if (choice instanceof RecipeChoice.ExactChoice exact) {
-            for (ItemStack stack : exact.getChoices()) {
-                if (stack != null && stack.hasItemMeta()) {
-                    String id = stack.getItemMeta().getPersistentDataContainer().get(idKey, PersistentDataType.STRING);
-                    if (id != null && id.startsWith("siftite_")) return true;
-                }
-            }
-        }
-        // Probe every material the choice could plausibly accept with a tagged stand-in.
-        // MaterialChoice reports its candidates; ExactChoice only reports its display stacks,
-        // so also try the item types already seen in this recipe's choices plus common bases.
-        java.util.Set<Material> candidates = java.util.EnumSet.noneOf(Material.class);
+    private static ItemStack taggedStandIn(RecipeChoice choice, NamespacedKey idKey) {
+        Material base = Material.AIR;
         if (choice instanceof RecipeChoice.MaterialChoice material) {
-            candidates.addAll(material.getChoices());
-        } else if (choice instanceof RecipeChoice.ExactChoice exact) {
-            for (ItemStack stack : exact.getChoices()) {
-                if (stack != null) candidates.add(stack.getType());
-            }
+            Collection<? extends Material> options = material.getChoices();
+            if (options != null && !options.isEmpty()) base = options.iterator().next();
         }
-        candidates.addAll(PROBE_BASES);
-        for (Material candidate : candidates) {
-            if (!candidate.isItem()) continue;
-            ItemStack probe = new ItemStack(candidate);
-            ItemMeta meta = probe.getItemMeta();
-            if (meta == null) continue;
+        ItemStack probe = new ItemStack(base);
+        ItemMeta meta = probe.getItemMeta();
+        if (base.isItem() && meta != null) {
             meta.getPersistentDataContainer().set(idKey, PersistentDataType.STRING, "siftite_probe");
             probe.setItemMeta(meta);
-            if (choice.test(probe)) return true;
         }
-        return false;
-    }
-
-    /** Representative vanilla bases used to probe recipe ingredient choices with tagged items. */
-    private static final java.util.Set<Material> PROBE_BASES = java.util.EnumSet.of(
-            Material.AMETHYST_SHARD, Material.NETHERITE_INGOT, Material.IRON_INGOT,
-            Material.IRON_NUGGET, Material.MUTTON, Material.COPPER_INGOT, Material.GOLD_INGOT);
-
-    /** Test seam: exposes the datapack-recipe whitelist check without a live plugin instance. */
-    static final class SiftiteGuardProbe {
-        private final NamespacedKey idKey;
-        SiftiteGuardProbe(NamespacedKey idKey) { this.idKey = idKey; }
-        boolean recipeIntendsTaggedItems(org.bukkit.inventory.Recipe recipe) {
-            return SiftiteContent.recipeIntendsTaggedItems(recipe, idKey);
-        }
+        return probe;
     }
 
     @EventHandler
@@ -475,6 +460,23 @@ public final class SiftiteContent implements Listener {
     private boolean isPluginRecipe(org.bukkit.inventory.Recipe recipe) {
         return recipe instanceof Keyed keyed
                 && keyed.getKey().getNamespace().equals(plugin.getName().toLowerCase(Locale.ROOT));
+    }
+
+    /**
+     * True only for recipes registered by THIS plugin instance. Ownership is proven via the
+     * recipe's own NamespacedKey: every addShaped/addShapeless/registerFurnish/registerCampfire
+     * call builds its key with {@code new NamespacedKey(plugin, ...)}. The old check compared
+     * the key namespace against the lowercased plugin name — which also matched the bundled
+     * datapack's {@code thesift:*} recipes and wrongly bypassed them through the guard.
+     */
+    private boolean isOwnRecipe(org.bukkit.inventory.Recipe recipe) {
+        if (!(recipe instanceof Keyed keyed)) return false;
+        try {
+            return keyed.getKey().getNamespace().equals(plugin.getName())
+                    && new NamespacedKey(plugin, keyed.getKey().getKey()).equals(keyed.getKey());
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
     }
 
     private void addShaped(String key, ItemStack result, String row1, String row2, String row3, Object... ingredients) {

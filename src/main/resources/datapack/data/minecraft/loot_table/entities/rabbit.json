@@ -34,6 +34,9 @@
             },
             {
               "type": "minecraft:item",
+              "conditions": [
+                {"condition": "minecraft:random_chance", "chance": 0.1}
+              ],
               "name": "minecraft:rabbit_foot"
             }
           ]

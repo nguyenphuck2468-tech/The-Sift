@@ -1,0 +1,12 @@
+{
+  "condition": "minecraft:entity_properties",
+  "entity": "this",
+  "predicate": {
+    "type": "minecraft:rabbit",
+    "flags": {
+      "is_baby": false
+    },
+    "location": {},
+    "nbt": "{Tamed:1b,RabbitType:5}"
+  }
+}

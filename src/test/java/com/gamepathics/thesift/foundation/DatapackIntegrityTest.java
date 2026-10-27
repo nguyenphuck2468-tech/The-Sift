@@ -47,11 +47,31 @@ class DatapackIntegrityTest {
                 "datapack must bundle the Blub loot table (blub_meat drop)");
         // Vanilla rabbit override so tamed Blub rabbits keep the mod-parity meat drop.
         assertTrue(Files.exists(PROGRESSION.resolve("data/minecraft/loot_table/entities/rabbit.json")));
+        // The rabbit override references a loot predicate; it must actually ship, otherwise
+        // the whole table fails to load (invalid reference) and vanilla rabbit drops break.
+        assertTrue(Files.exists(PROGRESSION.resolve("data/thesift/predicate/is_tamed_blub.json")),
+                "minecraft:reference -> thesift:is_tamed_blub needs a bundled predicate file");
         try (Stream<Path> paths = Files.walk(lootRoot)) {
             for (Path json : paths.filter(path -> path.toString().endsWith(".json")).toList()) {
                 JsonParser.parseString(Files.readString(json)); // must be valid JSON
             }
         }
+    }
+
+    @Test
+    void vanillaRabbitOverrideKeepsBaseDropsAndFootChance() throws IOException {
+        // Regression for the alternatives-order bug: rabbit_foot used to sit behind an
+        // unconditional rabbit_hide entry, so it could never roll. The foot branch now
+        // carries its own random_chance condition, and the plain rabbit (meat) pool stays.
+        Path rabbit = PROGRESSION.resolve("data/minecraft/loot_table/entities/rabbit.json");
+        JsonObject root = JsonParser.parseString(Files.readString(rabbit)).getAsJsonObject();
+        JsonArray pools = root.getAsJsonArray("pools");
+        assertEquals(2, pools.size(), "hide/foot pool plus the base rabbit-meat pool");
+        String serialized = root.toString();
+        assertTrue(serialized.contains("\"minecraft:rabbit\""),
+                "live rabbit must still drop (furnace_smelt condition applies on fire only)");
+        assertTrue(serialized.contains("random_chance"),
+                "rabbit_foot branch must be gated by its own chance, not shadowed forever");
     }
 
     @Test
