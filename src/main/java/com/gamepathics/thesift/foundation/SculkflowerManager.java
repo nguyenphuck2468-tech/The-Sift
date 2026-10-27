@@ -17,7 +17,6 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitTask;
 
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -30,19 +29,15 @@ final class SculkflowerManager implements Listener {
     private static final String FLOWER_ID = "sculkflower";
     private static final long GROWTH_INTERVAL_TICKS = 68L;
 
-    private final JavaPlugin plugin;
     private final ExternalBlockBridge blocks;
     private final SiftiteContent content;
     private final NamespacedKey contentKey;
-    private final BukkitTask growthTask;
 
     SculkflowerManager(JavaPlugin plugin, SiftiteContent content) {
-        this.plugin = plugin;
         this.blocks = new ExternalBlockBridge(plugin);
         this.content = content;
         this.contentKey = new NamespacedKey(plugin, "content");
-        this.growthTask = Bukkit.getScheduler().runTaskTimer(plugin, this::tickGrowth, 40L,
-                GROWTH_INTERVAL_TICKS);
+        Bukkit.getScheduler().runTaskTimer(plugin, this::tickGrowth, 40L, GROWTH_INTERVAL_TICKS);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -87,7 +82,8 @@ final class SculkflowerManager implements Listener {
         if (age < 0) {
             if (!blocks.isBlock(FLOWER_ID, event.getBlock())) return;
             event.setDropItems(false);
-            drop(event.getBlock(), seed());
+            // The mature plant is the final crop state in the reference mod;
+            // breaking it drops the flower itself, not an extra seed.
             drop(event.getBlock(), flower());
             return;
         }
@@ -100,7 +96,7 @@ final class SculkflowerManager implements Listener {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
         if (sift == null) return;
         for (org.bukkit.Chunk chunk : sift.getLoadedChunks()) {
-            // Approximate vanilla random-tick density without walking every block in the world.
+            // Sample loaded chunks rather than scanning every block every tick.
             for (int attempt = 0; attempt < 8; attempt++) {
                 int x = ThreadLocalRandom.current().nextInt(16);
                 int z = ThreadLocalRandom.current().nextInt(16);
@@ -114,7 +110,7 @@ final class SculkflowerManager implements Listener {
     }
 
     private boolean grow(Block block, int nextAge) {
-        String id = nextAge >= 2 ? FLOWER_ID : "sculkflower_crop_stage" + nextAge;
+        String id = nextAge >= 2 ? FLOWER_ID : CROP_STAGE1;
         return blocks.place(id, block.getLocation());
     }
 
