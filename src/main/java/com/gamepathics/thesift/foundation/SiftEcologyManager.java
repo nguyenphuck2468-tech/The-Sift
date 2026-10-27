@@ -62,6 +62,7 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey blubOwnerKey;
     private final NamespacedKey spearThrowAtKey;
     private final NamespacedKey snifferCorruptionStartKey;
+    private final NamespacedKey darkSnifferSonicAtKey;
     /** Last herd anchor per world so spawned Sifters regroup instead of scattering (mod parity). */
     private final java.util.Map<org.bukkit.World, Location> sifterHerdAnchors = new ConcurrentHashMap<>();
     private final SiftMobFactory mobFactory;
@@ -94,6 +95,7 @@ public final class SiftEcologyManager implements Listener {
         this.blubOwnerKey = new NamespacedKey(plugin, "blub_owner");
         this.spearThrowAtKey = new NamespacedKey(plugin, "spear_last_throw");
         this.snifferCorruptionStartKey = new NamespacedKey(plugin, "sniffer_corruption_start");
+        this.darkSnifferSonicAtKey = new NamespacedKey(plugin, "dark_sniffer_sonic_at");
         // Shared instances are injected by the plugin lifecycle; fall back to local ones only
         // for standalone/test construction.
         this.mobFactory = sharedMobFactory != null ? sharedMobFactory : new SiftMobFactory(plugin);
@@ -1185,21 +1187,34 @@ public final class SiftEcologyManager implements Listener {
     private void tickDarkSniffers() {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
         if (sift == null) return;
-        // Sonic Sniff: pull players toward the Dark Sniffer (mod parity, docs §5). Scans the
-        // world once per tick instead of per player so multiple survivors never double-pull.
+        // Vanilla-backed Sonic Sniff approximation: one visible target per cooldown.
+        // The mod's wind-up and travelling wave still require a custom mob implementation.
+        long now = System.currentTimeMillis();
         for (Entity entity : sift.getEntities()) {
-            if (!(entity instanceof LivingEntity sniffer) || entity.getType() != EntityType.SNIFFER) continue;
-            String id = entity.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING);
-            if (!"dark_sniffer".equals(id)) continue;
-            for (Entity nearby : sift.getNearbyEntities(entity.getLocation(), 18, 10, 18)) {
-                if (!(nearby instanceof Player target)) continue;
-                Vector pull = sniffer.getLocation().toVector().subtract(target.getLocation().toVector());
-                if (pull.lengthSquared() < 0.01) continue;
-                pull.normalize().multiply(0.28).setY(0.18);
-                target.setVelocity(target.getVelocity().multiply(0.45).add(pull));
-                target.playSound(target.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 0.25f, 1.6f);
-                sift.spawnParticle(Particle.SONIC_BOOM, target.getLocation().add(0, 1, 0), 1);
+            if (!(entity instanceof Mob sniffer) || entity.getType() != EntityType.SNIFFER) continue;
+            var pdc = entity.getPersistentDataContainer();
+            if (!"dark_sniffer".equals(pdc.get(creatureKey, PersistentDataType.STRING))) continue;
+            Long lastSonicAt = pdc.get(darkSnifferSonicAtKey, PersistentDataType.LONG);
+            if (lastSonicAt != null && now - lastSonicAt < 5_000L) continue;
+
+            Player target = null;
+            double nearestDistanceSquared = 32.0 * 32.0;
+            for (Entity nearby : sift.getNearbyEntities(entity.getLocation(), 32, 10, 32)) {
+                if (!(nearby instanceof Player player) || !player.isValid() || player.isDead()) continue;
+                double distanceSquared = entity.getLocation().distanceSquared(player.getLocation());
+                if (distanceSquared < 25.0 || distanceSquared > nearestDistanceSquared) continue;
+                if (!sniffer.hasLineOfSight(player)) continue;
+                nearestDistanceSquared = distanceSquared;
+                target = player;
             }
+            if (target == null) continue;
+            Vector pull = entity.getLocation().toVector().subtract(target.getLocation().toVector());
+            if (pull.lengthSquared() < 0.01) continue;
+            pdc.set(darkSnifferSonicAtKey, PersistentDataType.LONG, now);
+            pull.normalize().multiply(0.3).setY(0.18);
+            target.setVelocity(target.getVelocity().multiply(0.45).add(pull));
+            target.playSound(target.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 0.45f, 1.2f);
+            sift.spawnParticle(Particle.SONIC_BOOM, target.getLocation().add(0, 1, 0), 1);
         }
         // Corruption conversion: vanilla Sniffers that linger on sculk/soul ground in The Sift
         // turn into a Dark Sniffer, mirroring the mod's "infected sniffer" transformation.
