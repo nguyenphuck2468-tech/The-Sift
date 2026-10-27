@@ -1253,8 +1253,8 @@ public final class SiftEcologyManager implements Listener {
                     }
                     double leadTicks = Math.min(20.0, distance / 1.5);
                     Vector velocity = target.getVelocity();
-                    Vector predicted = targetPos.clone().add(velocity.getX() * leadTicks, 0,
-                            velocity.getZ() * leadTicks);
+                    Vector predicted = targetPos.clone().add(new Vector(
+                            velocity.getX() * leadTicks, 0, velocity.getZ() * leadTicks));
                     Vector direction = predicted.subtract(origin);
                     if (direction.lengthSquared() < 0.000001) direction = direct;
                     double predictedDistance = direction.length();
@@ -1298,7 +1298,8 @@ public final class SiftEcologyManager implements Listener {
                     if (!(candidate instanceof LivingEntity victim) || victim == entity || victim.isDead()) continue;
                     var victimPdc = victim.getPersistentDataContainer();
                     if (waveId != null && waveId.equals(victimPdc.get(darkSnifferWavePulledKey, PersistentDataType.STRING))) continue;
-                    Vector center = victim.getLocation().toVector().add(0, victim.getHeight() * 0.5, 0);
+                    Vector center = victim.getLocation().toVector().add(
+                            new Vector(0, victim.getHeight() * 0.5, 0));
                     if (distanceSquaredToSegment(center, previous, current) > 0.8 * 0.8) continue;
                     Vector pull = entity.getLocation().toVector().subtract(victim.getLocation().toVector()).multiply(0.3);
                     victim.setVelocity(victim.getVelocity().add(pull));
@@ -1357,6 +1358,7 @@ public final class SiftEcologyManager implements Listener {
     private void tickDarkSniffers() {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
         if (sift == null) return;
+        long now = System.currentTimeMillis();
         // Corruption conversion: vanilla Sniffers that linger on sculk/soul ground in The Sift
         // turn into a Dark Sniffer, mirroring the mod's "infected sniffer" transformation.
         long cooldownMillis = Math.max(1, plugin.getConfig().getInt("mobs.dark-sniffer.corruption-ticks", 600)) * 50L;
