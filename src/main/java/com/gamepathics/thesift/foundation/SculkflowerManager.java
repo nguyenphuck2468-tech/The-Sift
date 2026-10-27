@@ -111,15 +111,24 @@ final class SculkflowerManager implements Listener {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
         if (sift == null) return;
         for (org.bukkit.Chunk chunk : sift.getLoadedChunks()) {
-            // Sample loaded chunks rather than scanning every block every tick.
+            // Sample columns, not random Y coordinates: choosing a uniform Y across a
+            // modern world's full height almost never lands on a crop block.
             for (int attempt = 0; attempt < 32; attempt++) {
                 int x = ThreadLocalRandom.current().nextInt(16);
                 int z = ThreadLocalRandom.current().nextInt(16);
-                int y = ThreadLocalRandom.current().nextInt(sift.getMinHeight(), sift.getMaxHeight());
-                Block block = chunk.getBlock(x, y, z);
-                int age = cropAge(block);
-                if (age < 0 || ThreadLocalRandom.current().nextInt(3) != 0) continue;
-                grow(block, age + 1);
+                Block crop = null;
+                int age = -1;
+                for (int y = sift.getMaxHeight() - 1; y >= sift.getMinHeight(); y--) {
+                    Block candidate = chunk.getBlock(x, y, z);
+                    int candidateAge = cropAge(candidate);
+                    if (candidateAge >= 0) {
+                        crop = candidate;
+                        age = candidateAge;
+                        break;
+                    }
+                }
+                if (crop == null || ThreadLocalRandom.current().nextInt(3) != 0) continue;
+                grow(crop, age + 1);
             }
         }
     }
