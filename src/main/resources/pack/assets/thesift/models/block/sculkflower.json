@@ -1,7 +1,7 @@
 {
   "parent": "minecraft:block/cross",
   "textures": {
-    "cross": "thesift:block/sculkflower"
+    "cross": "minecraft:block/torchflower"
   },
   "render_type": "minecraft:cutout"
 }
