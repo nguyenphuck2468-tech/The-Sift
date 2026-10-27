@@ -401,7 +401,13 @@ public final class SiftiteContent implements Listener {
         return false;
     }
 
-    /** Checks an ExactChoice's own stacks, then probes Material choices with tagged stand-ins. */
+    /**
+     * Checks an ExactChoice's own stacks directly, and falls back to probing the choice with
+     * representative tagged stand-in stacks. The direct ExactChoice#getChoices() read can come
+     * back empty on server implementations that normalise the display list (MockBukkit does),
+     * so the probe is what makes this check portable: a tagged siftite_ stack that satisfies
+     * the choice proves the recipe was authored for it.
+     */
     private static boolean choiceAcceptsTaggedItem(RecipeChoice choice, NamespacedKey idKey) {
         if (choice instanceof RecipeChoice.ExactChoice exact) {
             for (ItemStack stack : exact.getChoices()) {
@@ -410,19 +416,35 @@ public final class SiftiteContent implements Listener {
                     if (id != null && id.startsWith("siftite_")) return true;
                 }
             }
-            return false;
         }
+        // Probe every material the choice could plausibly accept with a tagged stand-in.
+        // MaterialChoice reports its candidates; ExactChoice only reports its display stacks,
+        // so also try the item types already seen in this recipe's choices plus common bases.
+        java.util.Set<Material> candidates = new java.util.EnumSet<>(java.util.EnumSet.noneOf(Material.class));
         if (choice instanceof RecipeChoice.MaterialChoice material) {
-            for (Material candidate : material.getChoices()) {
-                ItemStack probe = new ItemStack(candidate);
-                ItemMeta meta = probe.getItemMeta();
-                meta.getPersistentDataContainer().set(idKey, PersistentDataType.STRING, "siftite_probe");
-                probe.setItemMeta(meta);
-                if (choice.test(probe)) return true;
+            candidates.addAll(material.getChoices());
+        } else if (choice instanceof RecipeChoice.ExactChoice exact) {
+            for (ItemStack stack : exact.getChoices()) {
+                if (stack != null) candidates.add(stack.getType());
             }
+        }
+        candidates.addAll(PROBE_BASES);
+        for (Material candidate : candidates) {
+            if (!candidate.isItem()) continue;
+            ItemStack probe = new ItemStack(candidate);
+            ItemMeta meta = probe.getItemMeta();
+            if (meta == null) continue;
+            meta.getPersistentDataContainer().set(idKey, PersistentDataType.STRING, "siftite_probe");
+            probe.setItemMeta(meta);
+            if (choice.test(probe)) return true;
         }
         return false;
     }
+
+    /** Representative vanilla bases used to probe recipe ingredient choices with tagged items. */
+    private static final java.util.Set<Material> PROBE_BASES = java.util.EnumSet.of(
+            Material.AMETHYST_SHARD, Material.NETHERITE_INGOT, Material.IRON_INGOT,
+            Material.IRON_NUGGET, Material.MUTTON, Material.COPPER_INGOT, Material.GOLD_INGOT);
 
     /** Test seam: exposes the datapack-recipe whitelist check without a live plugin instance. */
     static final class SiftiteGuardProbe {
