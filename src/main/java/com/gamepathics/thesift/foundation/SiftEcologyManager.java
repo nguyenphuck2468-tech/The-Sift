@@ -1644,18 +1644,25 @@ public final class SiftEcologyManager implements Listener {
     private void tickDarkSniffers() {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
         if (sift == null) return;
-        long now = System.currentTimeMillis();
+        // Use the world's persisted game-time clock, not wall-clock milliseconds:
+        // infection should advance while the world ticks and must pause while the server is offline.
+        long now = sift.getFullTime();
         // The source mod infects a Sniffer when it ENTERS its DIGGING state while
         // the block beneath the point 2.25 blocks ahead of its head is sculk.
         // Paper cannot inject into Sniffer.transitionTo(), so sample the state here;
-        // once infection starts, the saved timestamp persists even after digging ends.
-        long infectionMillis = Math.max(1, plugin.getConfig().getInt("mobs.dark-sniffer.corruption-ticks", 600)) * 50L;
+        // once infection starts, the saved tick count persists even after digging ends.
+        long infectionTicks = Math.max(1, plugin.getConfig().getInt("mobs.dark-sniffer.corruption-ticks", 600));
         java.util.List<Entity> conversions = new java.util.ArrayList<>();
         for (Entity entity : sift.getEntities()) {
             if (!(entity instanceof org.bukkit.entity.Sniffer sniffer)) continue;
             var pdc = entity.getPersistentDataContainer();
             if (pdc.has(creatureKey, PersistentDataType.STRING)) continue; // already a Dark Sniffer
             Long infectionStartedAt = pdc.get(snifferCorruptionStartKey, PersistentDataType.LONG);
+            // Older builds stored epoch milliseconds here; reset that legacy value safely.
+            if (infectionStartedAt != null && infectionStartedAt > now + 1200L) {
+                infectionStartedAt = null;
+                pdc.remove(snifferCorruptionStartKey);
+            }
             Location loc = entity.getLocation();
             if (infectionStartedAt == null) {
                 if (sniffer.getState() != org.bukkit.entity.Sniffer.State.DIGGING) continue;
@@ -1670,7 +1677,7 @@ public final class SiftEcologyManager implements Listener {
                 continue;
             }
             // Infection is irreversible in the reference mod and is saved with the Sniffer.
-            if (now - infectionStartedAt >= infectionMillis) conversions.add(entity);
+            if (now - infectionStartedAt >= infectionTicks) conversions.add(entity);
         }
         // Convert after iteration so removal never disturbs the live entity list mid-scan.
         // Spawn first: if a provider refuses the replacement, keep the original Sniffer alive.
