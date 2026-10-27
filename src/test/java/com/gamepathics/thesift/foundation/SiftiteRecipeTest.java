@@ -242,12 +242,6 @@ class SiftiteRecipeTest {
         assertFalse(blockedPlain.get(), "plain vanilla ingredients must not trigger the guard");
     }
 
-    private static ItemStack[] filledMatrix(ItemStack ingredient) {
-        ItemStack[] matrix = new ItemStack[9];
-        for (int i = 0; i < matrix.length; i++) matrix[i] = ingredient.clone();
-        return matrix;
-    }
-
     @Test
     void blubCampfireRecipeOnlyAcceptsTaggedBlubMeat() {
         // P1 regression: the campfire recipe must use an ExactChoice on the tagged blub_meat,
