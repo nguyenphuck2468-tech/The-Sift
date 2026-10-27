@@ -63,12 +63,25 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey spearThrowAtKey;
     private final NamespacedKey snifferCorruptionStartKey;
     private final NamespacedKey darkSnifferSonicAtKey;
+    private final NamespacedKey darkSnifferSonicTargetKey;
+    private final NamespacedKey darkSnifferSonicWindupKey;
+    private final NamespacedKey darkSnifferWaveStartKey;
+    private final NamespacedKey darkSnifferWaveOriginXKey;
+    private final NamespacedKey darkSnifferWaveOriginYKey;
+    private final NamespacedKey darkSnifferWaveOriginZKey;
+    private final NamespacedKey darkSnifferWaveDirectionXKey;
+    private final NamespacedKey darkSnifferWaveDirectionYKey;
+    private final NamespacedKey darkSnifferWaveDirectionZKey;
+    private final NamespacedKey darkSnifferWaveFlightTicksKey;
+    private final NamespacedKey darkSnifferWaveIdKey;
+    private final NamespacedKey darkSnifferWavePulledKey;
     /** Last herd anchor per world so spawned Sifters regroup instead of scattering (mod parity). */
     private final java.util.Map<org.bukkit.World, Location> sifterHerdAnchors = new ConcurrentHashMap<>();
     private final SiftMobFactory mobFactory;
     private final ExternalBlockBridge blockBridge;
     private final SiftiteContent content;
     private final BukkitTask tideTask;
+    private final BukkitTask darkSnifferCombatTask;
     private final AtomicLong providerPlacementFailures = new AtomicLong();
     private final AtomicLong deferredDecorationRetries = new AtomicLong();
     private final java.util.Map<String, AtomicLong> providerPlacementFailuresById = new ConcurrentHashMap<>();
@@ -96,6 +109,18 @@ public final class SiftEcologyManager implements Listener {
         this.spearThrowAtKey = new NamespacedKey(plugin, "spear_last_throw");
         this.snifferCorruptionStartKey = new NamespacedKey(plugin, "sniffer_corruption_start");
         this.darkSnifferSonicAtKey = new NamespacedKey(plugin, "dark_sniffer_sonic_at");
+        this.darkSnifferSonicTargetKey = new NamespacedKey(plugin, "dark_sniffer_sonic_target");
+        this.darkSnifferSonicWindupKey = new NamespacedKey(plugin, "dark_sniffer_sonic_windup");
+        this.darkSnifferWaveStartKey = new NamespacedKey(plugin, "dark_sniffer_wave_start");
+        this.darkSnifferWaveOriginXKey = new NamespacedKey(plugin, "dark_sniffer_wave_origin_x");
+        this.darkSnifferWaveOriginYKey = new NamespacedKey(plugin, "dark_sniffer_wave_origin_y");
+        this.darkSnifferWaveOriginZKey = new NamespacedKey(plugin, "dark_sniffer_wave_origin_z");
+        this.darkSnifferWaveDirectionXKey = new NamespacedKey(plugin, "dark_sniffer_wave_direction_x");
+        this.darkSnifferWaveDirectionYKey = new NamespacedKey(plugin, "dark_sniffer_wave_direction_y");
+        this.darkSnifferWaveDirectionZKey = new NamespacedKey(plugin, "dark_sniffer_wave_direction_z");
+        this.darkSnifferWaveFlightTicksKey = new NamespacedKey(plugin, "dark_sniffer_wave_flight_ticks");
+        this.darkSnifferWaveIdKey = new NamespacedKey(plugin, "dark_sniffer_wave_id");
+        this.darkSnifferWavePulledKey = new NamespacedKey(plugin, "dark_sniffer_wave_pulled");
         // Shared instances are injected by the plugin lifecycle; fall back to local ones only
         // for standalone/test construction.
         this.mobFactory = sharedMobFactory != null ? sharedMobFactory : new SiftMobFactory(plugin);
@@ -108,10 +133,13 @@ public final class SiftEcologyManager implements Listener {
             tickBlubs();
             tickSifterHerds();
         }, 100L, 100L);
+        this.darkSnifferCombatTask = Bukkit.getScheduler().runTaskTimer(plugin,
+                this::tickDarkSnifferCombat, 1L, 1L);
     }
 
     public void shutdown() {
         tideTask.cancel();
+        darkSnifferCombatTask.cancel();
         sifterHerdAnchors.clear();
     }
 
@@ -1184,23 +1212,110 @@ public final class SiftEcologyManager implements Listener {
         }
     }
 
-    private void tickDarkSniffers() {
+    /**
+     * Paper approximation of the mod's Dark Sniffer combat loop. This runs every tick so the
+     * 10-tick wind-up and 1.5-block/tick travelling wave do not become a single instant pull.
+     * State is persisted on the entity, so a chunk unload safely interrupts/restarts combat.
+     */
+    private void tickDarkSnifferCombat() {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
         if (sift == null) return;
-        // Vanilla-backed Sonic Sniff approximation: one visible target per cooldown.
-        // The mod's wind-up and travelling wave still require a custom mob implementation.
         long now = System.currentTimeMillis();
         for (Entity entity : sift.getEntities()) {
             if (!(entity instanceof Mob sniffer) || entity.getType() != EntityType.SNIFFER) continue;
             var pdc = entity.getPersistentDataContainer();
             if (!"dark_sniffer".equals(pdc.get(creatureKey, PersistentDataType.STRING))) continue;
+
+            String targetId = pdc.get(darkSnifferSonicTargetKey, PersistentDataType.STRING);
+            Long windupAt = pdc.get(darkSnifferSonicWindupKey, PersistentDataType.LONG);
+            Long waveStart = pdc.get(darkSnifferWaveStartKey, PersistentDataType.LONG);
+            if (targetId != null && windupAt != null) {
+                Player target = Bukkit.getPlayer(UUID.fromString(targetId));
+                if (target == null || !target.isValid() || target.isDead()
+                        || !target.getWorld().equals(sift)
+                        || !sniffer.hasLineOfSight(target)
+                        || entity.getLocation().distanceSquared(target.getLocation()) > 32.0 * 32.0) {
+                    clearDarkSnifferWave(pdc);
+                    continue;
+                }
+                if (waveStart == null) {
+                    if (now - windupAt < 500L) {
+                        sniffer.lookAt(target);
+                        continue;
+                    }
+                    Vector origin = sniffer.getEyeLocation().toVector();
+                    Vector targetPos = target.getEyeLocation().toVector();
+                    Vector direct = targetPos.clone().subtract(origin);
+                    double distance = direct.length();
+                    if (distance < 0.001) {
+                        clearDarkSnifferWave(pdc);
+                        continue;
+                    }
+                    double leadTicks = Math.min(20.0, distance / 1.5);
+                    Vector velocity = target.getVelocity();
+                    Vector predicted = targetPos.clone().add(velocity.getX() * leadTicks, 0,
+                            velocity.getZ() * leadTicks);
+                    Vector direction = predicted.subtract(origin);
+                    if (direction.lengthSquared() < 0.000001) direction = direct;
+                    double predictedDistance = direction.length();
+                    direction.normalize();
+                    int flightTicks = Math.max(1, (int) Math.ceil((predictedDistance + 7.5) / 1.5));
+                    String waveId = entity.getUniqueId() + ":" + now;
+                    pdc.set(darkSnifferWaveOriginXKey, PersistentDataType.DOUBLE, origin.getX());
+                    pdc.set(darkSnifferWaveOriginYKey, PersistentDataType.DOUBLE, origin.getY());
+                    pdc.set(darkSnifferWaveOriginZKey, PersistentDataType.DOUBLE, origin.getZ());
+                    pdc.set(darkSnifferWaveDirectionXKey, PersistentDataType.DOUBLE, direction.getX());
+                    pdc.set(darkSnifferWaveDirectionYKey, PersistentDataType.DOUBLE, direction.getY());
+                    pdc.set(darkSnifferWaveDirectionZKey, PersistentDataType.DOUBLE, direction.getZ());
+                    pdc.set(darkSnifferWaveFlightTicksKey, PersistentDataType.INTEGER, flightTicks);
+                    pdc.set(darkSnifferWaveStartKey, PersistentDataType.LONG, now);
+                    pdc.set(darkSnifferWaveIdKey, PersistentDataType.STRING, waveId);
+                    pdc.set(darkSnifferSonicAtKey, PersistentDataType.LONG, now);
+                    sniffer.getWorld().playSound(sniffer.getLocation(), Sound.ENTITY_WARDEN_SONIC_CHARGE, 1.0f, 0.7f);
+                    continue;
+                }
+                int flightTicks = pdc.getOrDefault(darkSnifferWaveFlightTicksKey, PersistentDataType.INTEGER, 1);
+                int age = (int) Math.max(0, (now - waveStart) / 50L);
+                if (age >= flightTicks) {
+                    clearDarkSnifferWave(pdc);
+                    continue;
+                }
+                Vector origin = new Vector(
+                        pdc.getOrDefault(darkSnifferWaveOriginXKey, PersistentDataType.DOUBLE, sniffer.getX()),
+                        pdc.getOrDefault(darkSnifferWaveOriginYKey, PersistentDataType.DOUBLE, sniffer.getY() + 1),
+                        pdc.getOrDefault(darkSnifferWaveOriginZKey, PersistentDataType.DOUBLE, sniffer.getZ()));
+                Vector direction = new Vector(
+                        pdc.getOrDefault(darkSnifferWaveDirectionXKey, PersistentDataType.DOUBLE, 0.0),
+                        pdc.getOrDefault(darkSnifferWaveDirectionYKey, PersistentDataType.DOUBLE, 0.0),
+                        pdc.getOrDefault(darkSnifferWaveDirectionZKey, PersistentDataType.DOUBLE, 1.0));
+                Vector previous = origin.clone().add(direction.clone().multiply(1.5 * Math.max(0, age - 1)));
+                Vector current = origin.clone().add(direction.clone().multiply(1.5 * age));
+                String waveId = pdc.get(darkSnifferWaveIdKey, PersistentDataType.STRING);
+                Location waveLoc = current.toLocation(sift);
+                sift.spawnParticle(Particle.SONIC_BOOM, waveLoc, 1);
+                sift.spawnParticle(Particle.SWEEP_ATTACK, waveLoc, 2, 0.15, 0.15, 0.15, 0);
+                for (Entity candidate : sift.getNearbyEntities(waveLoc, 2, 2, 2)) {
+                    if (!(candidate instanceof LivingEntity victim) || victim == entity || victim.isDead()) continue;
+                    var victimPdc = victim.getPersistentDataContainer();
+                    if (waveId != null && waveId.equals(victimPdc.get(darkSnifferWavePulledKey, PersistentDataType.STRING))) continue;
+                    Vector center = victim.getLocation().toVector().add(0, victim.getHeight() * 0.5, 0);
+                    if (distanceSquaredToSegment(center, previous, current) > 0.8 * 0.8) continue;
+                    Vector pull = entity.getLocation().toVector().subtract(victim.getLocation().toVector()).multiply(0.3);
+                    victim.setVelocity(victim.getVelocity().add(pull));
+                    if (waveId != null) victimPdc.set(darkSnifferWavePulledKey, PersistentDataType.STRING, waveId);
+                    victim.getWorld().playSound(victim.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 0.35f, 1.15f);
+                }
+                continue;
+            }
+
             Long lastSonicAt = pdc.get(darkSnifferSonicAtKey, PersistentDataType.LONG);
             if (lastSonicAt != null && now - lastSonicAt < 5_000L) continue;
-
             Player target = null;
             double nearestDistanceSquared = 32.0 * 32.0;
             for (Entity nearby : sift.getNearbyEntities(entity.getLocation(), 32, 10, 32)) {
-                if (!(nearby instanceof Player player) || !player.isValid() || player.isDead()) continue;
+                if (!(nearby instanceof Player player) || !player.isValid() || player.isDead()
+                        || player.getGameMode() == org.bukkit.GameMode.CREATIVE
+                        || player.getGameMode() == org.bukkit.GameMode.SPECTATOR) continue;
                 double distanceSquared = entity.getLocation().distanceSquared(player.getLocation());
                 if (distanceSquared < 25.0 || distanceSquared > nearestDistanceSquared) continue;
                 if (!sniffer.hasLineOfSight(player)) continue;
@@ -1208,14 +1323,40 @@ public final class SiftEcologyManager implements Listener {
                 target = player;
             }
             if (target == null) continue;
-            Vector pull = entity.getLocation().toVector().subtract(target.getLocation().toVector());
-            if (pull.lengthSquared() < 0.01) continue;
-            pdc.set(darkSnifferSonicAtKey, PersistentDataType.LONG, now);
-            pull.normalize().multiply(0.3).setY(0.18);
-            target.setVelocity(target.getVelocity().multiply(0.45).add(pull));
-            target.playSound(target.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 0.45f, 1.2f);
-            sift.spawnParticle(Particle.SONIC_BOOM, target.getLocation().add(0, 1, 0), 1);
+            pdc.set(darkSnifferSonicTargetKey, PersistentDataType.STRING, target.getUniqueId().toString());
+            pdc.set(darkSnifferSonicWindupKey, PersistentDataType.LONG, now);
+            pdc.remove(darkSnifferWaveStartKey);
+            sniffer.lookAt(target);
+            sift.playSound(entity.getLocation(), Sound.ENTITY_SNIFFER_SNIFFING, 1.0f, 0.7f);
         }
+    }
+
+    private static double distanceSquaredToSegment(Vector point, Vector start, Vector end) {
+        Vector segment = end.clone().subtract(start);
+        double lengthSquared = segment.lengthSquared();
+        if (lengthSquared < 1.0E-9) return point.distanceSquared(start);
+        double t = Math.max(0, Math.min(1, point.clone().subtract(start).dot(segment) / lengthSquared));
+        Vector closest = start.clone().add(segment.multiply(t));
+        return point.distanceSquared(closest);
+    }
+
+    private void clearDarkSnifferWave(org.bukkit.persistence.PersistentDataContainer pdc) {
+        pdc.remove(darkSnifferSonicTargetKey);
+        pdc.remove(darkSnifferSonicWindupKey);
+        pdc.remove(darkSnifferWaveStartKey);
+        pdc.remove(darkSnifferWaveOriginXKey);
+        pdc.remove(darkSnifferWaveOriginYKey);
+        pdc.remove(darkSnifferWaveOriginZKey);
+        pdc.remove(darkSnifferWaveDirectionXKey);
+        pdc.remove(darkSnifferWaveDirectionYKey);
+        pdc.remove(darkSnifferWaveDirectionZKey);
+        pdc.remove(darkSnifferWaveFlightTicksKey);
+        pdc.remove(darkSnifferWaveIdKey);
+    }
+
+    private void tickDarkSniffers() {
+        World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
+        if (sift == null) return;
         // Corruption conversion: vanilla Sniffers that linger on sculk/soul ground in The Sift
         // turn into a Dark Sniffer, mirroring the mod's "infected sniffer" transformation.
         long cooldownMillis = Math.max(1, plugin.getConfig().getInt("mobs.dark-sniffer.corruption-ticks", 600)) * 50L;
