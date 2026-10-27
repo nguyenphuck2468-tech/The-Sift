@@ -281,7 +281,8 @@ public final class SiftiteContent implements Listener {
             case "drifter" -> Material.ENDERMAN_SPAWN_EGG;
             case "shardling" -> Material.ENDERMITE_SPAWN_EGG;
             case "prism_warden" -> Material.WARDEN_SPAWN_EGG;
-            case "lumen_tulip" -> Material.TORCHFLOWER_SEEDS;
+            case "lumen_tulip", "sculkflower_seeds" -> Material.TORCHFLOWER_SEEDS;
+            case "sculkflower" -> Material.POPPY;
             case "prismite" -> Material.SILVERFISH_SPAWN_EGG;
             case "loomer" -> Material.RABBIT_SPAWN_EGG;
             // Remaining spec mobs get vanilla stand-in spawn eggs so every id in
