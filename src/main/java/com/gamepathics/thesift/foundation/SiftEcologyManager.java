@@ -1203,7 +1203,7 @@ public final class SiftEcologyManager implements Listener {
         }
         // Corruption conversion: vanilla Sniffers that linger on sculk/soul ground in The Sift
         // turn into a Dark Sniffer, mirroring the mod's "infected sniffer" transformation.
-        long cooldownMillis = plugin.getConfig().getInt("mobs.dark-sniffer.corruption-ticks", 200) * 50L;
+        long cooldownMillis = plugin.getConfig().getInt("mobs.dark-sniffer.corruption-ticks", 600) * 50L;
         long now = System.currentTimeMillis();
         java.util.List<Entity> conversions = new java.util.ArrayList<>();
         for (Entity entity : sift.getEntities()) {
