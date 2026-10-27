@@ -77,7 +77,7 @@ final class SculkflowerManager implements Listener {
         if (player.getGameMode() != GameMode.CREATIVE) held.setAmount(held.getAmount() - 1);
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onBreak(BlockBreakEvent event) {
         if (!isSift(event.getBlock().getWorld())) return;
         int age = cropAge(event.getBlock());
