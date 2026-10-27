@@ -420,7 +420,7 @@ public final class SiftiteContent implements Listener {
         // Probe every material the choice could plausibly accept with a tagged stand-in.
         // MaterialChoice reports its candidates; ExactChoice only reports its display stacks,
         // so also try the item types already seen in this recipe's choices plus common bases.
-        java.util.Set<Material> candidates = new java.util.EnumSet<>(java.util.EnumSet.noneOf(Material.class));
+        java.util.Set<Material> candidates = java.util.EnumSet.noneOf(Material.class);
         if (choice instanceof RecipeChoice.MaterialChoice material) {
             candidates.addAll(material.getChoices());
         } else if (choice instanceof RecipeChoice.ExactChoice exact) {
