@@ -29,11 +29,13 @@ final class SculkflowerManager implements Listener {
     private static final String FLOWER_ID = "sculkflower";
     private static final long GROWTH_INTERVAL_TICKS = 68L;
 
+    private final JavaPlugin plugin;
     private final ExternalBlockBridge blocks;
     private final SiftiteContent content;
     private final NamespacedKey contentKey;
 
     SculkflowerManager(JavaPlugin plugin, SiftiteContent content) {
+        this.plugin = plugin;
         this.blocks = new ExternalBlockBridge(plugin);
         this.content = content;
         this.contentKey = new NamespacedKey(plugin, "content");
