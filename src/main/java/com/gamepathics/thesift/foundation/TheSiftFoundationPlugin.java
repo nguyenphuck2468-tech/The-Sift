@@ -296,6 +296,12 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                 resourcePackBridge.sendTo(player, force);
                 sender.sendMessage("The Sift resource pack sent to you (" + (force ? "forced" : "additive") + ").");
             } else {
+                // Broadcast only makes sense when delivery can actually happen.
+                if (!resourcePackBridge.canDeliver()) {
+                    sender.sendMessage("No resource-pack provider plugin detected and resource-pack.server-url"
+                            + " is empty; set an http(s) download URL or install a provider before broadcasting.");
+                    return true;
+                }
                 resourcePackBridge.broadcastToPlayers(sender, force);
             }
             return true;

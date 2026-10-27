@@ -91,13 +91,10 @@ public final class SiftAdvancementManager implements Listener {
             // Spire Tyrant only.
             case "the_sifter", "sifter" -> grant(killer, "sifter");
             case "dark_sniffer" -> grant(killer, "sniffer_hunter");
-            // Parity fix: the bundled "tyrant" advancement ("Crimson Conqueror") was previously
-            // unobtainable because no creature ever carried the matching ID. SiftEcologyManager
-            // now spawns the crimson-named "spire_tyrant" variant of the Sifter boss, and killing
-            // it grants the advancement. Note: the reference mod's Spire Tyrant lives in the
-            // Crimson Keep structure, which this plugin does not generate yet — so the
-            // advancement title/description remain aspirational even though it is now obtainable
-            // in survival play. Structure parity is tracked in docs/mod-gap-analysis.md.
+            // NOT mod parity: the reference mod (Arta48/Mielons-The-Sift) has no "Spire Tyrant"
+            // creature and no Crimson Keep; its bundled "tyrant" advancement is a fan-made hook.
+            // This plugin adds an original spire_tyrant variant so that advancement is obtainable
+            // in survival play instead of dead content. See docs/mod-gap-analysis.md.
             case "spire_tyrant" -> grant(killer, "sifter", "tyrant");
             default -> { }
         }

@@ -72,10 +72,10 @@ particular `thesift:tyrant` ("Crimson Conqueror") was previously unobtainable
 because no creature ever carried a matching ID; the ecology spawner now
 introduces a crimson-named **Spire Tyrant** variant of the Sifter boss in the
 shattered/siftslate peaks (config: `content.spire_tyrant`, default on), and
-killing it grants the advancement plus Spire Fragment drops. Caveat kept from
-the reference mod: the Tyrant canonically dwells in the Crimson Keep structure,
-which this plugin does not generate yet — so the advancement text remains
-aspirational even though it is obtainable. Structure parity is tracked in
+killing it grants the advancement plus Spire Fragment drops. Honesty note: the
+Spire Tyrant and its Crimson Keep are **not in the reference mod** — they are
+original fan-made content added so the bundled `tyrant` advancement is not dead
+content, and they must not be described as mod parity. Tracked in
 `docs/mod-gap-analysis.md`.
 
 ### Spawn eggs (mod parity)

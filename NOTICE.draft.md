@@ -15,6 +15,26 @@ notice must be kept with these files; do not drop it when a final NOTICE/LICENSE
 is written. This supersedes the earlier "no attribution claim" statement for
 those paths only.
 
+## Ported gameplay logic and features (Mielon's The Sift, MIT)
+
+Beyond the terrain data above, several gameplay behaviours were re-implemented
+by reading the reference mod's source/datapack (Copyright (c) 2026 Mielon, MIT
+License): the Singer barter reward table, the creature frame detector used for
+mob tagging, the Soul Block music-piece selection, mob stat lines (Echo Golem
+health, Blub taming), advancement trigger mapping, and ore/feature placement
+data derived in commit "port ore features" (all per the MIT attribution
+requirement — the copyright and permission notice must be kept with any final
+NOTICE/LICENSE). These are clean-room-style ports of observable behaviour plus
+direct datapack JSON reuse where noted; they carry the same MIT obligation as
+the terrain files.
+
+## Original fan-made content (NOT from the reference mod)
+
+The following exist only in this plugin and must never be described as mod
+parity: the Spire Tyrant boss variant and its Crimson Keep references (the
+reference mod contains no such creature or structure), Prism Warden, Rift Key,
+Sifter-herd tuning constants, and all config keys introduced for them.
+
 ## Verified third-party material included
 
 None has been verified as included by this audit. Do not treat reference

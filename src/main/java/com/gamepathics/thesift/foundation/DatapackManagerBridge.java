@@ -58,6 +58,15 @@ public final class DatapackManagerBridge {
 
     /** Enables/disables a staged or discovered pack by name and refreshes the datapack manager. */
     public boolean setEnabled(String name, boolean enabled) {
+        // Guard: disabling the dimension pack while the server runs can strand The Sift world
+        // (missing dimension registration). Enabling is always safe; disabling needs --force.
+        if (!enabled && name.toLowerCase(Locale.ROOT).contains("dimension")
+                && !plugin.getServer().getWorlds().isEmpty()
+                && plugin.getServer().getWorlds().stream().anyMatch(w -> w != null)) {
+            plugin.getLogger().warning("Refusing to disable the dimension datapack at runtime via '" + name
+                    + "'; use /datapack disable <name> --force on the console if you know what you are doing.");
+            return false;
+        }
         var manager = plugin.getServer().getDatapackManager();
         Datapack pack = findPack(manager.getPacks(), name);
         if (pack == null) return false;

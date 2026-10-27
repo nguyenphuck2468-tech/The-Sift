@@ -47,13 +47,39 @@ public final class ResourcePackBridge {
         this.localZip = plugin.getDataFolder().toPath().resolve("pack").resolve("thesift-resource-pack.zip");
     }
 
-    /** Materializes the bundled pack (src/main/resources/pack) into the plugin data folder as a zip. */
+    /**
+     * Materializes the bundled pack (src/main/resources/pack) into the plugin data folder as a zip.
+     * Rebuilds whenever the jar is newer than the staged zip, so upgrading the plugin ships the
+     * updated pack instead of silently keeping the stale one cached in {@code cachedSha1}.
+     */
     public void prepare() {
         try {
             Files.createDirectories(localZip.getParent());
-            if (!Files.exists(localZip)) buildZipFromResources();
+            if (!isStagedZipCurrent()) {
+                buildZipFromResources();
+                cachedSha1 = null; // force re-hash after rebuild
+            }
         } catch (IOException exception) {
             plugin.getLogger().warning("Could not stage the bundled resource pack: " + exception.getMessage());
+        }
+    }
+
+    private boolean isStagedZipCurrent() throws IOException {
+        if (!Files.exists(localZip)) return false;
+        Path jar = pluginJarPath();
+        if (jar == null) return true; // can't compare: keep existing zip
+        return Files.getLastModifiedTime(localZip).compareTo(Files.getLastModifiedTime(jar)) >= 0;
+    }
+
+    private Path pluginJarPath() {
+        try {
+            // JavaPlugin#getFile is protected; reach it reflectively (same package restriction).
+            Method getFile = JavaPlugin.class.getDeclaredMethod("getFile");
+            getFile.setAccessible(true);
+            Object file = getFile.invoke(plugin);
+            return file instanceof java.io.File f ? f.toPath() : null;
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
+            return null; // MockBukkit / unusual classloader: no comparable jar file
         }
     }
 
@@ -80,6 +106,17 @@ public final class ResourcePackBridge {
 
     private void sendTo(Player player, Plugin provider, boolean force) {
         if (provider != null && tryProviderSend(provider, player, force)) return;
+        // Native Paper delivery requires an http(s) URL the client can download; without a
+        // configured server-url we would hand out a file:// link every client rejects (and with
+        // setResourcePack(force) that can kick players at join). Skip quietly instead.
+        if (packUrlOrNull() == null) {
+            if (!detectedLogged) {
+                detectedLogged = true;
+                plugin.getLogger().info("resource-pack.server-url is empty and no provider plugin was"
+                        + " detected; native pack delivery is skipped until a download URL is configured.");
+            }
+            return;
+        }
         tryNativeSend(player, force);
     }
 
@@ -147,17 +184,20 @@ public final class ResourcePackBridge {
     private void tryNativeSend(Player player, boolean force) {
         try {
             String hash = sha1();
+            // Paper expects the raw 20-byte SHA-1 digest, not the ASCII hex string.
+            byte[] hashBytes = hash.isEmpty() ? null : HexFormat.of().parseHex(hash);
             String prompt = plugin.getConfig().getString("resource-pack.prompt", "The Sift textures");
             if (force) {
                 // Paper 26.x: setResourcePack(UUID key, url, byte[] hash, prompt, force).
                 player.setResourcePack(java.util.UUID.nameUUIDFromBytes(
                                 ("thesift:" + hash).getBytes(java.nio.charset.StandardCharsets.UTF_8)),
-                        packUrl(), hash.getBytes(java.nio.charset.StandardCharsets.UTF_8), prompt, true);
+                        packUrl(), hashBytes, prompt, true);
             } else {
                 // Paper 26.x: addResourcePack(UUID id, url, byte[] hash, prompt, inSlot).
+                // Additive packs are never forced; they show in the server-resource-pack slot.
                 player.addResourcePack(java.util.UUID.nameUUIDFromBytes(
                                 ("thesift:addon").getBytes(java.nio.charset.StandardCharsets.UTF_8)),
-                        packUrl(), hash.getBytes(java.nio.charset.StandardCharsets.UTF_8), prompt, true);
+                        packUrl(), hashBytes, prompt, false);
             }
         } catch (RuntimeException | LinkageError exception) {
             plugin.getLogger().warning("Native resource pack send failed for " + player.getName() + ": "
@@ -175,9 +215,22 @@ public final class ResourcePackBridge {
      * pack through a detected provider plugin that reads local files.
      */
     private String packUrl() {
+        String url = packUrlOrNull();
+        return url != null ? url : "";
+    }
+
+    /** The configured http(s) download URL, or null when none is set (native delivery disabled). */
+    private String packUrlOrNull() {
         String configured = plugin.getConfig().getString("resource-pack.server-url", "");
-        if (configured != null && !configured.isBlank()) return configured.trim();
-        return "file://" + localZip.toAbsolutePath();
+        if (configured == null || configured.isBlank()) return null;
+        String trimmed = configured.trim();
+        // file:// URLs are rejected by every client; treat them as unconfigured.
+        return trimmed.startsWith("http://") || trimmed.startsWith("https://") ? trimmed : null;
+    }
+
+    /** True when pack delivery can actually reach clients: a provider plugin, or an http(s) URL. */
+    public boolean canDeliver() {
+        return findProviderPlugin() != null || packUrlOrNull() != null;
     }
 
     // ------------------------------------------------------------------ hashing / staging

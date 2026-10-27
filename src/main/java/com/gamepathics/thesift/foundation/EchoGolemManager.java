@@ -159,11 +159,11 @@ public final class EchoGolemManager implements Listener {
                     world.spawnParticle(Particle.END_ROD, center.clone().add(0, 1.5, 0), 1);
                     world.playSound(center, Sound.ENTITY_WARDEN_HEARTBEAT, 0.3f, 0.8f);
                     Player owner = owner(entity);
-                    // Charoite-kin keep the same resonance benefit as Singer protection: a
-                    // protected companion is healed instead of just hearing the pulse.
+                    // Resonance heal: the pulse reaches its owner when they are within the
+                    // resonance range, or anywhere in-dimension while carrying Charoite (kin).
                     if (owner != null && owner.getWorld().equals(world)
-                            && (protectedByCharoite(owner)
-                                || owner.getLocation().distanceSquared(center) <= range * range)) {
+                            && (owner.getLocation().distanceSquared(center) <= range * range
+                                || protectedByCharoite(owner))) {
                         double heal = plugin.getConfig().getDouble("echo-golem.heal-amount", 4.0);
                         Location ownerLocation = owner.getLocation();
                         owner.setHealth(Math.min(owner.getHealth() + heal,
@@ -231,7 +231,7 @@ public final class EchoGolemManager implements Listener {
 
     private boolean hasTaggedCharoite(ItemStack[] items) {
         for (ItemStack stack : items) {
-            if (content.is(stack, "charoite")) return true;
+            if (sharedContent().is(stack, "charoite")) return true;
         }
         return false;
     }
@@ -252,7 +252,7 @@ public final class EchoGolemManager implements Listener {
         }
         if (plugin.getConfig().getBoolean("echo-golem.drop-siftite", true)) {
             // Drop Siftite Ingot
-            ItemStack drop = content.item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot");
+            ItemStack drop = sharedContent().item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot");
             if (drop != null) event.getDrops().add(drop);
         }
     }
@@ -282,7 +282,7 @@ public final class EchoGolemManager implements Listener {
             return;
         }
         if (owner == null || !owner.equals(player.getUniqueId().toString())) return;
-        boolean holdingSoulBlock = content.is(hand, "soul_block");
+        boolean holdingSoulBlock = sharedContent().is(hand, "soul_block");
         boolean carrying = pdc.has(cargoKey, PersistentDataType.BYTE);
         if (holdingSoulBlock && !carrying) {
             consumeOne(player);
@@ -290,7 +290,7 @@ public final class EchoGolemManager implements Listener {
             player.sendMessage("§bThe Echo Golem takes the Soul Block.");
             event.setCancelled(true);
         } else if (carrying && hand.getType().isAir()) {
-            ItemStack soul = content.forId("soul_block");
+            ItemStack soul = sharedContent().forId("soul_block");
             if (soul == null) {
                 player.sendMessage("Soul Block item is unavailable from the configured provider. Run /sift doctor.");
                 event.setCancelled(true);

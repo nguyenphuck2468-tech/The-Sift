@@ -171,8 +171,10 @@ providers:
 
 resource-pack:
   # Gửi resource pack đi kèm plugin cho người chơi khi vào server (qua provider như ResourcePackManager nếu có).
-  auto-send: true
-  # URL http(s) công khai để client tải zip (server Paper không nhận file://); để trống nếu provider đọc file cục bộ.
+  # Mặc định TẮT: chỉ bật khi đã cấu hình server-url http(s) hợp lệ hoặc cài plugin provider,
+  # nếu không client sẽ nhận URL không tải được.
+  auto-send: false
+  # URL http(s) công khai để client tải zip (bắt buộc cho đường native; file:// bị client từ chối).
   server-url: ""
   title: "The Sift (fan-made)"
   prompt: "Texture mob/blok The Sift"
