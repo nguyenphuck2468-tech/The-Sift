@@ -1,0 +1,292 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "rolls": {
+        "type": "minecraft:uniform",
+        "min": 4,
+        "max": 7
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "thesift:overgrown_fronds",
+          "weight": 12
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thesift:overgrown_chard",
+          "weight": 10
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thesift:overgrown_stalks",
+          "weight": 12
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thesift:siftslate_stalks",
+          "weight": 12
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thesift:healthy_sculk_sprouts",
+          "weight": 9
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thesift:dry_healthy_sculk_sprouts",
+          "weight": 9
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thesift:overgrown_lotus",
+          "weight": 5
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thesift:sunburst_plant",
+          "weight": 5
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thesift:whisperbloom",
+          "weight": 5
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thesift:siftslate",
+          "weight": 12,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 2,
+                "max": 6
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thesift:siftslate_growth",
+          "weight": 10,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 4
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thesift:healthy_sculk",
+          "weight": 7,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 3
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thesift:dry_healthy_sculk",
+          "weight": 7,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 3
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thesift:overgrown_willow_log",
+          "weight": 11,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 2,
+                "max": 5
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thesift:overgrown_willow_planks",
+          "weight": 12,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 2,
+                "max": 7
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thesift:overgrown_willow_foliage",
+          "weight": 9,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 4
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rolls": {
+        "type": "minecraft:uniform",
+        "min": 1,
+        "max": 2
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:sculk",
+          "weight": 8,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 4
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "thesift:charoite",
+          "weight": 10,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 4
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:emerald",
+          "weight": 4,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 3
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:diamond",
+          "weight": 2,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 2
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "thesift:music_disc_rift"
+        }
+      ],
+      "condition": {
+        "chance": 0.5,
+        "type": "minecraft:random_chance"
+      }
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "thesift:siftite_upgrade_smithing_template"
+        }
+      ],
+      "condition": {
+        "chance": 0.4,
+        "type": "minecraft:random_chance"
+      }
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:alternatives",
+          "children": [
+            {
+              "type": "minecraft:item",
+              "name": "thesift:siftite_nugget",
+              "condition": {
+                "chance": 0.1,
+                "type": "minecraft:random_chance"
+              },
+              "modifier": [
+                {
+                  "count": 2,
+                  "type": "minecraft:set_count"
+                }
+              ]
+            },
+            {
+              "type": "minecraft:item",
+              "name": "thesift:siftite_nugget"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "chance": 0.2,
+        "type": "minecraft:random_chance"
+      }
+    }
+  ],
+  "random_sequence": "thesift:chests/abandoned_portal"
+}

@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:buried_treasure",
+  "biomes": [
+    "thesift:overgrown_forest",
+    "thesift:overgrown_clearing",
+    "thesift:overgrown_slopes",
+    "thesift:overgrown_peaks",
+    "thesift:overgrown_forest_slopes",
+    "thesift:sift_wastes",
+    "thesift:siftslate_slopes",
+    "thesift:siftslate_peaks",
+    "thesift:ichor_snowy_peaks"
+  ],
+  "spawn_overrides": {},
+  "step": "surface_structures"
+}

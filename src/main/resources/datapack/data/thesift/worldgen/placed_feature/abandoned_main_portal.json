@@ -1,0 +1,8 @@
+{
+  "feature": "thesift:abandoned_main_portal",
+  "placement": [
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}
