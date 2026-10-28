@@ -11,7 +11,7 @@
             {
               "function": "minecraft:set_components",
               "components": {
-                "minecraft:custom_data": {"thesift:content": "sonorous_deepslate"},
+                "minecraft:custom_data": {"PublicBukkitValues": {"thesift:content": "sonorous_deepslate"}},
                 "minecraft:custom_name": {"text": "Sonorous Deepslate", "color": "aqua", "italic": false}
               }
             }
