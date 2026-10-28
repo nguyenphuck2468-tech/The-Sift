@@ -1,26 +1,38 @@
 package com.gamepathics.thesift.foundation;
 
+import org.bukkit.plugin.RegisteredListener;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockbukkit.mockbukkit.MockBukkit;
+import org.mockbukkit.mockbukkit.ServerMock;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DarkSnifferDiggingGiftListenerRegistrationTest {
-    @Test
-    void giftListenerIsRegisteredByPluginRatherThanResourcePackHandler() throws Exception {
-        String pluginSource = Files.readString(Path.of(
-                "src/main/java/com/gamepathics/thesift/foundation/TheSiftFoundationPlugin.java"));
-        String resourcePackListenerSource = Files.readString(Path.of(
-                "src/main/java/com/gamepathics/thesift/foundation/SiftResourcePackListener.java"));
+    private ServerMock server;
+    private TheSiftFoundationPlugin plugin;
 
-        assertTrue(
-                pluginSource.contains("registerEvents(new DarkSnifferDiggingGiftListener(this), this);"),
-                "The plugin must register the Dark Sniffer gift listener during enable");
-        assertFalse(
-                resourcePackListenerSource.contains("new DarkSnifferDiggingGiftListener"),
-                "Gift listener registration must not depend on resource-pack handling");
+    @BeforeEach
+    void setUp() {
+        server = MockBukkit.mock();
+        plugin = MockBukkit.load(TheSiftFoundationPlugin.class);
+    }
+
+    @AfterEach
+    void tearDown() {
+        MockBukkit.unmock();
+    }
+
+    @Test
+    void giftListenerIsRegisteredExactlyOnce() {
+        List<RegisteredListener> listeners = Arrays.stream(server.getPluginManager().getRegisteredListeners(plugin))
+                .filter(rl -> rl.getListener() instanceof DarkSnifferDiggingGiftListener)
+                .toList();
+        
+        assertEquals(1, listeners.size(), "DarkSnifferDiggingGiftListener must be registered exactly once");
     }
 }

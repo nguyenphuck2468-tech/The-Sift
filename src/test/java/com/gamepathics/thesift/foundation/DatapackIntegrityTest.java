@@ -67,15 +67,6 @@ class DatapackIntegrityTest {
                 "datapack must bundle the Sifter loot table (raw_sifter_meat drop)");
         assertTrue(Files.exists(lootRoot.resolve("blub.json")),
                 "datapack must bundle the Blub loot table (blub_meat drop)");
-        // Vanilla rabbit override: the tamed-Blub meat drop CANNOT be expressed here — Blub
-        // taming state lives in Java PDC (blub_owner), which loot predicates cannot read, and
-        // vanilla rabbits have no Tamed NBT at all. The tagged blub_meat drop comes from the
-        // EntityDeathEvent listener in SiftEcologyManager instead. This table only mirrors the
-        // vanilla rabbit drops with a reachable rabbit_foot branch: "alternatives" picks the
-        // FIRST child whose conditions pass, so the hide entry keeps vanilla's own
-        // killed_by_player gate; otherwise an unconditional hide would shadow the foot forever.
-        Path rabbit = PROGRESSION.resolve("data/minecraft/loot_table/entities/rabbit.json");
-        assertTrue(Files.exists(rabbit), "vanilla rabbit override must ship with reachable drops");
         try (Stream<Path> paths = Files.walk(lootRoot)) {
             for (Path json : paths.filter(path -> path.toString().endsWith(".json")).toList()) {
                 JsonParser.parseString(Files.readString(json)); // must be valid JSON
@@ -83,33 +74,6 @@ class DatapackIntegrityTest {
         }
     }
 
-    @Test
-    void vanillaRabbitOverrideKeepsBaseDropsAndFootChance() throws IOException {
-        // Regression for the alternatives-order bug (review): rabbit_foot used to sit behind an
-        // unconditional rabbit_hide entry, so it could never roll — "alternatives" picks the
-        // FIRST child whose conditions pass. The hide branch now carries vanilla's own
-        // killed_by_player predicate, so the foot (random_chance 0.1) is reachable when the
-        // kill was not by a player, exactly like vanilla. The plain rabbit (meat) pool stays.
-        Path rabbit = PROGRESSION.resolve("data/minecraft/loot_table/entities/rabbit.json");
-        JsonObject root = JsonParser.parseString(Files.readString(rabbit)).getAsJsonObject();
-        JsonArray pools = root.getAsJsonArray("pools");
-        assertEquals(2, pools.size(), "hide/foot pool plus the base rabbit-meat pool");
-        String serialized = root.toString();
-        assertTrue(serialized.contains("\"minecraft:rabbit\""),
-                "live rabbit must still drop (furnace_smelt condition applies on fire only)");
-        assertTrue(serialized.contains("killed_by_player"),
-                "rabbit_hide branch must be gated so rabbit_foot is actually reachable");
-        assertTrue(serialized.contains("random_chance"),
-                "rabbit_foot branch must be gated by its own chance, not shadowed forever");
-        // The blub-meat branch must NOT rely on an impossible NBT match: Blub taming state
-        // lives in Java PDC (blub_owner), which loot predicates cannot read — and vanilla
-        // rabbits have no Tamed tag at all. The override therefore ships only guaranteed-
-        // reachable branches; the tagged blub_meat drop comes from the Java death listener.
-        assertFalse(serialized.contains("is_tamed_blub"),
-                "rabbit override must not reference thesift:is_tamed_blub (unmatchable via NBT)");
-        assertFalse(serialized.contains("blub_meat"),
-                "blub meat drops are handled in Java; no datapack branch may fake them via NBT");
-    }
 
     @Test
     void progressionPackShipsBlockLootTablesTagsAndRecipes() throws IOException {

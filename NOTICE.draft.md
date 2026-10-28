@@ -38,7 +38,10 @@ item or advancement — it has no Crimson Keep either), the Echo Golem resonance
 heal pulse (`echo-golem.heal-enabled`, default off), Prism Warden, Rift Key,
 Sifter-herd tuning constants, and all config keys introduced for them. The
 Spire Tyrant spawn variant is additionally disabled by default
-(`content.spire_tyrant: false`).
+(`content.spire_tyrant: false`). The bundled `soul_block` crafting recipe is
+also fan-made: in the original mod, Soul Blocks are not craftable and only
+generate naturally in Soul Canyons; the recipe exists here only to provide a
+survival-mode acquisition path for the standalone plugin.
 
 ## Verified third-party material included
 
