@@ -46,13 +46,22 @@ final class SculkflowerManager implements Listener {
 
     /** Register the reference Sculkflower -> Light Blue Dye recipe with provider-backed item matching. */
     void registerRecipes() {
-        NamespacedKey key = new NamespacedKey(plugin, "light_blue_dye_from_sculkflower");
+        NamespacedKey key = recipeKey();
         plugin.getServer().removeRecipe(key);
         ItemStack input = flower();
         if (input == null) return;
         ShapelessRecipe recipe = new ShapelessRecipe(key, new ItemStack(Material.LIGHT_BLUE_DYE));
         recipe.addIngredient(RecipeChoice.exactChoice(input));
         plugin.getServer().addRecipe(recipe);
+    }
+
+    /** Remove the recipe owned by this manager when the plugin is disabled. */
+    void removeRecipes() {
+        plugin.getServer().removeRecipe(recipeKey());
+    }
+
+    private NamespacedKey recipeKey() {
+        return new NamespacedKey(plugin, "light_blue_dye_from_sculkflower");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
