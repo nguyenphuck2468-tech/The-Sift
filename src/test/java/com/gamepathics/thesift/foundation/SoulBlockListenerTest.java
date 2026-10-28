@@ -96,12 +96,12 @@ class SoulBlockListenerTest {
                 .getAsJsonArray("entries").get(0).getAsJsonObject().get("name").getAsString();
         assertEquals("minecraft:soul_sand", entryName,
                 "Soul Block stands in for SOUL_SAND; the loot entry must match");
-        String tag = table.getAsJsonArray("pools").get(0).getAsJsonObject()
+        com.google.gson.JsonObject customData = table.getAsJsonArray("pools").get(0).getAsJsonObject()
                 .getAsJsonArray("entries").get(0).getAsJsonObject()
                 .getAsJsonArray("functions").get(0).getAsJsonObject()
                 .getAsJsonObject("components").getAsJsonObject("minecraft:custom_data")
-                .get("thesift:content").getAsString();
-        assertEquals("soul_block", tag,
+                .getAsJsonObject("PublicBukkitValues");
+        assertEquals("soul_block", customData.get("thesift:content").getAsString(),
                 "loot drop must carry the same content id the Java listener expects");
     }
 
