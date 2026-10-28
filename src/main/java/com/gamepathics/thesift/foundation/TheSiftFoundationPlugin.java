@@ -121,7 +121,6 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         if (contentRegistry.isEnabled(ContentId.SOUL_BLOCK)) {
             getServer().getPluginManager().registerEvents(new SoulBlockListener(this, sharedContent()), this);
         }
-        getServer().getPluginManager().registerEvents(new DarkSnifferDiggingGiftListener(this), this);
         registerContentPluginReloadHooks();
         getServer().getPluginManager().registerEvents(new SiftResourcePackListener(this, resourcePackBridge), this);
         // Keep a delayed initial refresh as a fallback for providers without a load event.
@@ -257,6 +256,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         }
         if (ichorContent != null) ichorContent.removeRecipes();
         if (siftiteContent != null) siftiteContent.removeRecipes();
+        if (sculkflowerManager != null) sculkflowerManager.removeRecipes();
         if (ichorState != null) {
             ichorState.shutdown();
         }
