@@ -33,10 +33,22 @@ where noted; they carry the same MIT obligation as the terrain files.
 
 The worldgen data used for porting terrain features was cross-referenced with
 the unofficial NeoForge port by MikiKox1. The NeoForge port's worldgen data has
-been verified to be identical to the original Fabric mod, except for biome JSONs.
-Credit to MikiKox1 for the NeoForge port effort.
+been sampled (8 files) and matches the original Fabric mod, except for biome
+JSONs which were modified in the port. Credit to MikiKox1 for the NeoForge
+port effort.
 
-## Asset Contributors and Provenance
+## Assets copied directly from the original mod (Mielon's The Sift, MIT)
+
+The following texture files are identical byte-for-byte to the original mod's
+assets and are included under the original MIT License. The MIT copyright and
+permission notice must be kept with these files.
+
+- `src/main/resources/texture/entity/sculkflower.png`
+- `src/main/resources/texture/block/sculkflower_crop_stage0.png`
+- `src/main/resources/texture/block/sculkflower_crop_stage1.png`
+- `src/main/resources/texture/item/sculkflower_seeds.png`
+
+## Asset Contributors and Provenance (NOT currently included)
 
 The following third-party assets are present in the original mod. They are NOT
 currently included in this plugin's build artifact unless explicitly permitted.
