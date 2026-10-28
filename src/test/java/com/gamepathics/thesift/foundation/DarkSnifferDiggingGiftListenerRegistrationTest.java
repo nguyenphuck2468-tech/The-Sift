@@ -1,25 +1,22 @@
 package com.gamepathics.thesift.foundation;
 
+import org.bukkit.event.HandlerList;
 import org.bukkit.plugin.RegisteredListener;
+import org.bukkit.plugin.java.JavaPlugin;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockbukkit.mockbukkit.MockBukkit;
-import org.mockbukkit.mockbukkit.ServerMock;
 
-import java.util.Arrays;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class DarkSnifferDiggingGiftListenerRegistrationTest {
-    private ServerMock server;
-    private TheSiftFoundationPlugin plugin;
+    private JavaPlugin plugin;
 
     @BeforeEach
     void setUp() {
-        server = MockBukkit.mock();
-        plugin = MockBukkit.load(TheSiftFoundationPlugin.class);
+        MockBukkit.mock();
+        plugin = MockBukkit.createMockPlugin("TheSift");
     }
 
     @AfterEach
@@ -28,11 +25,17 @@ class DarkSnifferDiggingGiftListenerRegistrationTest {
     }
 
     @Test
-    void giftListenerIsRegisteredExactlyOnce() {
-        List<RegisteredListener> listeners = Arrays.stream(server.getPluginManager().getRegisteredListeners(plugin))
-                .filter(rl -> rl.getListener() instanceof DarkSnifferDiggingGiftListener)
-                .toList();
+    void resourcePackListenerDoesNotRegisterGiftListener() {
+        // SiftResourcePackListener must NOT register DarkSnifferDiggingGiftListener
+        new SiftResourcePackListener(plugin, new ResourcePackBridge(plugin));
         
-        assertEquals(1, listeners.size(), "DarkSnifferDiggingGiftListener must be registered exactly once");
+        boolean found = false;
+        for (RegisteredListener rl : HandlerList.getRegisteredListeners(plugin)) {
+            if (rl.getListener() instanceof DarkSnifferDiggingGiftListener) {
+                found = true;
+                break;
+            }
+        }
+        assertFalse(found, "SiftResourcePackListener must not register DarkSnifferDiggingGiftListener");
     }
 }

@@ -119,8 +119,7 @@ are tracked as unverified in `docs/parity-matrix.md`.
   (smelts to Cooked Sifter Meat) and Blubs drop Blub Meat (smelts to Cooked
   Blub Meat); both furnace recipes are registered by the plugin itself. The
   bundled progression datapack now also ships matching loot tables
-  (`thesift:loot_table/entity/sifter|blub` plus a vanilla rabbit override for
-  tamed Blubs), and all plugin-owned recipes respect `recipes.enabled` in
+  (`thesift:loot_table/entity/sifter|blub`), and all plugin-owned recipes respect `recipes.enabled` in
   config.yml and are unregistered on disable/reload so no ghost recipes
   survive a hot swap.
 - Rare natural Rift events in Shattered Peaks, using the existing opening,

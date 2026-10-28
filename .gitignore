@@ -2,7 +2,3 @@ build/
 *.args
 *.log
 logs.zip
-
-# Build artifacts
-javac.*.args
-logs.zip
