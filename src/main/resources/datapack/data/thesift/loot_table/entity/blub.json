@@ -11,7 +11,7 @@
             {
               "function": "minecraft:set_components",
               "components": {
-                "minecraft:custom_data": {"thesift:content": "blub_meat"},
+                "minecraft:custom_data": {"PublicBukkitValues": {"thesift:content": "blub_meat"}},
                 "minecraft:custom_name": {"text": "Blub Meat", "color": "light_purple", "italic": false}
               }
             }
