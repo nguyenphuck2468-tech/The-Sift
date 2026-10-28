@@ -116,7 +116,7 @@ public final class ResonanceManager implements Listener {
         try {
             singer.getWorld().spawnParticle(org.bukkit.Particle.SOUL,
                     singer.getLocation().add(0, 1.0, 0), 6, 0.3, 0.3, 0.3, 0.0);
-        } catch (Throwable ignored) {
+        } catch (Exception ignored) {
         }
         Player attacker = null;
         if (event.getDamager() instanceof Player p) attacker = p;
@@ -126,7 +126,7 @@ public final class ResonanceManager implements Listener {
             try {
                 attacker.sendActionBar("\u00a75The Singer cannot be harmed outside its soul event"
                         + " \u2014 offer it a Soul Block.");
-            } catch (Throwable ignored) {
+            } catch (Exception ignored) {
             }
         }
     }
