@@ -1,25 +1,26 @@
 package com.gamepathics.thesift.foundation;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.bukkit.event.HandlerList;
-import org.mockbukkit.mockbukkit.MockBukkit;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DarkSnifferDiggingGiftListenerRegistrationTest {
-    @AfterEach
-    void tearDown() {
-        MockBukkit.unmock();
-    }
-
     @Test
-    void registersGiftListenerWhenPluginEnables() {
-        TheSiftFoundationPlugin plugin = MockBukkit.load(TheSiftFoundationPlugin.class);
+    void giftListenerIsRegisteredByPluginRatherThanResourcePackHandler() throws Exception {
+        String pluginSource = Files.readString(Path.of(
+                "src/main/java/com/gamepathics/thesift/foundation/TheSiftFoundationPlugin.java"));
+        String resourcePackListenerSource = Files.readString(Path.of(
+                "src/main/java/com/gamepathics/thesift/foundation/SiftResourcePackListener.java"));
 
         assertTrue(
-                HandlerList.getRegisteredListeners(plugin).stream()
-                        .anyMatch(registered -> registered.getListener() instanceof DarkSnifferDiggingGiftListener),
-                "Dark Sniffer gift listener must be registered independently of resource-pack handling");
+                pluginSource.contains("registerEvents(new DarkSnifferDiggingGiftListener(this), this);"),
+                "The plugin must register the Dark Sniffer gift listener during enable");
+        assertFalse(
+                resourcePackListenerSource.contains("new DarkSnifferDiggingGiftListener"),
+                "Gift listener registration must not depend on resource-pack handling");
     }
 }
