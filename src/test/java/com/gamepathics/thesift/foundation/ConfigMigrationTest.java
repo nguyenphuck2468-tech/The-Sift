@@ -45,7 +45,7 @@ class ConfigMigrationTest {
     }
 
     @Test
-    void migrate_whenConfigVersionMissing_defaultsToVersion1AndMigratesTo3() {
+    void migrate_whenConfigVersionMissing_defaultsToVersion1AndMigratesToCurrent() {
         // config-version not set, defaults to 1
         boolean result = migrate();
         
@@ -55,7 +55,7 @@ class ConfigMigrationTest {
     }
 
     @Test
-    void migrate_whenConfigVersionIs1_migratesTo3() {
+    void migrate_whenConfigVersionIs1_migratesToCurrent() {
         config.set("config-version", 1);
         
         boolean result = migrate();
