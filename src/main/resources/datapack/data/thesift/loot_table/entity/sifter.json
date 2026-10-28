@@ -11,7 +11,7 @@
             {
               "function": "minecraft:set_components",
               "components": {
-                "minecraft:custom_data": {"thesift:content": "raw_sifter_meat"},
+                "minecraft:custom_data": {"PublicBukkitValues": {"thesift:content": "raw_sifter_meat"}},
                 "minecraft:custom_name": {"text": "Raw Sifter Meat", "color": "light_purple", "italic": false}
               }
             }
@@ -30,7 +30,7 @@
             {
               "function": "minecraft:set_components",
               "components": {
-                "minecraft:custom_data": {"thesift:content": "sift_shard"},
+                "minecraft:custom_data": {"PublicBukkitValues": {"thesift:content": "sift_shard"}},
                 "minecraft:custom_name": {"text": "Sift Shard", "color": "light_purple", "italic": false}
               }
             }
