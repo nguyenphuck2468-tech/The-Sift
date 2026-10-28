@@ -11,6 +11,10 @@
             {
               "type": "minecraft:item",
               "name": "minecraft:rabbit_hide",
+              "functions": [{"function": "minecraft:set_count", "count": {"type": "minecraft:uniform", "min": 0, "max": 1}}]
+            },
+            {
+              "type": "minecraft:item",
               "conditions": [
                 {
                   "condition": "minecraft:entity_properties",
@@ -18,13 +22,7 @@
                   "predicate": {
                     "killed_by_player": true
                   }
-                }
-              ],
-              "functions": [{"function": "minecraft:set_count", "count": {"type": "minecraft:uniform", "min": 0, "max": 1}}]
-            },
-            {
-              "type": "minecraft:item",
-              "conditions": [
+                },
                 {"condition": "minecraft:random_chance", "chance": 0.1}
               ],
               "name": "minecraft:rabbit_foot"
