@@ -37,6 +37,7 @@ public final class SiftiteContent implements Listener {
     private final JavaPlugin plugin;
     private final NamespacedKey idKey;
     private final ExternalItemBridge externalItems;
+    private final java.util.Set<NamespacedKey> ownedRecipeKeys = ConcurrentHashMap.newKeySet();
 
     public SiftiteContent(JavaPlugin plugin) {
         this(plugin, new ExternalItemBridge(plugin));
@@ -49,24 +50,15 @@ public final class SiftiteContent implements Listener {
         this.externalItems = Objects.requireNonNull(externalItems);
     }
 
-    /** Unregisters every recipe this plugin owns (called from onDisable so a reload does not leave ghost recipes). */
+    /** Unregisters exactly the recipes registered by this plugin instance. */
     public void removeRecipes() {
         Server server = plugin.getServer();
-        // Sweep by ownership, not a hand-maintained list: any siftite tool/armor recipe added
-        // later used to survive disable/reload as a ghost because it was missing below.
-        // API notes verified against paper-api 26.3.build.218: Server#recipeIterator() returns
-        // Iterator<Recipe> (NOT Iterable, so no for-each) and Server#removeRecipe only accepts a
-        // NamespacedKey. Collect keys through the iterator first, then remove — mutating the
-        // recipe manager while iterating its live view is unsafe.
-        java.util.List<NamespacedKey> ownedKeys = new ArrayList<>();
-        java.util.Iterator<org.bukkit.inventory.Recipe> iterator = server.recipeIterator();
-        while (iterator.hasNext()) {
-            org.bukkit.inventory.Recipe recipe = iterator.next();
-            if (isOwnRecipe(recipe)) ownedKeys.add(((Keyed) recipe).getKey());
-        }
-        for (NamespacedKey key : ownedKeys) {
+        // Do not sweep the entire namespace: datapacks or other integrations may legitimately
+        // register recipes under thesift. Track the exact keys this instance added instead.
+        for (NamespacedKey key : ownedRecipeKeys) {
             server.removeRecipe(key);
         }
+        ownedRecipeKeys.clear();
     }
 
     public void registerRecipes() {
@@ -333,6 +325,7 @@ public final class SiftiteContent implements Listener {
                 org.bukkit.inventory.RecipeChoice.exactChoice(
                         item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot")));
         server.addRecipe(recipe);
+        ownedRecipeKeys.add(recipeKey);
     }
 
     private void addTemplateRecipe() {
@@ -345,6 +338,7 @@ public final class SiftiteContent implements Listener {
                 Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE));
         recipe.addIngredient(exact(item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot")));
         plugin.getServer().addRecipe(recipe);
+        ownedRecipeKeys.add(recipeKey);
     }
 
     /** Tagged Siftite materials must not be accepted by recipes that don't declare them. */
@@ -559,6 +553,7 @@ public final class SiftiteContent implements Listener {
             else recipe.setIngredient(symbol, (Material) value);
         }
         plugin.getServer().addRecipe(recipe);
+        ownedRecipeKeys.add(recipeKey);
     }
 
     private void addShapeless(String key, ItemStack result, Material... ingredients) {
@@ -567,6 +562,7 @@ public final class SiftiteContent implements Listener {
         ShapelessRecipe recipe = new ShapelessRecipe(recipeKey, result);
         for (Material ingredient : ingredients) recipe.addIngredient(ingredient);
         plugin.getServer().addRecipe(recipe);
+        ownedRecipeKeys.add(recipeKey);
     }
 
     /** Register a furnace smelting recipe from a tagged item to its cooked counterpart. */
@@ -580,6 +576,7 @@ public final class SiftiteContent implements Listener {
         FurnaceRecipe recipe = new FurnaceRecipe(recipeKey, output,
                 RecipeChoice.exactChoice(input), 0.35f, 10);
         plugin.getServer().addRecipe(recipe);
+        ownedRecipeKeys.add(recipeKey);
     }
 
     /** Campfire twin of {@link #registerFurnish}: ExactChoice input so vanilla mutton cannot cook here. */
@@ -591,6 +588,7 @@ public final class SiftiteContent implements Listener {
         org.bukkit.inventory.CampfireRecipe recipe = new org.bukkit.inventory.CampfireRecipe(
                 recipeKey, output, RecipeChoice.exactChoice(input), 0.35f, 600);
         plugin.getServer().addRecipe(recipe);
+        ownedRecipeKeys.add(recipeKey);
     }
 
     private org.bukkit.inventory.RecipeChoice exact(ItemStack item) {
