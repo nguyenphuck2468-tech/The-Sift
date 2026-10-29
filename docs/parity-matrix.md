@@ -49,7 +49,7 @@ Useful smoke commands: `/sift give soul_block <player>`, `/sift summon singer <p
 
 With `providers.strict: true`, readiness requires at least one selected backend resolving **every** mandatory item ID, at least one selected backend resolving **every** mandatory block ID, and at least one selected mob backend resolving **every** mandatory mob ID. The canonical lists are in `integrations/content-spec.json`; Gradle generates the runtime lists in `ProviderContentIds`. ItemsAdder custom entity readiness uses the documented registry probe, while EliteMobs has no verified side-effect-free registry probe and remains unresolved. The dimension and its existing save remain untouched when readiness fails.
 
-`providers.strict` is now always enforced (a `false` value is ignored with a warning), so there is no vanilla fallback. A `requirements` section in `config.yml` (defaults: ModelEngine required; one plugin each for items, blocks, mobs) is checked on the first server tick, and The Sift disables itself and logs what is missing if any rule fails. Bedrock support is optional and controlled by `providers.bedrock-enabled`.
+`providers.strict: true` (the default) blocks dimension access until readiness passes and makes provider-mapped chunk decoration fail-and-retry until providers resolve; `false` is the documented development/CI mode where block placements fall back to vanilla stand-ins (the CI boot gate runs the server in this mode). A `requirements` section in `config.yml` (defaults: ModelEngine required; one plugin each for items, blocks, mobs) is checked on the first server tick and warns loudly (or self-disables with `requirements.hard-stop: true`) when a rule fails. Bedrock support is optional and controlled by `providers.bedrock-enabled`.
 
 ## Public references used
 
@@ -89,7 +89,7 @@ The progression pack no longer defines biomes or worldgen features. Its four dup
 | `pink_meadows_geode` | Chưa làm | Its placed-feature JSON referenced a configured feature that was absent, causing an unbound registry ID. |
 | `pink_meadows` references to `sculk_patch`, `healthy_sculk`, `resonance_crystal`, `singer_spawn` | Chưa làm | Missing/legacy placed-feature graph removed with the progression worldgen tree. |
 | `shattered_peaks` references to `geode`, `resonance_crystal`, `rift_structure`, `echo_golem_spawn` | Chưa làm | Missing/legacy placed-feature graph removed with the progression worldgen tree. |
-| All 15 dimension-pack biome feature/carver arrays | Chưa làm | Currently empty. Worldgen content must be added to the dimension pack and validated by JSON graph tests and the Paper 26.3 boot gate. |
+| Dimension-pack biome feature/carver arrays | **ĐÃ WIRE** (2026-10-29) | All 15 biomes list the three ported carvers and the mod's 11-step feature layout: 19 configured + 25 placed features (sculk blobs/sprouts, siftslate stalks and hanging roots, overgrown vegetation, ichor underground lake) joined the ore features, all with vanilla stand-in blocks and validated by `DatapackIntegrityTest` plus the Paper 26.3 boot gate. The mod's 17 custom Java feature types stay Java-side (`SiftEcologyManager`). |
 
 Any future worldgen work must use the 26.3 `worldgen/feature/` schema (not legacy `configured_feature/`), provide complete biome → placed feature → feature references, and avoid vanilla Sift stand-ins while `providers.strict: true`.
 
@@ -100,7 +100,7 @@ Already present in the repository before this branch: Singer, Echo Golem, Blub, 
 
 Added on the `mielon-parity` branch: Goat Horn wakes a Singer; Ancient City frame + eight Sonorous Deepslate + beams; portal-mode Rift; timed natural Rifts in The Sift; 10 more advancements (20 total, matching the mod's count).
 
-Still different or missing: Overgrown Willow wood set (cherry stand-in), sculk plants, Ichor as a real flowing fluid (**STAND-IN**), biome worldgen features/carvers in strict mode (all biome arrays empty), 10 vs 15 biomes, music-disc audio (needs a resource pack), Bedrock level 2.
+Still different or missing: Overgrown Willow wood set (cherry stand-in), Ichor as a real flowing fluid (**STAND-IN**), the mod's 17 custom Java feature types as true datapack features (ichor lakes, soul canyon, monoliths, sniffer caves, willow trees — generated as Java stand-ins instead), 10 vs 15 biomes, music-disc audio (needs a resource pack), Bedrock level 2.
 
 
 ## Terrain port from the mod (mielon-parity)
@@ -111,9 +111,9 @@ Still different or missing: Overgrown Willow wood set (cherry stand-in), sculk p
 | Dimension biome source | Replaced by the mod's 10-biome multi-noise table. The five prototype biomes stay registered but no longer generate. |
 | Dimension type | `min_y 0`, `height 256`, `logical_height 256` to match the mod's density functions (previously -64/384). **Existing `the_sift` worlds must be regenerated.** |
 | Terrain blocks | **STAND-IN**: `siftslate`→`deepslate`, `siftslate_growth`→`moss_block`, `healthy_sculk`→`sculk`, `dry_healthy_sculk`→`pale_moss_block`. A datapack cannot place provider blocks. |
-| Biome carvers | The ten mod-named biomes now list the three mod carvers. |
+| Biome carvers | The ten mod-named biomes now list the three mod carvers. **2026-10-29: all 15 biomes list them** (boot-verified). |
 | Natural-spawn hooks | Singer (`overgrown_clearing`), Echo Golem (`siftslate_slopes`), Prism Warden (`overgrown_forest`), natural Rifts/The Sifter (`siftslate_peaks`), Ichor springs (`sift_wastes`) re-keyed from the prototype biomes. Compile and live behaviour **CHƯA CHẠY**. |
-| Biome `features` arrays, structures, lakes, willow trees, sculk and flora features | Still **chưa làm** (empty). |
+| Biome `features` arrays, structures, lakes, willow trees, sculk and flora features | **2026-10-29: data-driven parts ported** — sculk blobs/sprouts, siftslate stalks and hanging roots, overgrown flora and the ichor underground lake ship as `worldgen/feature/`+`placed_feature/` with vanilla stand-in blocks; abandoned portal structures ship with their chest loot. The mod's 17 custom Java feature types (ichor lakes/springs/snow, soul canyon, monoliths, cliff arches, sniffer caves, willow trees, sculk spikes, flower/plant patches, lava floor, growth cleanup, surface sculk) remain Java-side in `SiftEcologyManager` — see `NOTICE.draft.md`. |
 | Siftslate ores (coal, coal surface, diamond, emerald) | **Ported** by `scripts/port_mod_ores.py` with the mod's size/count/height/filters. **STAND-IN**: vanilla `deepslate_*_ore` replacing deepslate, in step 6 of all ten mod biomes. Charoite and Siftite ore remain Java/provider generated. |
 
 ## Port from the mod source (mielons-the-sift-neoforge-port, MIT, (c) 2026 Mielon)

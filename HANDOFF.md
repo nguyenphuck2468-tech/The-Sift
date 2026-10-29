@@ -464,3 +464,37 @@ dimension type (0..256). `scripts/check_terrain_refs.py` verifies references and
 Siftslate/growth/sculk terrain blocks are vanilla stand-ins (see parity matrix). The
 change was written without a Java 25/Paper toolchain: run `./gradlew clean build` and the
 Paper boot gate before merging, then delete and regenerate any existing `the_sift` world.
+
+## Overnight consolidation and parity port (2026-10-29/30, agent run)
+
+All branch work was consolidated into `main` and every step was validated by
+the CI Pipeline (unit tests + real Paper 26.3 boot + `/sift doctor` gate):
+
+- `main` CI was red: the `DatapackIntegrityTest` NPE'd on the biome tag files
+  (`tags/worldgen/biome/*.json` matched the `/worldgen/biome/` path filter)
+  and could not resolve features under the legacy `worldgen/configured_feature`
+  directory. Fixed in the test; the exact 15-biome canonical set is asserted.
+- `review-fixes-clean` (mielon-parity + 23 review commits), both NOTICE doc
+  branches, and `worldgen/portal-structures` (with its loot table rewritten to
+  vanilla stand-in items after the boot gate caught `thesift:*` item ids) are
+  merged into `main`. `AncientCityGateManager` + `/sift locate` from main was
+  kept alongside the parity ecology wiring. Main-only files that never passed
+  registry validation (12 density functions, `sift_cave` carver, gate
+  structure set, 9 loot tables + 15 recipes with `thesift:*` items, 3
+  superseded advancements) were deleted per the repo's earlier precedent.
+- The boot gate now runs the CI server in the documented `providers.strict:
+  false` fallback mode and asserts the fallback doctor output; strict mode
+  with zero providers could never go green (chunk decoration correctly fails
+  provider placements and retries by design). `check_terrain_refs.py` also
+  validates tags and the structure/template registries now.
+- The mod's vanilla-schema worldgen was ported into the dimension pack
+  (`scripts/port_mod_features.py`): 19 configured + 25 placed features with
+  vanilla stand-in blocks, all 15 biomes wired with the three carvers and the
+  mod's 11 feature stages, three block tags shipped, the mod's 17 custom Java
+  feature types intentionally left to `SiftEcologyManager`. Portal structures
+  moved from the progression pack to the dimension pack. Boot-verified green.
+- Provider bridges now cache resolved plugin classes/methods (`Reflect`);
+  per-event provider lookups no longer repeat reflection.
+- PRs #1/#8/#9/#10/#11 carry the merged content; the superseded
+  `fix/p1-stability-issues` and `review-fixes-469732c` branches are redundant
+  (fully contained in `review-fixes-clean`).
