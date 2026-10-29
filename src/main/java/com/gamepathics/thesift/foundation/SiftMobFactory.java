@@ -58,7 +58,15 @@ public final class SiftMobFactory {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private static org.bukkit.attribute.Attribute toAttribute(String name) {
+        if (name == null || name.isBlank()) return null;
+        try {
+            org.bukkit.NamespacedKey key = org.bukkit.NamespacedKey.minecraft(name.toLowerCase(java.util.Locale.ROOT));
+            org.bukkit.attribute.Attribute attr = org.bukkit.Registry.ATTRIBUTE.get(key);
+            if (attr != null) return attr;
+        } catch (Throwable ignored) {
+        }
         try {
             return org.bukkit.attribute.Attribute.valueOf(name.toUpperCase(java.util.Locale.ROOT));
         } catch (IllegalArgumentException ignored) {
@@ -76,3 +84,4 @@ public final class SiftMobFactory {
         Bukkit.getScheduler().runTask(owner, task);
     }
 }
+

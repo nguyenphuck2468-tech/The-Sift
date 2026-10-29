@@ -24,7 +24,21 @@ class DatapackIntegrityTest {
     private static final Path PROGRESSION = Path.of("src/main/resources/datapack");
     private static final Path DIMENSION = Path.of("src/main/resources/sift_dimension_datapack");
     private static final Set<String> CANONICAL_BIOMES = Set.of(
-            "thesift:bulb_forest", "thesift:crystal_spires", "thesift:pink_meadows", "thesift:shattered_peaks"
+            "thesift:bulb_forest",
+            "thesift:carapace",
+            "thesift:crystal_spires",
+            "thesift:ichor_snowy_peaks",
+            "thesift:overgrown_clearing",
+            "thesift:overgrown_forest",
+            "thesift:overgrown_forest_slopes",
+            "thesift:overgrown_peaks",
+            "thesift:overgrown_slopes",
+            "thesift:pink_meadows",
+            "thesift:shattered_peaks",
+            "thesift:sift_deep_dark",
+            "thesift:sift_wastes",
+            "thesift:siftslate_peaks",
+            "thesift:siftslate_slopes"
     );
 
     @Test
@@ -135,9 +149,16 @@ class DatapackIntegrityTest {
         duplicates.retainAll(dimensionBiomes);
 
         assertTrue(duplicates.isEmpty(), "Biome IDs must be defined by only one bundled pack: " + duplicates);
-        assertEquals(CANONICAL_BIOMES, dimensionBiomes.stream().filter(CANONICAL_BIOMES::contains).collect(java.util.stream.Collectors.toSet()));
+        assertEquals(CANONICAL_BIOMES, dimensionBiomes);
         assertTrue(progressionBiomes.isEmpty(), "Progression pack must not define biome JSON");
         assertTrue(Files.isDirectory(PROGRESSION.resolve("data/thesift/advancement")), "Progression advancements must remain");
+    }
+
+    @Test
+    void progressionPackContainsNoBiomeJson() throws IOException {
+        Path biomeDir = PROGRESSION.resolve("data/thesift/worldgen/biome");
+        assertTrue(Files.notExists(biomeDir) || Files.list(biomeDir).findFirst().isEmpty(),
+                "Progression pack must not contain any worldgen/biome JSON to avoid duplicate biome ID ownership");
     }
 
     @Test
@@ -228,3 +249,4 @@ class DatapackIntegrityTest {
         return id.contains(":") ? id : "minecraft:" + id;
     }
 }
+

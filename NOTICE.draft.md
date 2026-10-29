@@ -29,6 +29,38 @@ and permission notice must be kept with any final NOTICE/LICENSE). These are
 clean-room-style ports of observable behaviour plus direct datapack JSON reuse
 where noted; they carry the same MIT obligation as the terrain files.
 
+## NeoForge Port Reference (MikiKox1)
+
+The worldgen data used for porting terrain features was cross-referenced with
+the unofficial NeoForge port by MikiKox1. The NeoForge port's worldgen data has
+been sampled (8 files) and matches the original Fabric mod, except for biome
+JSONs which were modified in the port. Credit to MikiKox1 for the NeoForge
+port effort.
+
+## Assets copied directly from the original mod (Mielon's The Sift, MIT)
+
+The following texture files are identical byte-for-byte to the original mod's
+assets and are included under the original MIT License. The MIT copyright and
+permission notice must be kept with these files.
+
+- `src/main/resources/texture/entity/sculkflower.png`
+- `src/main/resources/texture/block/sculkflower_crop_stage0.png`
+- `src/main/resources/texture/block/sculkflower_crop_stage1.png`
+- `src/main/resources/texture/item/sculkflower_seeds.png`
+
+## Asset Contributors and Provenance (NOT currently included)
+
+The following third-party assets are present in the original mod. They are NOT
+currently included in this plugin's build artifact unless explicitly permitted.
+Do not copy these assets without verifying the license or obtaining permission.
+
+- **ImpSteve**: Dark Sniffer texture. (License status unknown/to be verified; not included).
+- **Fuzja Jądrowa**: "Rift" music disc. (License status unknown/to be verified; not included).
+- **Echo_Dev**: Wellspring remix (music/audio). (License status unknown/to be verified; not included).
+- **StrawberrySushi_**: Korean localization. (Not applicable to this Java/Paper plugin; not included).
+
+The original LICENSE by Mielon (MIT) applies to the ported code and data as noted above.
+
 ## Original fan-made content (NOT from the reference mod)
 
 The following exist only in this plugin and must never be described as mod
@@ -54,6 +86,8 @@ research as proof that code, assets, or other material was copied or licensed.
   license was observed in the reference repository, but this audit did not
   establish that any repository file here is a copy or derivative of a
   particular file from it. No attribution claim is made for this project.
+- NeoForge Port: <https://github.com/MikiKox1/mielons-the-sift-neoforge-port>.
+  Used as a data reference for worldgen parity.
 
 ## Unresolved binary
 
