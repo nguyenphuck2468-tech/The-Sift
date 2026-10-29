@@ -51,9 +51,18 @@ public final class SiftMobFactory {
         for (java.util.Map.Entry<String, Double> entry : stats.entrySet()) {
             org.bukkit.attribute.Attribute attr = toAttribute(entry.getKey());
             if (attr == null || entity.getAttribute(attr) == null) continue;
+            // Raising MAX_HEALTH on a freshly spawned stand-in (Blub rabbit 3 -> 20) must also
+            // fill the health bar, or the creature spawns nearly dead; damaged entities keep
+            // their current health.
+            boolean atFullHealth = attr == org.bukkit.attribute.Attribute.MAX_HEALTH
+                    && entity.getHealth() >= entity.getAttribute(attr).getValue() - 0.01;
             entity.getAttribute(attr).setBaseValue(entry.getValue());
-            if (attr == org.bukkit.attribute.Attribute.MAX_HEALTH && entity.getHealth() > entry.getValue()) {
-                entity.setHealth(entry.getValue());
+            if (attr == org.bukkit.attribute.Attribute.MAX_HEALTH) {
+                if (entity.getHealth() > entry.getValue()) {
+                    entity.setHealth(entry.getValue());
+                } else if (atFullHealth) {
+                    entity.setHealth(entry.getValue());
+                }
             }
         }
     }

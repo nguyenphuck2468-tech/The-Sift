@@ -8,10 +8,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CommandSuggestionsTest {
     @Test
-    void locateIsTheOnlyPlayerFacingCommandWithoutAdminPermission() {
+    void travelCommandsArePlayerFacingWithoutAdminPermission() {
         org.junit.jupiter.api.Assertions.assertFalse(TheSiftFoundationPlugin.requiresAdminPermission(new String[]{"locate"}));
-        org.junit.jupiter.api.Assertions.assertTrue(TheSiftFoundationPlugin.requiresAdminPermission(new String[]{"dimension"}));
+        org.junit.jupiter.api.Assertions.assertFalse(TheSiftFoundationPlugin.requiresAdminPermission(new String[]{"dimension"}));
+        org.junit.jupiter.api.Assertions.assertFalse(TheSiftFoundationPlugin.requiresAdminPermission(new String[]{"enter"}));
+        org.junit.jupiter.api.Assertions.assertFalse(TheSiftFoundationPlugin.requiresAdminPermission(new String[]{"return"}));
         org.junit.jupiter.api.Assertions.assertTrue(TheSiftFoundationPlugin.requiresAdminPermission(new String[]{"give", "rift_key", "Alex"}));
+        org.junit.jupiter.api.Assertions.assertTrue(TheSiftFoundationPlugin.requiresAdminPermission(new String[]{"doctor"}));
     }
 
     @Test

@@ -198,10 +198,11 @@ public final class IchorState {
     }
 
     /**
-     * Periodic async persistence. The write itself runs WITHOUT holding the state monitor, so
-     * main-thread readers ({@link #level}/{@link #block}) are never blocked by file IO; only a
-     * short lock takes the snapshot. The file is written to a temp path and moved atomically so a
-     * crash mid-save cannot corrupt ichor-state.yml.
+     * Periodic async persistence. Snapshot AND file write share one monitor so a slow async
+     * write can never land an older snapshot over a newer synchronous shutdown save (the
+     * revision counter alone only guarded the dirty flag, not the file contents). The lock is
+     * held briefly: main-thread mutators only append to small maps. The file is written to a
+     * temp path and moved atomically so a crash mid-save cannot corrupt ichor-state.yml.
      */
     private void save() {
         final Map<String, Integer> cauldronSnapshot;
@@ -212,30 +213,28 @@ public final class IchorState {
             cauldronSnapshot = new HashMap<>(cauldrons);
             blockSnapshot = new HashMap<>(blocks);
             savedRevision = revision;
-        }
-        FileConfiguration config = new YamlConfiguration();
-        config.set("cauldrons", cauldronSnapshot);
-        config.set("blocks", blockSnapshot);
-        try {
-            Path target = storageFile.toPath();
-            Path parent = target.getParent();
-            if (parent != null) Files.createDirectories(parent);
-            Path temp = Files.createTempFile(parent, "ichor-state", ".tmp");
+            FileConfiguration config = new YamlConfiguration();
+            config.set("cauldrons", cauldronSnapshot);
+            config.set("blocks", blockSnapshot);
             try {
-                Files.writeString(temp, config.saveToString());
+                Path target = storageFile.toPath();
+                Path parent = target.getParent();
+                if (parent != null) Files.createDirectories(parent);
+                Path temp = Files.createTempFile(parent, "ichor-state", ".tmp");
                 try {
-                    Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-                } catch (AtomicMoveNotSupportedException exception) {
-                    Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
+                    Files.writeString(temp, config.saveToString());
+                    try {
+                        Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+                    } catch (AtomicMoveNotSupportedException exception) {
+                        Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                } finally {
+                    Files.deleteIfExists(temp);
                 }
-            } finally {
-                Files.deleteIfExists(temp);
-            }
-            synchronized (this) {
                 if (revision == savedRevision) dirty = false;
+            } catch (IOException e) {
+                plugin.getLogger().log(Level.SEVERE, "Failed to save Ichor state", e);
             }
-        } catch (IOException e) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to save Ichor state", e);
         }
     }
 

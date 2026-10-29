@@ -549,7 +549,12 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     }
 
     static boolean requiresAdminPermission(String[] args) {
-        return args.length == 0 || !args[0].equalsIgnoreCase("locate");
+        // Player-facing travel commands: the README documents /sift dimension and /sift return
+        // as the way players enter and leave the dimension, and /sift locate is the compass
+        // helper. Strict mode still gates actual dimension access through readiness.
+        if (args.length == 0) return true;
+        String sub = args[0].toLowerCase(java.util.Locale.ROOT);
+        return !(sub.equals("locate") || sub.equals("dimension") || sub.equals("enter") || sub.equals("return"));
     }
 
     private java.util.List<String> providerWarnings() {

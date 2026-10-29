@@ -4,6 +4,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Color;
 import org.bukkit.Difficulty;
+import org.bukkit.GameMode;
+import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -197,6 +199,11 @@ public final class SiftEcologyManager implements Listener {
             deferredDecorationRetries.incrementAndGet();
             return;
         }
+        // Skip the entity snapshot entirely for chunks that already finished decorating:
+        // every reload of a decorated chunk otherwise pays a full chunk entity scan before
+        // decorateChunkOnce rejects it.
+        Byte decorated = chunk.getPersistentDataContainer().get(decoratedChunkKey, PersistentDataType.BYTE);
+        if (decorated != null && decorated == CHUNK_DECORATION_COMPLETE) return;
 
         boolean measure = plugin.getConfig().getBoolean("debug.chunk-generation-metrics.enabled", false);
         long started = measure ? System.nanoTime() : 0L;
@@ -661,18 +668,21 @@ public final class SiftEcologyManager implements Listener {
     /** Ore veins required for ordinary survival progression in a biome set with no data-driven features. */
     private void generateSiftResources(Chunk chunk, Random random) {
         boolean dataDriven = dimensionOreFeaturesActive();
-        generateOreVeins(chunk, random, Material.IRON_ORE, 2, -24, 56, 5);
+        // The dimension terrain spans Y 0..256 (the mod layout), not vanilla's -64..320, so the
+        // vanilla-style ranges are shifted +64; unshifted negatives clamp to the floor and lose
+        // most of the band (diamond would be squeezed into 1..8).
+        generateOreVeins(chunk, random, Material.IRON_ORE, 2, 40, 120, 5);
         // The dimension datapack's siftslate_coal/diamond/emerald placed features cover these
         // three ores when enabled; skip only their Java stand-ins so iron/copper/redstone/lapis/
         // gold keep generating (the pack has no equivalent feature for those yet).
         if (!dataDriven) {
-            generateOreVeins(chunk, random, Material.COAL_ORE, 2, 8, 112, 7);
+            generateOreVeins(chunk, random, Material.COAL_ORE, 2, 72, 176, 7);
         }
-        generateOreVeins(chunk, random, Material.COPPER_ORE, 1, -16, 80, 5);
-        generateOreVeins(chunk, random, Material.REDSTONE_ORE, 1, -56, 16, 5);
-        generateOreVeins(chunk, random, Material.LAPIS_ORE, 1, -40, 48, 3);
-        if (!dataDriven && random.nextInt(4) == 0) generateOreVeins(chunk, random, Material.DIAMOND_ORE, 1, -58, 8, 3);
-        if (random.nextInt(8) == 0) generateOreVeins(chunk, random, Material.GOLD_ORE, 1, -48, 24, 4);
+        generateOreVeins(chunk, random, Material.COPPER_ORE, 1, 48, 144, 5);
+        generateOreVeins(chunk, random, Material.REDSTONE_ORE, 1, 8, 80, 5);
+        generateOreVeins(chunk, random, Material.LAPIS_ORE, 1, 24, 112, 3);
+        if (!dataDriven && random.nextInt(4) == 0) generateOreVeins(chunk, random, Material.DIAMOND_ORE, 1, 6, 72, 3);
+        if (random.nextInt(8) == 0) generateOreVeins(chunk, random, Material.GOLD_ORE, 1, 16, 88, 4);
     }
 
     private void generateOreVeins(Chunk chunk, Random random, Material oreType,
@@ -998,10 +1008,12 @@ public final class SiftEcologyManager implements Listener {
     public void onSiftBossDeath(EntityDeathEvent event) {
         String id = event.getEntity().getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING);
         if ("prism_warden".equals(id) || "the_sifter".equals(id) || "spire_tyrant".equals(id)) {
-            event.getDrops().add(content.item(Material.ECHO_SHARD,
-                    "heart_of_the_sift", "Heart of the Sift"));
-            event.getDrops().add(content.item(Material.AMETHYST_SHARD,
-                    "sift_shard", "Sift Shard"));
+            // content.item returns null in strict mode when no provider resolves the ID;
+            // a null entry in the drop list would break the drop processing downstream.
+            ItemStack heart = content.item(Material.ECHO_SHARD, "heart_of_the_sift", "Heart of the Sift");
+            if (heart != null) event.getDrops().add(heart);
+            ItemStack shard = content.item(Material.AMETHYST_SHARD, "sift_shard", "Sift Shard");
+            if (shard != null) event.getDrops().add(shard);
             // Spire Fragment is a fan-made token for the bundled tyrant.json advancement icon.
             // The reference mod has no such item; admins can disable the whole variant with
             // content.spire_tyrant (default off), which also removes this drop.
@@ -1210,13 +1222,6 @@ public final class SiftEcologyManager implements Listener {
     private void tickIchorWeather() {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
         if (sift == null || sift.getPlayers().isEmpty()) return;
-        for (Player player : sift.getPlayers()) {
-            Material contact = player.getLocation().getBlock().getType();
-            if (contact == Material.WATER || contact == Material.BUBBLE_COLUMN) {
-                player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 120, 0, true, false, true));
-                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 120, 0, true, false, true));
-            }
-        }
         int period = Math.max(180, plugin.getConfig().getInt("sift-world.ichor-weather-period-seconds", 900));
         long phase = (sift.getFullTime() / 20L) % period;
         boolean ichorStorm = phase > period * 2L / 3L && phase < period * 5L / 6L;
@@ -1229,7 +1234,13 @@ public final class SiftEcologyManager implements Listener {
             Location at = player.getLocation();
             sift.spawnParticle(Particle.DUST, at.clone().add(0, 2, 0), 18,
                     2.5, 1.5, 2.5, ichor);
-            if (player.getLocation().getBlock().getLightFromSky() > 0) {
+            // Effects only while the ichor storm is active - standing in ordinary (non-ichor)
+            // water outside a storm must not be an infinite regeneration source. MOTION_BLOCKING
+            // heightmap instead of light-from-sky, which also lit players under open eaves.
+            boolean exposedToRain = sift.getHighestBlockYAt(at, HeightMap.MOTION_BLOCKING) <= at.getBlockY();
+            boolean inWater = at.getBlock().getType() == Material.WATER
+                    || at.getBlock().getType() == Material.BUBBLE_COLUMN;
+            if (exposedToRain || inWater) {
                 player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 120, 0, true, false, true));
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 120, 0, true, false, true));
             }
@@ -1333,7 +1344,15 @@ public final class SiftEcologyManager implements Listener {
             Long windupAt = pdc.get(darkSnifferSonicWindupKey, PersistentDataType.LONG);
             Long waveStart = pdc.get(darkSnifferWaveStartKey, PersistentDataType.LONG);
             if (targetId != null && windupAt != null) {
-                Player target = Bukkit.getPlayer(UUID.fromString(targetId));
+                Player target;
+                try {
+                    target = Bukkit.getPlayer(UUID.fromString(targetId));
+                } catch (IllegalArgumentException ignored) {
+                    // Invalid persisted UUID: drop the stale sonic target and move on to the
+                    // next sniffer in the batch instead of aborting the whole tick.
+                    pdc.set(darkSnifferSonicTargetKey, PersistentDataType.STRING, "");
+                    continue;
+                }
                 if (target == null || !target.isValid() || target.isDead()
                         || !target.getWorld().equals(sift)
                         || !sniffer.hasLineOfSight(target)
@@ -1499,7 +1518,9 @@ public final class SiftEcologyManager implements Listener {
                 sniffer.getPathfinder().stopPathfinding();
                 Long attackAt = pdc.get(darkSnifferAttackAtKey, PersistentDataType.LONG);
                 if (attackAt == null || now - attackAt >= 1_200L) {
-                    combatTarget.damage(7.0, sniffer);
+                    // Same config key the spawn stat line uses (mobs.dark_sniffer.attack-damage,
+                    // underscored like every mobs.<id> key); the melee path must honour it too.
+                    combatTarget.damage(plugin.getConfig().getDouble("mobs.dark_sniffer.attack-damage", 7.0), sniffer);
                     Vector knockback = combatTarget.getLocation().toVector()
                             .subtract(entity.getLocation().toVector());
                     knockback.setY(0);
@@ -1830,27 +1851,32 @@ public final class SiftEcologyManager implements Listener {
         String species = content.idOf(hand);
         if (species == null) return;
         Player player = event.getPlayer();
+        // Cancel first, always: the held item is a vanilla spawn egg, so an uncancelled event
+        // would spawn the raw vanilla stand-in mob (Warden, Ravager, ...) with none of the
+        // Sift limits - the permission check must not be the only gate.
+        event.setCancelled(true);
         if (!plugin.getConfig().getBoolean("spawn-eggs.enabled", true)) {
-            event.setCancelled(true);
             player.sendMessage("\u00a7cSift spawn eggs are disabled by configuration.");
             return;
         }
-        if (!"op".equals(plugin.getConfig().getString("spawn-eggs.permission-mode", "op"))
-                || player.isOp()) {
-            event.setCancelled(true); // cancel the vanilla egg before it spawns anything
-            Block clicked = event.getClickedBlock();
-            Location at = clicked.getLocation().add(0.5, 1.0, 0.5);
-            // Special mobs keep their dedicated managers so soul-event/charoite wiring applies.
-            boolean spawned = switch (species) {
-                case "echo_golem" -> echoGolemManager.summonEchoGolem(at) != null;
-                case "singer" -> resonanceManager.summonSinger(at) != null;
-                default -> summonCreature(species, at);
-            };
-            if (spawned) {
-                consumeOne(player, hand);
-            } else {
-                player.sendMessage("\u00a7cUnknown Sift creature: " + species);
-            }
+        if (!"all".equals(plugin.getConfig().getString("spawn-eggs.permission-mode", "op"))
+                && !player.isOp()) {
+            player.sendMessage("\u00a7cSift spawn eggs require op in the current permission mode.");
+            return;
+        }
+        Block clicked = event.getClickedBlock();
+        Location at = clicked.getLocation().add(0.5, 1.0, 0.5);
+        // Special mobs keep their dedicated managers so soul-event/charoite wiring applies.
+        // The managers only exist while their content flags are enabled.
+        boolean spawned = switch (species) {
+            case "echo_golem" -> echoGolemManager != null && echoGolemManager.summonEchoGolem(at) != null;
+            case "singer" -> resonanceManager != null && resonanceManager.summonSinger(at) != null;
+            default -> summonCreature(species, at);
+        };
+        if (spawned) {
+            consumeOne(player, hand);
+        } else {
+            player.sendMessage("\u00a7cUnknown Sift creature: " + species);
         }
     }
 
@@ -1903,6 +1929,8 @@ public final class SiftEcologyManager implements Listener {
     }
 
     private void consumeOne(Player player, ItemStack hand) {
+        // Vanilla behaviour: creative players keep their stack.
+        if (player.getGameMode() == GameMode.CREATIVE) return;
         if (hand.getAmount() <= 1) {
             player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
         } else {

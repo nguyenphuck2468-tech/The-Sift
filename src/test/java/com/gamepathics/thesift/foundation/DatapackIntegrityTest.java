@@ -215,7 +215,9 @@ class DatapackIntegrityTest {
         int oreBiomes = 0;
         for (Path biome : jsonFiles(DIMENSION.resolve("data"))) {
             String normalized = biome.toString().replace('\\', '/');
-            if (!normalized.contains("/worldgen/biome/")) continue;
+            // Biome tag files (tags/worldgen/biome) share the path segment but have no
+            // features array; the same path pitfall the earlier NPE came from.
+            if (!normalized.contains("/worldgen/biome/") || normalized.contains("/tags/")) continue;
             JsonObject root = JsonParser.parseString(Files.readString(biome)).getAsJsonObject();
             JsonArray stages = root.getAsJsonArray("features");
             Set<String> referenced = new HashSet<>();
