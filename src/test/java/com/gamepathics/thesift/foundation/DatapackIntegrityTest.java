@@ -22,7 +22,21 @@ class DatapackIntegrityTest {
     private static final Path PROGRESSION = Path.of("src/main/resources/datapack");
     private static final Path DIMENSION = Path.of("src/main/resources/sift_dimension_datapack");
     private static final Set<String> CANONICAL_BIOMES = Set.of(
-            "thesift:bulb_forest", "thesift:crystal_spires", "thesift:pink_meadows", "thesift:shattered_peaks"
+            "thesift:bulb_forest",
+            "thesift:carapace",
+            "thesift:crystal_spires",
+            "thesift:ichor_snowy_peaks",
+            "thesift:overgrown_clearing",
+            "thesift:overgrown_forest",
+            "thesift:overgrown_forest_slopes",
+            "thesift:overgrown_peaks",
+            "thesift:overgrown_slopes",
+            "thesift:pink_meadows",
+            "thesift:shattered_peaks",
+            "thesift:sift_deep_dark",
+            "thesift:sift_wastes",
+            "thesift:siftslate_peaks",
+            "thesift:siftslate_slopes"
     );
 
     @Test
@@ -44,7 +58,7 @@ class DatapackIntegrityTest {
         duplicates.retainAll(dimensionBiomes);
 
         assertTrue(duplicates.isEmpty(), "Biome IDs must be defined by only one bundled pack: " + duplicates);
-        assertEquals(CANONICAL_BIOMES, dimensionBiomes.stream().filter(CANONICAL_BIOMES::contains).collect(java.util.stream.Collectors.toSet()));
+        assertEquals(CANONICAL_BIOMES, dimensionBiomes);
         assertTrue(progressionBiomes.isEmpty(), "Progression pack must not define biome JSON");
         assertTrue(Files.isDirectory(PROGRESSION.resolve("data/thesift/advancement")), "Progression advancements must remain");
     }
@@ -52,9 +66,12 @@ class DatapackIntegrityTest {
     @Test
     void biomeFeatureReferencesResolveThroughPlacedAndConfiguredFeatures() throws IOException {
         Map<String, Path> placedFeatures = resources(DIMENSION.resolve("data"), "worldgen/placed_feature");
-        Map<String, Path> configuredFeatures = resources(DIMENSION.resolve("data"), "worldgen/feature");
+        // The dimension pack keeps the legacy registry directory name; resolve both spellings.
+        Map<String, Path> configuredFeatures = new HashMap<>(resources(DIMENSION.resolve("data"), "worldgen/feature"));
+        configuredFeatures.putAll(resources(DIMENSION.resolve("data"), "worldgen/configured_feature"));
         for (Path biome : jsonFiles(DIMENSION.resolve("data"))) {
-            if (!biome.toString().replace('\\', '/').contains("/worldgen/biome/")) continue;
+            String normalized = biome.toString().replace('\\', '/');
+            if (!normalized.contains("/worldgen/biome/") || normalized.contains("/tags/")) continue;
             JsonObject root = JsonParser.parseString(Files.readString(biome)).getAsJsonObject();
             JsonArray stages = root.getAsJsonArray("features");
             for (JsonElement stage : stages) {
@@ -80,6 +97,7 @@ class DatapackIntegrityTest {
         Map<String, Path> result = new HashMap<>();
         for (Path file : jsonFiles(dataRoot)) {
             String normalized = file.toString().replace('\\', '/');
+            if (normalized.contains("/tags/")) continue;
             String marker = "/" + resourceDirectory + "/";
             int markerIndex = normalized.indexOf(marker);
             if (markerIndex < 0) continue;
