@@ -1,0 +1,292 @@
+{
+  "type": "minecraft:chest",
+  "pools": [
+    {
+      "rolls": {
+        "type": "minecraft:uniform",
+        "min": 4,
+        "max": 7
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:large_fern",
+          "weight": 12
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:beetroot",
+          "weight": 10
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:sugar_cane",
+          "weight": 12
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:pointed_dripstone",
+          "weight": 12
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:sculk_vein",
+          "weight": 9
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:sculk_vein",
+          "weight": 9
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:pink_petals",
+          "weight": 5
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:torchflower",
+          "weight": 5
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:spore_blossom",
+          "weight": 5
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:deepslate",
+          "weight": 12,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 2,
+                "max": 6
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:tuff",
+          "weight": 10,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 4
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:sculk",
+          "weight": 7,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 3
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:sculk",
+          "weight": 7,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 3
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:cherry_log",
+          "weight": 11,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 2,
+                "max": 5
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:cherry_planks",
+          "weight": 12,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 2,
+                "max": 7
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:cherry_leaves",
+          "weight": 9,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 4
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rolls": {
+        "type": "minecraft:uniform",
+        "min": 1,
+        "max": 2
+      },
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:sculk",
+          "weight": 8,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 4
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:amethyst_shard",
+          "weight": 10,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 4
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:emerald",
+          "weight": 4,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 3
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        },
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:diamond",
+          "weight": 2,
+          "modifier": [
+            {
+              "count": {
+                "type": "minecraft:uniform",
+                "min": 1,
+                "max": 2
+              },
+              "type": "minecraft:set_count"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:music_disc_otherside"
+        }
+      ],
+      "condition": {
+        "chance": 0.5,
+        "type": "minecraft:random_chance"
+      }
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:netherite_upgrade_smithing_template"
+        }
+      ],
+      "condition": {
+        "chance": 0.4,
+        "type": "minecraft:random_chance"
+      }
+    },
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:alternatives",
+          "children": [
+            {
+              "type": "minecraft:item",
+              "name": "minecraft:iron_nugget",
+              "condition": {
+                "chance": 0.1,
+                "type": "minecraft:random_chance"
+              },
+              "modifier": [
+                {
+                  "count": 2,
+                  "type": "minecraft:set_count"
+                }
+              ]
+            },
+            {
+              "type": "minecraft:item",
+              "name": "minecraft:iron_nugget"
+            }
+          ]
+        }
+      ],
+      "condition": {
+        "chance": 0.2,
+        "type": "minecraft:random_chance"
+      }
+    }
+  ],
+  "random_sequence": "thesift:chests/abandoned_portal"
+}

@@ -1,0 +1,14 @@
+{
+  "structures": [
+    {
+      "structure": "thesift:abandoned_main_portal",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "spacing": 24,
+    "separation": 12,
+    "salt": 14357620
+  }
+}
