@@ -3,10 +3,7 @@
   "to_place": {
     "type": "minecraft:simple",
     "state": {
-      "id": "thesift:siftslate_hanging_roots",
-      "properties": {
-        "waterlogged": "false"
-      }
+      "Name": "minecraft:hanging_roots"
     }
   }
 }

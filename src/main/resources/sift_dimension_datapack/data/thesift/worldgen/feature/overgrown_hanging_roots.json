@@ -3,10 +3,7 @@
   "to_place": {
     "type": "minecraft:simple",
     "state": {
-      "id": "thesift:overgrown_hanging_roots",
-      "properties": {
-        "waterlogged": "false"
-      }
+      "Name": "minecraft:hanging_roots"
     }
   }
 }
