@@ -51,7 +51,10 @@
       "thesift:siftslate_charoite_ore",
       "thesift:siftslate_siftite_ore"
     ],
-    [],
+    [
+      "thesift:ichor_underground_lake",
+      "thesift:siftslate_hanging_roots_cave"
+    ],
     [],
     [],
     []

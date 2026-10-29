@@ -49,11 +49,23 @@
       "thesift:siftslate_diamond_ore",
       "thesift:siftslate_emerald_ore",
       "thesift:siftslate_charoite_ore",
-      "thesift:siftslate_siftite_ore"
+      "thesift:siftslate_siftite_ore",
+      "thesift:healthy_sculk_underground_blob",
+      "thesift:dry_healthy_sculk_underground_blob"
+    ],
+    [
+      "thesift:ichor_underground_lake",
+      "thesift:siftslate_hanging_roots_cave",
+      "thesift:siftslate_stalks_cave",
+      "thesift:healthy_sculk_sprouts_cave",
+      "thesift:dry_healthy_sculk_sprouts_cave",
+      "thesift:siftslate_stalks_on_healthy_cave",
+      "thesift:siftslate_stalks_on_dry_cave"
     ],
     [],
-    [],
-    [],
+    [
+      "thesift:abandoned_main_portal"
+    ],
     []
   ],
   "has_precipitation": true,

@@ -187,6 +187,21 @@ class DatapackIntegrityTest {
     }
 
     @Test
+    void biomeCarversResolveToBundledCarvers() throws IOException {
+        Map<String, Path> carvers = resources(DIMENSION.resolve("data"), "worldgen/carver");
+        for (Path biome : jsonFiles(DIMENSION.resolve("data"))) {
+            String normalized = biome.toString().replace('\\', '/');
+            if (!normalized.contains("/worldgen/biome/") || normalized.contains("/tags/")) continue;
+            JsonObject root = JsonParser.parseString(Files.readString(biome)).getAsJsonObject();
+            for (JsonElement carver : root.getAsJsonArray("carvers")) {
+                String carverId = resourceId(carver.getAsString());
+                assertTrue(carverId.startsWith("minecraft:") || carvers.containsKey(carverId),
+                        biome + " references missing carver " + carverId);
+            }
+        }
+    }
+
+    @Test
     void siftslateOreFeaturesAreWiredIntoEveryOreBearingBiome() throws IOException {
         // Step index 6 is the "ore" generation step (after structure/carver/liquid/misc/
         // feature/decoration). The Java stand-in veins in SiftEcologyManager skip themselves
