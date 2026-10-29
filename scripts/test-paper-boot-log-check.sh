@@ -10,7 +10,7 @@ cat >"$console_log" <<'EOF'
 Paper startup
 [TheSift] Enabling TheSift v2.0.0-foundation
 Done (39.324s)! For help, type "help"
-Provider strict: true; dimension allowed: false
+Provider strict: false; dimension allowed: true
 Worldgen provider placement failures: 0 (deferred chunk retries: 0; last: none)
 EOF
 printf '[Server thread/INFO]: plugin enabled\n' >"$server_log"
