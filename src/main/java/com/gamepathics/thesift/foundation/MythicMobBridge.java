@@ -57,11 +57,15 @@ final class MythicMobBridge {
         String entityId = plugin.getConfig().getString(
                 "integrations.mobs.itemsadder.entities." + id, "thesift:" + id).trim();
         try {
-            Class<?> customEntity = Class.forName("dev.lone.itemsadder.api.CustomEntity");
-            Object wrapper = customEntity.getMethod("spawn", String.class, Location.class)
-                    .invoke(null, entityId, location);
+            Class<?> customEntity = Reflect.optionalClass("dev.lone.itemsadder.api.CustomEntity");
+            if (customEntity == null) return null;
+            Method spawn = Reflect.optionalMethod(customEntity, "spawn", String.class, Location.class);
+            if (spawn == null) return null;
+            Method getEntity = Reflect.optionalMethod(customEntity, "getEntity");
+            if (getEntity == null) return null;
+            Object wrapper = spawn.invoke(null, entityId, location);
             if (wrapper == null) return null;
-            Object entity = customEntity.getMethod("getEntity").invoke(wrapper);
+            Object entity = getEntity.invoke(wrapper);
             return entity instanceof LivingEntity living ? living : null;
         } catch (ReflectiveOperationException | LinkageError exception) {
             plugin.getLogger().fine("ItemsAdder custom entity unavailable for " + entityId + ": "
@@ -73,15 +77,23 @@ final class MythicMobBridge {
     private LivingEntity spawnMythic(String id, Location location) {
         if (!plugin.getServer().getPluginManager().isPluginEnabled("MythicMobs")) return null;
         try {
-            Class<?> mythicBukkit = Class.forName("io.lumine.mythic.bukkit.MythicBukkit");
-            Object api = mythicBukkit.getMethod("inst").invoke(null);
-            Object manager = api.getClass().getMethod("getMobManager").invoke(api);
-            Object result = manager.getClass().getMethod("getMythicMob", String.class).invoke(manager, id);
+            Class<?> mythicBukkit = Reflect.optionalClass("io.lumine.mythic.bukkit.MythicBukkit");
+            Class<?> adapter = Reflect.optionalClass("io.lumine.mythic.bukkit.BukkitAdapter");
+            if (mythicBukkit == null || adapter == null) return null;
+            Method inst = Reflect.optionalMethod(mythicBukkit, "inst");
+            Method adapt = Reflect.optionalMethod(adapter, "adapt", Location.class);
+            if (inst == null || adapt == null) return null;
+            Object api = inst.invoke(null);
+            Method getMobManager = Reflect.optionalMethod(api.getClass(), "getMobManager");
+            if (getMobManager == null) return null;
+            Object manager = getMobManager.invoke(api);
+            Method getMythicMob = Reflect.optionalMethod(manager.getClass(), "getMythicMob", String.class);
+            if (getMythicMob == null) return null;
+            Object result = getMythicMob.invoke(manager, id);
             Object mob = result instanceof Optional<?> optional ? optional.orElse(null) : result;
             if (mob == null) return null;
 
-            Class<?> adapter = Class.forName("io.lumine.mythic.bukkit.BukkitAdapter");
-            Object mythicLocation = adapter.getMethod("adapt", Location.class).invoke(null, location);
+            Object mythicLocation = adapt.invoke(null, location);
             Method spawn = null;
             for (Method method : mob.getClass().getMethods()) {
                 if (method.getName().equals("spawn") && method.getParameterCount() == 2
@@ -93,8 +105,12 @@ final class MythicMobBridge {
             }
             if (spawn == null) return null;
             Object activeMob = spawn.invoke(mob, mythicLocation, 1.0);
-            Object abstractEntity = activeMob.getClass().getMethod("getEntity").invoke(activeMob);
-            Object bukkitEntity = abstractEntity.getClass().getMethod("getBukkitEntity").invoke(abstractEntity);
+            Method getAbstractEntity = Reflect.optionalMethod(activeMob.getClass(), "getEntity");
+            if (getAbstractEntity == null) return null;
+            Object abstractEntity = getAbstractEntity.invoke(activeMob);
+            Method getBukkitEntity = Reflect.optionalMethod(abstractEntity.getClass(), "getBukkitEntity");
+            if (getBukkitEntity == null) return null;
+            Object bukkitEntity = getBukkitEntity.invoke(abstractEntity);
             return bukkitEntity instanceof LivingEntity entity ? entity : null;
         } catch (ReflectiveOperationException | LinkageError exception) {
             plugin.getLogger().warning("MythicMobs could not spawn " + id + "; using vanilla fallback: "
@@ -108,13 +124,18 @@ final class MythicMobBridge {
         String file = plugin.getConfig().getString("integrations.mobs.elitemobs.definitions." + id, "");
         if (file.isBlank()) return null;
         try {
-            Class<?> bossType = Class.forName(
+            Class<?> bossType = Reflect.optionalClass(
                     "com.magmaguy.elitemobs.mobconstructor.custombosses.CustomBossEntity");
-            Object boss = bossType.getMethod("createCustomBossEntity", String.class).invoke(null, file);
+            if (bossType == null) return null;
+            Method create = Reflect.optionalMethod(bossType, "createCustomBossEntity", String.class);
+            Method spawn = Reflect.optionalMethod(bossType, "spawn", Location.class, int.class, boolean.class);
+            Method getLivingEntity = Reflect.optionalMethod(bossType, "getLivingEntity");
+            if (create == null || spawn == null || getLivingEntity == null) return null;
+            Object boss = create.invoke(null, file);
             if (boss == null) return null;
-            bossType.getMethod("spawn", Location.class, int.class, boolean.class).invoke(boss, location,
+            spawn.invoke(boss, location,
                     plugin.getConfig().getInt("integrations.mobs.elitemobs.level", 1), true);
-            Object livingEntity = bossType.getMethod("getLivingEntity").invoke(boss);
+            Object livingEntity = getLivingEntity.invoke(boss);
             return livingEntity instanceof LivingEntity entity ? entity : null;
         } catch (ReflectiveOperationException | LinkageError exception) {
             plugin.getLogger().warning("EliteMobs could not spawn configured Sift boss " + id + ": "

@@ -19,9 +19,13 @@ final class ModelEngineBridge {
                 "integrations.mobs.modelengine.models." + creatureId, "").trim();
         if (modelId.isEmpty()) return;
         try {
-            Class<?> api = Class.forName("com.ticxo.modelengine.api.ModelEngineAPI");
-            Object modeled = api.getMethod("createModeledEntity", Entity.class).invoke(null, entity);
-            Object activeModel = api.getMethod("createActiveModel", String.class).invoke(null, modelId);
+            Class<?> api = Reflect.optionalClass("com.ticxo.modelengine.api.ModelEngineAPI");
+            if (api == null) return;
+            Method createModeledEntity = Reflect.optionalMethod(api, "createModeledEntity", Entity.class);
+            Method createActiveModel = Reflect.optionalMethod(api, "createActiveModel", String.class);
+            if (createModeledEntity == null || createActiveModel == null) return;
+            Object modeled = createModeledEntity.invoke(null, entity);
+            Object activeModel = createActiveModel.invoke(null, modelId);
             if (modeled == null || activeModel == null) return;
             Method addModel = null;
             for (Method method : modeled.getClass().getMethods()) {

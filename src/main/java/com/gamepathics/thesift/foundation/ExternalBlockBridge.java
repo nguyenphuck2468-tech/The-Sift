@@ -58,8 +58,11 @@ final class ExternalBlockBridge {
                             && p.supports(contentId));
             if (backend.equals("ItemsAdder")) {
                 if (!enabled(backend)) return false;
-                Class<?> type = Class.forName("dev.lone.itemsadder.api.CustomBlock");
-                return Boolean.TRUE.equals(type.getMethod("isInRegistry", String.class).invoke(null, externalId));
+                Class<?> type = Reflect.optionalClass("dev.lone.itemsadder.api.CustomBlock");
+                if (type == null) return false;
+                Method inRegistry = Reflect.optionalMethod(type, "isInRegistry", String.class);
+                return inRegistry != null
+                        && Boolean.TRUE.equals(inRegistry.invoke(null, externalId));
             }
             if (backend.equals("Nexo")) return nexoBlockDefinitionExists(externalId);
             if (backend.equals("Oraxen")) return oraxenBlockDefinitionExists(externalId);
@@ -69,17 +72,21 @@ final class ExternalBlockBridge {
 
     private boolean nexoBlockDefinitionExists(String id) throws ReflectiveOperationException {
         if (!enabled("Nexo")) return false;
-        Class<?> blocks = Class.forName("com.nexomc.nexo.api.NexoBlocks");
-        Object result = blocks.getMethod("isCustomBlock", String.class).invoke(null, id);
-        if (Boolean.TRUE.equals(result)) return true;
-        return !id.contains(":") && Boolean.TRUE.equals(
-                blocks.getMethod("isCustomBlock", String.class).invoke(null, "thesift:" + id));
+        Class<?> blocks = Reflect.optionalClass("com.nexomc.nexo.api.NexoBlocks");
+        if (blocks == null) return false;
+        Method isCustomBlock = Reflect.optionalMethod(blocks, "isCustomBlock", String.class);
+        if (isCustomBlock == null) return false;
+        if (Boolean.TRUE.equals(isCustomBlock.invoke(null, id))) return true;
+        return !id.contains(":") && Boolean.TRUE.equals(isCustomBlock.invoke(null, "thesift:" + id));
     }
 
     private boolean oraxenBlockDefinitionExists(String id) throws ReflectiveOperationException {
         if (!enabled("Oraxen")) return false;
-        Class<?> blocks = Class.forName("io.th0rgal.oraxen.api.OraxenBlocks");
-        Object result = blocks.getMethod("getBlockIDs").invoke(null);
+        Class<?> blocks = Reflect.optionalClass("io.th0rgal.oraxen.api.OraxenBlocks");
+        if (blocks == null) return false;
+        Method getBlockIDs = Reflect.optionalMethod(blocks, "getBlockIDs");
+        if (getBlockIDs == null) return false;
+        Object result = getBlockIDs.invoke(null);
         if (!(result instanceof Iterable<?> ids)) return false;
         String namespaced = id.contains(":") ? id : "thesift:" + id;
         for (Object value : ids) {
@@ -132,17 +139,22 @@ final class ExternalBlockBridge {
     private boolean isAnyItemsAdderBlock(Block block) {
         if (!enabled("ItemsAdder")) return false;
         try {
-            Object found = Class.forName("dev.lone.itemsadder.api.CustomBlock")
-                    .getMethod("byAlreadyPlaced", Block.class).invoke(null, block);
-            return found != null;
+            Class<?> customBlock = Reflect.optionalClass("dev.lone.itemsadder.api.CustomBlock");
+            if (customBlock == null) return false;
+            Method byAlreadyPlaced = Reflect.optionalMethod(customBlock, "byAlreadyPlaced", Block.class);
+            if (byAlreadyPlaced == null) return false;
+            return byAlreadyPlaced.invoke(null, block) != null;
         } catch (ReflectiveOperationException | LinkageError exception) { return false; }
     }
 
     private boolean reflectiveBlockCheck(String pluginName, String className, String methodName, Block block) {
         if (!enabled(pluginName)) return false;
         try {
-            Object result = Class.forName(className).getMethod(methodName, Block.class).invoke(null, block);
-            return Boolean.TRUE.equals(result);
+            Class<?> api = Reflect.optionalClass(className);
+            if (api == null) return false;
+            Method check = Reflect.optionalMethod(api, methodName, Block.class);
+            if (check == null) return false;
+            return Boolean.TRUE.equals(check.invoke(null, block));
         } catch (ReflectiveOperationException | LinkageError exception) {
             plugin.getLogger().fine(pluginName + " block detection unavailable: " + exception.getMessage());
             return false;
@@ -152,10 +164,15 @@ final class ExternalBlockBridge {
     private boolean nexoBlockCheck(Block block, String expectedId) {
         if (!enabled("Nexo")) return false;
         try {
-            Class<?> api = Class.forName("com.nexomc.nexo.api.NexoBlocks");
-            Object mechanic = api.getMethod("customBlockMechanic", Block.class).invoke(null, block);
+            Class<?> api = Reflect.optionalClass("com.nexomc.nexo.api.NexoBlocks");
+            if (api == null) return false;
+            Method customBlockMechanic = Reflect.optionalMethod(api, "customBlockMechanic", Block.class);
+            if (customBlockMechanic == null) return false;
+            Object mechanic = customBlockMechanic.invoke(null, block);
             if (mechanic == null) return false;
-            Object found = mechanic.getClass().getMethod("getItemID").invoke(mechanic);
+            Method getItemID = Reflect.optionalMethod(mechanic.getClass(), "getItemID");
+            if (getItemID == null) return false;
+            Object found = getItemID.invoke(mechanic);
             return found instanceof String id && sameProviderId(expectedId, id);
         } catch (ReflectiveOperationException | LinkageError exception) {
             plugin.getLogger().fine("Nexo block ID lookup unavailable: " + exception.getMessage());
@@ -166,19 +183,20 @@ final class ExternalBlockBridge {
     private boolean oraxenBlockCheck(Block block, String expectedId) {
         if (!enabled("Oraxen")) return false;
         try {
-            Class<?> api = Class.forName("io.th0rgal.oraxen.api.OraxenBlocks");
+            Class<?> api = Reflect.optionalClass("io.th0rgal.oraxen.api.OraxenBlocks");
+            if (api == null) return false;
             for (String methodName : new String[]{"getNoteBlockMechanic", "getStringMechanic",
                     "getChorusMechanic", "getShapedMechanic"}) {
-                try {
-                    Object mechanic = api.getMethod(methodName, Block.class).invoke(null, block);
-                    if (mechanic == null) continue;
-                    for (String idMethod : new String[]{"getItemID", "getItemId"}) {
-                        try {
-                            Object found = mechanic.getClass().getMethod(idMethod).invoke(mechanic);
-                            if (found instanceof String id && sameProviderId(expectedId, id)) return true;
-                        } catch (NoSuchMethodException ignored) { }
-                    }
-                } catch (NoSuchMethodException ignored) { }
+                Method mechanicLookup = Reflect.optionalMethod(api, methodName, Block.class);
+                if (mechanicLookup == null) continue;
+                Object mechanic = mechanicLookup.invoke(null, block);
+                if (mechanic == null) continue;
+                for (String idMethod : new String[]{"getItemID", "getItemId"}) {
+                    Method idLookup = Reflect.optionalMethod(mechanic.getClass(), idMethod);
+                    if (idLookup == null) continue;
+                    Object found = idLookup.invoke(mechanic);
+                    if (found instanceof String id && sameProviderId(expectedId, id)) return true;
+                }
             }
         } catch (ReflectiveOperationException | LinkageError exception) {
             plugin.getLogger().fine("Oraxen block ID lookup unavailable: " + exception.getMessage());
@@ -194,11 +212,15 @@ final class ExternalBlockBridge {
     private boolean itemsAdderBlockCheck(Block block, String expectedId) {
         if (!enabled("ItemsAdder")) return false;
         try {
-            Class<?> customBlock = Class.forName("dev.lone.itemsadder.api.CustomBlock");
-            Object result = customBlock
-                    .getMethod("byAlreadyPlaced", Block.class).invoke(null, block);
+            Class<?> customBlock = Reflect.optionalClass("dev.lone.itemsadder.api.CustomBlock");
+            if (customBlock == null) return false;
+            Method byAlreadyPlaced = Reflect.optionalMethod(customBlock, "byAlreadyPlaced", Block.class);
+            if (byAlreadyPlaced == null) return false;
+            Object result = byAlreadyPlaced.invoke(null, block);
             if (result == null) return false;
-            Object actualId = customBlock.getMethod("getNamespacedID").invoke(result);
+            Method getNamespacedID = Reflect.optionalMethod(customBlock, "getNamespacedID");
+            if (getNamespacedID == null) return false;
+            Object actualId = getNamespacedID.invoke(result);
             String normalized = expectedId.contains(":") ? expectedId : "thesift:" + expectedId;
             return actualId instanceof String id && id.equalsIgnoreCase(normalized);
         } catch (ReflectiveOperationException | LinkageError exception) {
@@ -210,11 +232,12 @@ final class ExternalBlockBridge {
     private boolean placeItemsAdder(String id, Location location) {
         if (!enabled("ItemsAdder")) return false;
         try {
-            Class<?> customBlock = Class.forName("dev.lone.itemsadder.api.CustomBlock");
+            Class<?> customBlock = Reflect.optionalClass("dev.lone.itemsadder.api.CustomBlock");
+            if (customBlock == null) return false;
+            Method place = Reflect.optionalMethod(customBlock, "place", String.class, Location.class);
+            if (place == null) return false;
             String itemId = id.contains(":") ? id : "thesift:" + id;
-            Object result = customBlock.getMethod("place", String.class, Location.class)
-                    .invoke(null, itemId, location.clone());
-            return result != null;
+            return place.invoke(null, itemId, location.clone()) != null;
         } catch (ReflectiveOperationException | LinkageError exception) {
             plugin.getLogger().fine("ItemsAdder block unavailable for " + id + ": " + exception.getMessage());
             return false;
@@ -224,8 +247,10 @@ final class ExternalBlockBridge {
     private boolean placeReflectively(String pluginName, String className, String id, Location location) {
         if (!enabled(pluginName)) return false;
         try {
-            Class<?> api = Class.forName(className);
-            Method place = api.getMethod("place", String.class, Location.class);
+            Class<?> api = Reflect.optionalClass(className);
+            if (api == null) return false;
+            Method place = Reflect.optionalMethod(api, "place", String.class, Location.class);
+            if (place == null) return false;
             Material before = location.getBlock().getType();
             Object result = place.invoke(null, id, location.clone());
             if (result instanceof Boolean success) return success;

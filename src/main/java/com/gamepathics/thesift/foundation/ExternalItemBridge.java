@@ -64,8 +64,11 @@ final class ExternalItemBridge {
     private boolean matchesNexo(String id, ItemStack stack) {
         if (!enabled("Nexo")) return false;
         try {
-            Object found = Class.forName("com.nexomc.nexo.api.NexoItems")
-                    .getMethod("idFromItem", ItemStack.class).invoke(null, stack);
+            Class<?> api = Reflect.optionalClass("com.nexomc.nexo.api.NexoItems");
+            if (api == null) return false;
+            Method idFromItem = Reflect.optionalMethod(api, "idFromItem", ItemStack.class);
+            if (idFromItem == null) return false;
+            Object found = idFromItem.invoke(null, stack);
             return found instanceof String actual && matchesId(id, actual);
         } catch (ReflectiveOperationException | LinkageError exception) { return false; }
     }
@@ -73,10 +76,15 @@ final class ExternalItemBridge {
     private boolean matchesItemsAdder(String id, ItemStack stack) {
         if (!enabled("ItemsAdder")) return false;
         try {
-            Object custom = Class.forName("dev.lone.itemsadder.api.CustomStack")
-                    .getMethod("byItemStack", ItemStack.class).invoke(null, stack);
+            Class<?> api = Reflect.optionalClass("dev.lone.itemsadder.api.CustomStack");
+            if (api == null) return false;
+            Method byItemStack = Reflect.optionalMethod(api, "byItemStack", ItemStack.class);
+            if (byItemStack == null) return false;
+            Object custom = byItemStack.invoke(null, stack);
             if (custom == null) return false;
-            Object found = custom.getClass().getMethod("getNamespacedID").invoke(custom);
+            Method getNamespacedID = Reflect.optionalMethod(custom.getClass(), "getNamespacedID");
+            if (getNamespacedID == null) return false;
+            Object found = getNamespacedID.invoke(custom);
             return found instanceof String actual && matchesId(id, actual);
         } catch (ReflectiveOperationException | LinkageError exception) { return false; }
     }
@@ -84,8 +92,11 @@ final class ExternalItemBridge {
     private boolean matchesOraxen(String id, ItemStack stack) {
         if (!enabled("Oraxen")) return false;
         try {
-            Object found = Class.forName("io.th0rgal.oraxen.api.OraxenItems")
-                    .getMethod("getIdByItem", ItemStack.class).invoke(null, stack);
+            Class<?> api = Reflect.optionalClass("io.th0rgal.oraxen.api.OraxenItems");
+            if (api == null) return false;
+            Method getIdByItem = Reflect.optionalMethod(api, "getIdByItem", ItemStack.class);
+            if (getIdByItem == null) return false;
+            Object found = getIdByItem.invoke(null, stack);
             return found instanceof String actual && matchesId(id, actual);
         } catch (ReflectiveOperationException | LinkageError exception) { return false; }
     }
@@ -137,11 +148,16 @@ final class ExternalItemBridge {
     private ItemStack fromNexo(String id) {
         if (!enabled("Nexo")) return null;
         try {
-            Class<?> api = Class.forName("com.nexomc.nexo.api.NexoItems");
-            Object builder = api.getMethod("itemFromId", String.class).invoke(null, id);
-            if (builder == null) builder = api.getMethod("itemFromId", String.class).invoke(null, "thesift:" + id);
+            Class<?> api = Reflect.optionalClass("com.nexomc.nexo.api.NexoItems");
+            if (api == null) return null;
+            Method itemFromId = Reflect.optionalMethod(api, "itemFromId", String.class);
+            if (itemFromId == null) return null;
+            Object builder = itemFromId.invoke(null, id);
+            if (builder == null) builder = itemFromId.invoke(null, "thesift:" + id);
             if (builder == null) return null;
-            Object stack = builder.getClass().getMethod("build").invoke(builder);
+            Method build = Reflect.optionalMethod(builder.getClass(), "build");
+            if (build == null) return null;
+            Object stack = build.invoke(builder);
             return stack instanceof ItemStack item ? item : null;
         } catch (ReflectiveOperationException | LinkageError exception) {
             plugin.getLogger().fine("Nexo item unavailable for " + id + ": " + exception.getMessage());
@@ -152,10 +168,14 @@ final class ExternalItemBridge {
     private ItemStack fromItemsAdder(String id) {
         if (!enabled("ItemsAdder")) return null;
         try {
-            Class<?> api = Class.forName("dev.lone.itemsadder.api.CustomStack");
-            Object customStack = api.getMethod("getInstance", String.class).invoke(null, "thesift:" + id);
+            Class<?> api = Reflect.optionalClass("dev.lone.itemsadder.api.CustomStack");
+            if (api == null) return null;
+            Method getInstance = Reflect.optionalMethod(api, "getInstance", String.class);
+            if (getInstance == null) return null;
+            Object customStack = getInstance.invoke(null, "thesift:" + id);
             if (customStack == null) return null;
-            Method getItemStack = api.getMethod("getItemStack");
+            Method getItemStack = Reflect.optionalMethod(api, "getItemStack");
+            if (getItemStack == null) return null;
             Object stack = getItemStack.invoke(customStack);
             return stack instanceof ItemStack item ? item : null;
         } catch (ReflectiveOperationException | LinkageError exception) {
@@ -167,10 +187,15 @@ final class ExternalItemBridge {
     private ItemStack fromOraxen(String id) {
         if (!enabled("Oraxen")) return null;
         try {
-            Class<?> api = Class.forName("io.th0rgal.oraxen.api.OraxenItems");
-            Object builder = api.getMethod("getItemById", String.class).invoke(null, id);
+            Class<?> api = Reflect.optionalClass("io.th0rgal.oraxen.api.OraxenItems");
+            if (api == null) return null;
+            Method getItemById = Reflect.optionalMethod(api, "getItemById", String.class);
+            if (getItemById == null) return null;
+            Object builder = getItemById.invoke(null, id);
             if (builder == null) return null;
-            Object stack = builder.getClass().getMethod("build").invoke(builder);
+            Method build = Reflect.optionalMethod(builder.getClass(), "build");
+            if (build == null) return null;
+            Object stack = build.invoke(builder);
             return stack instanceof ItemStack item ? item : null;
         } catch (ReflectiveOperationException | LinkageError exception) {
             plugin.getLogger().fine("Oraxen item unavailable for " + id + ": " + exception.getMessage());

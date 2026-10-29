@@ -32,10 +32,10 @@ final class Reflect {
     /** Returns the public method, or null when the provider API does not declare it. */
     static Method optionalMethod(Class<?> owner, String name, Class<?>... params) {
         String key = owner.getName() + "#" + name + "#" + Arrays.toString(params);
-        return METHODS.computeIfAbsent(key, ignored -> {
+        return METHODS.computeIfAbsent(key, missing -> {
             try {
                 return Optional.of(owner.getMethod(name, params));
-            } catch (NoSuchMethodException ignored) {
+            } catch (NoSuchMethodException absent) {
                 return Optional.<Method>empty();
             }
         }).orElse(null);
