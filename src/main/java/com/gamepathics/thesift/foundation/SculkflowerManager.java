@@ -80,6 +80,11 @@ final class SculkflowerManager implements Listener {
 
         event.setCancelled(true);
         if (player.getGameMode() != GameMode.CREATIVE) held.setAmount(held.getAmount() - 1);
+        // Reference-mod parity (planting_the_dark): the advancement fires specifically when
+        // Sculkflower seeds go onto Sculk, not onto the plugin's farmland extension.
+        if (clicked.getType() == Material.SCULK) {
+            SiftAdvancementGrant.grant(plugin, player, "planting_the_dark");
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)

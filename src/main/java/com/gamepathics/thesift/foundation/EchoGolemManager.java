@@ -308,6 +308,9 @@ public final class EchoGolemManager implements Listener {
             player.getInventory().addItem(soul).values()
                     .forEach(leftover -> player.getWorld().dropItemNaturally(player.getLocation(), leftover));
             player.sendMessage("§bThe Echo Golem returns its Soul Block to you.");
+            // Reference-mod parity (friend_of_the_sift): the bonded golem handing the Soul
+            // Block back to its player.
+            SiftAdvancementGrant.grant(plugin, player, "friend_of_the_sift");
             event.setCancelled(true);
         }
     }

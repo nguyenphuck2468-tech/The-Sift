@@ -1026,6 +1026,21 @@ public final class SiftEcologyManager implements Listener {
                 }
             }
         }
+        // Reference-mod parity (food_chain): a tamed Blub that kills a Dark Snifter earns its
+        // owner the advancement - the player taught the mob to fight for them.
+        if ("dark_sniffer".equals(id) && event.getEntity().getKiller() == null
+                && event.getEntity().getLastDamageCause() instanceof org.bukkit.event.entity.EntityDamageByEntityEvent byEntity) {
+            String blubOwnerId = byEntity.getDamager().getPersistentDataContainer()
+                    .get(blubOwnerKey, PersistentDataType.STRING);
+            if (blubOwnerId != null) {
+                try {
+                    Player owner = Bukkit.getPlayer(UUID.fromString(blubOwnerId));
+                    if (owner != null) SiftAdvancementGrant.grant(plugin, owner, "food_chain");
+                } catch (IllegalArgumentException ignored) {
+                    // Stale owner id.
+                }
+            }
+        }
         // Reference-mod parity (Sifter): drops raw_sifter_meat, which smelts to cooked_sifter_meat.
         if ("sifter".equals(id)) {
             ItemStack raw = content.item(Material.BEEF, "raw_sifter_meat", "Raw Sifter Meat");
@@ -1824,11 +1839,18 @@ public final class SiftEcologyManager implements Listener {
         ItemStack hand = player.getInventory().getItemInMainHand();
         if (ownerId == null && content.is(hand, "soul_block")) {
             if (!plugin.getConfig().getBoolean("content.blub", true)) return;
+            // Reference-mod parity: the Soul Block is always consumed and tames the Blub on
+            // a 1-in-3 roll (mobs.blub.tame-chance), not on every attempt.
             consumeOne(player, hand);
+            event.setCancelled(true);
+            if (Math.random() >= plugin.getConfig().getDouble("mobs.blub.tame-chance", 1.0 / 3.0)) {
+                player.sendMessage("\u00a77The Blub sniffs the Soul Block and wanders off. Try again.");
+                return;
+            }
             pdc.set(blubOwnerKey, PersistentDataType.STRING, player.getUniqueId().toString());
             if (target instanceof LivingEntity living) living.setRemoveWhenFarAway(false);
             player.sendMessage("\u00a7dThe Blub accepts your Soul Block and follows you.");
-            event.setCancelled(true);
+            SiftAdvancementGrant.grant(plugin, player, "blub");
         } else if (ownerId != null && ownerId.equals(player.getUniqueId().toString())) {
             // Already yours: a small heart response, mirroring the mod's bond feedback.
             target.getWorld().spawnParticle(Particle.HEART, target.getLocation().add(0, 0.6, 0), 3);

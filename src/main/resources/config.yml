@@ -90,6 +90,13 @@ echo-golem:
   charoite-protection: true
   drop-siftite: true
 
+# Tham chiếu bằng dưới (đọc bởi code với giá trị mặc định nếu thiếu).
+mobs:
+  blub:
+    # Parity với mod gốc: Soul Block luôn bị tiêu hao, thuần hoá Blub với tỉ lệ 1/3 mỗi lần
+    # thử chuột phải. Đặt 1.0 để thuần hoá luôn thành công (hành vi cũ).
+    tame-chance: 0.3333333333333333
+
 rift:
   enabled: true
   opening-duration-seconds: 5

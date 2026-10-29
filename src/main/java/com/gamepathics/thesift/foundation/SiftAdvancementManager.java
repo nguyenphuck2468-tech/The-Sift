@@ -1,7 +1,9 @@
 package com.gamepathics.thesift.foundation;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.advancement.Advancement;
 import org.bukkit.entity.Player;
@@ -28,9 +30,13 @@ import java.util.List;
  * vanilla triggers (Ancient City visit, biome visits) are handled by the datapack itself; the rest are
  * awarded from here or from the managers that own the event (Rift, Singer, Charoite enchanting, portal).
  *
- * <p>Not wired yet (their mechanics do not exist in the plugin): {@code like_father_and_son},
- * {@code friend_of_the_sift}, {@code food_chain}, {@code false_alarm}, {@code smells_creepy},
- * {@code planting_the_dark}, {@code spicewood}.
+ * <p>Mod-parity triggers verified against the reference mod's {@code ModAdvancements}:
+ * planting Sculkflower seeds on Sculk, igniting wood inside the dimension, a tamed Blub
+ * killing a Dark Snifter (owner), Blub taming, the Echo Golem returning the Soul Block.
+ * {@code false_alarm} stays unwired: the mod grants it when an Ichor Snowball lands near a
+ * Warden, and the plugin does not have an Ichor Snowball item yet. {@code like_father_and_son}
+ * stays unwired: the mod grants it when an Echo Golem transfers the Soul Block to a Singer,
+ * a mechanic the plugin does not implement.
  */
 public final class SiftAdvancementManager implements Listener {
     private static final String SIFT_WORLD = "thesift:the_sift";
@@ -53,6 +59,30 @@ public final class SiftAdvancementManager implements Listener {
         String id = contentId(event.getItem().getItemStack());
         if ("charoite".equals(id)) grant(player, "kinda_purpleish");
         if ("siftite_nugget".equals(id)) grant(player, "sifted_nugget");
+        // Reference-mod parity (smells_creepy): obtain Sculkflower seeds.
+        if ("sculkflower_seeds".equals(id)) grant(player, "smells_creepy");
+    }
+
+    /**
+     * Reference-mod parity (spicewood): ignite any wood block while inside the Sift dimension
+     * with flint and steel or a fire charge. Wood detection follows the mod's block-tag list.
+     */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onIgniteWood(PlayerInteractEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND
+                || event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        ItemStack held = event.getItem();
+        if (held == null || (held.getType() != Material.FLINT_AND_STEEL
+                && held.getType() != Material.FIRE_CHARGE)) return;
+        if (event.getClickedBlock() == null || !isSift(event.getPlayer().getWorld())) return;
+        org.bukkit.block.Block clicked = event.getClickedBlock();
+        if (clicked.getType().isAir()) return;
+        boolean wood = Tag.LOGS.isTagged(clicked.getType()) || Tag.PLANKS.isTagged(clicked.getType())
+                || Tag.WOODEN_STAIRS.isTagged(clicked.getType()) || Tag.WOODEN_SLABS.isTagged(clicked.getType())
+                || Tag.WOODEN_FENCES.isTagged(clicked.getType()) || Tag.WOODEN_DOORS.isTagged(clicked.getType())
+                || Tag.WOODEN_TRAPDOORS.isTagged(clicked.getType()) || Tag.WOODEN_BUTTONS.isTagged(clicked.getType())
+                || Tag.WOODEN_PRESSURE_PLATES.isTagged(clicked.getType());
+        if (wood) grant(event.getPlayer(), "spicewood");
     }
 
     @EventHandler
