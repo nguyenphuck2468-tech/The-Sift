@@ -3,8 +3,13 @@
 import json, re, sys
 from pathlib import Path
 base = Path(sys.argv[1] if len(sys.argv) > 1 else "src/main/resources/sift_dimension_datapack/data/thesift")
-registries = ["noise", "density_function", "carver", "noise_settings", "biome", "feature", "placed_feature"]
+registries = ["noise", "density_function", "carver", "noise_settings", "biome", "feature", "placed_feature",
+              "structure", "structure_set", "template_pool"]
 have_by = {r: {f"thesift:{f.stem}" for f in (base / "worldgen" / r).glob("*.json")} for r in registries}
+# Structures ship as NBT templates too; template_pool entries reference them by bare ID.
+have_by["structure"] |= {f"thesift:{f.stem}" for f in (base / "worldgen" / "structure").glob("*.nbt")}
+# tag_match predicates resolve against bundled block tags.
+have_by["tags/block"] = {f"thesift:{f.stem}" for f in (base / "tags" / "block").glob("*.json")}
 have = set().union(*have_by.values())
 IGNORE_NAMES = {"thesift:bedrock_floor", "thesift:the_sift"}  # random_name / dimension keys
 errors = []
