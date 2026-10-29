@@ -444,6 +444,18 @@
       "material": "DEEPSLATE",
       "name": "Sonorous Deepslate",
       "model": "thesift:item/siftslate"
+    },
+    {
+      "id": "sculkflower_seeds",
+      "material": "TORCHFLOWER_SEEDS",
+      "name": "Sculkflower Seeds",
+      "model": "thesift:item/sculkflower_seeds"
+    },
+    {
+      "id": "sculkflower",
+      "material": "POPPY",
+      "name": "Sculkflower",
+      "model": "thesift:item/sculkflower"
     }
   ],
   "mobs": [
@@ -451,155 +463,155 @@
       "id": "wisp",
       "type": "ALLAY",
       "display": "&dWisp",
-      "health": 20.0,
-      "damage": 4.0
+      "health": 20,
+      "damage": 4
     },
     {
       "id": "blub",
       "type": "AXOLOTL",
       "display": "&bBlub",
-      "health": 20.0,
-      "damage": 3.0
+      "health": 20,
+      "damage": 3
     },
     {
       "id": "loomer",
       "type": "RABBIT",
       "display": "&dLoomer",
-      "health": 16.0,
-      "damage": 2.0
+      "health": 16,
+      "damage": 2
     },
     {
       "id": "koi",
       "type": "TROPICAL_FISH",
       "display": "&bKoi",
-      "health": 10.0,
-      "damage": 2.0
+      "health": 10,
+      "damage": 2
     },
     {
       "id": "bulb",
       "type": "SLIME",
       "display": "&aBulb",
-      "health": 28.0,
-      "damage": 4.0
+      "health": 28,
+      "damage": 4
     },
     {
       "id": "violet_wisp",
       "type": "VEX",
       "display": "&5Violet Wisp",
-      "health": 24.0,
-      "damage": 5.0
+      "health": 24,
+      "damage": 5
     },
     {
       "id": "hollow_bulb",
       "type": "ZOMBIE",
       "display": "&dHollow Bulb",
-      "health": 32.0,
-      "damage": 5.0
+      "health": 32,
+      "damage": 5
     },
     {
       "id": "frost_stalker",
       "type": "STRAY",
       "display": "&bFrost Stalker",
-      "health": 36.0,
-      "damage": 6.0
+      "health": 36,
+      "damage": 6
     },
     {
       "id": "thornback",
       "type": "TURTLE",
       "display": "&dThornback",
-      "health": 40.0,
-      "damage": 5.0
+      "health": 40,
+      "damage": 5
     },
     {
       "id": "glimmerwing",
       "type": "BEE",
       "display": "&eGlimmerwing",
-      "health": 24.0,
-      "damage": 5.0
+      "health": 24,
+      "damage": 5
     },
     {
       "id": "sunspore",
       "type": "MOOSHROOM",
       "display": "&dSunspore",
-      "health": 32.0,
-      "damage": 2.0
+      "health": 32,
+      "damage": 2
     },
     {
       "id": "drifter",
       "type": "ENDERMAN",
       "display": "&5Drifter",
-      "health": 40.0,
-      "damage": 7.0
+      "health": 40,
+      "damage": 7
     },
     {
       "id": "dark_sniffer",
       "type": "SNIFFER",
       "display": "&5Dark Sniffer",
-      "health": 60.0,
-      "damage": 8.0
+      "health": 60,
+      "damage": 8
     },
     {
       "id": "prismite",
       "type": "SILVERFISH",
       "display": "&dPrismite",
-      "health": 14.0,
-      "damage": 4.0
+      "health": 14,
+      "damage": 4
     },
     {
       "id": "shardling",
       "type": "ENDERMITE",
       "display": "&dShardling",
-      "health": 18.0,
-      "damage": 5.0
+      "health": 18,
+      "damage": 5
     },
     {
       "id": "prism_warden",
       "type": "WARDEN",
       "display": "&5&lPrism Warden",
-      "health": 180.0,
-      "damage": 28.0
+      "health": 180,
+      "damage": 28
     },
     {
       "id": "the_sifter",
       "type": "RAVAGER",
       "display": "&5&lThe Sifter",
-      "health": 220.0,
-      "damage": 24.0
+      "health": 220,
+      "damage": 24
     },
     {
       "id": "glowbell",
       "type": "BAT",
       "display": "&dGlowbell",
-      "health": 12.0,
-      "damage": 2.0
+      "health": 12,
+      "damage": 2
     },
     {
       "id": "sift_wastes_stalker",
       "type": "HUSK",
       "display": "&5Sift Wastes Stalker",
-      "health": 36.0,
-      "damage": 6.0
+      "health": 36,
+      "damage": 6
     },
     {
       "id": "singer",
       "type": "ALLAY",
       "display": "&5&lSinger",
-      "health": 40.0,
-      "damage": 2.0
+      "health": 40,
+      "damage": 2
     },
     {
       "id": "echo_golem",
       "type": "IRON_GOLEM",
       "display": "&b&lEcho Golem",
-      "health": 80.0,
-      "damage": 12.0
+      "health": 80,
+      "damage": 12
     },
     {
       "id": "rift_walker",
       "type": "ENDERMAN",
       "display": "&5Rift Walker",
-      "health": 40.0,
-      "damage": 7.0
+      "health": 40,
+      "damage": 7
     }
   ],
   "blocks": [
@@ -657,6 +669,21 @@
       "id": "sonorous_deepslate",
       "material": "PAPER",
       "model": "block/siftslate"
+    },
+    {
+      "id": "sculkflower",
+      "material": "PAPER",
+      "model": "block/sculkflower"
+    },
+    {
+      "id": "sculkflower_crop_stage0",
+      "material": "PAPER",
+      "model": "block/sculkflower_crop_stage0"
+    },
+    {
+      "id": "sculkflower_crop_stage1",
+      "material": "PAPER",
+      "model": "block/sculkflower_crop_stage1"
     }
   ]
 }

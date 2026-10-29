@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:add",
+  "left": {
+    "type": "minecraft:noise",
+    "noise": "thesift:plateau_selector",
+    "xz_scale": 0.7,
+    "y_scale": 0.0
+  },
+  "right": {
+    "type": "minecraft:mul",
+    "left": 0.16,
+    "right": {
+      "type": "minecraft:noise",
+      "noise": "thesift:terrace_warp",
+      "xz_scale": 0.86,
+      "y_scale": 0.0
+    }
+  }
+}

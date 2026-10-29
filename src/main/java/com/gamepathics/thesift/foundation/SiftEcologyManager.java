@@ -3,6 +3,7 @@ package com.gamepathics.thesift.foundation;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Color;
+import org.bukkit.Difficulty;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -17,11 +18,19 @@ import org.bukkit.block.data.type.Snow;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityTargetLivingEntityEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.world.ChunkLoadEvent;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
@@ -52,10 +61,45 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey decorationRetryAttemptsKey;
     private final NamespacedKey decorationRetryAtKey;
     private final NamespacedKey creatureKey;
+    private final NamespacedKey blubOwnerKey;
+    private final NamespacedKey spearThrowAtKey;
+    private final NamespacedKey snifferCorruptionStartKey;
+    private final NamespacedKey snifferFleePathAtKey;
+    private final NamespacedKey darkSnifferSonicAtKey;
+    private final NamespacedKey darkSnifferSonicTargetKey;
+    private final NamespacedKey darkSnifferCombatTargetKey;
+    private final NamespacedKey darkSnifferHomeXKey;
+    private final NamespacedKey darkSnifferHomeYKey;
+    private final NamespacedKey darkSnifferHomeZKey;
+    private final NamespacedKey darkSnifferIdlePathAtKey;
+    private final NamespacedKey darkSnifferTargetRefreshKey;
+    private final NamespacedKey darkSnifferPathRefreshKey;
+    private final NamespacedKey darkSnifferAttackAtKey;
+    private final NamespacedKey darkSnifferNoMeleeTicksKey;
+    private final NamespacedKey darkSnifferSonicWindupKey;
+    private final NamespacedKey darkSnifferWaveStartKey;
+    private final NamespacedKey darkSnifferWaveOriginXKey;
+    private final NamespacedKey darkSnifferWaveOriginYKey;
+    private final NamespacedKey darkSnifferWaveOriginZKey;
+    private final NamespacedKey darkSnifferWaveDirectionXKey;
+    private final NamespacedKey darkSnifferWaveDirectionYKey;
+    private final NamespacedKey darkSnifferWaveDirectionZKey;
+    private final NamespacedKey darkSnifferWaveFlightTicksKey;
+    private final NamespacedKey darkSnifferWaveIdKey;
+    private final NamespacedKey darkSnifferWavePulledKey;
+    private final NamespacedKey wardenPettingTargetKey;
+    private final NamespacedKey wardenPettingSearchAtKey;
+    private final NamespacedKey wardenPettingApproachAtKey;
+    private final NamespacedKey wardenPettingStartKey;
+    private final NamespacedKey wardenPettingHeartAtKey;
+    private final NamespacedKey darkSnifferPettingWardenKey;
+    /** Last herd anchor per world so spawned Sifters regroup instead of scattering (mod parity). */
+    private final java.util.Map<org.bukkit.World, Location> sifterHerdAnchors = new ConcurrentHashMap<>();
     private final SiftMobFactory mobFactory;
     private final ExternalBlockBridge blockBridge;
     private final SiftiteContent content;
     private final BukkitTask tideTask;
+    private final BukkitTask darkSnifferCombatTask;
     private final AtomicLong providerPlacementFailures = new AtomicLong();
     private final AtomicLong deferredDecorationRetries = new AtomicLong();
     private final java.util.Map<String, AtomicLong> providerPlacementFailuresById = new ConcurrentHashMap<>();
@@ -64,6 +108,13 @@ public final class SiftEcologyManager implements Listener {
 
     public SiftEcologyManager(JavaPlugin plugin, ResonanceManager resonanceManager,
                               EchoGolemManager echoGolemManager, RiftManager riftManager) {
+        this(plugin, resonanceManager, echoGolemManager, riftManager, null, null);
+    }
+
+    /** Shared wiring: reuse the plugin-wide SiftiteContent/SiftMobFactory when available. */
+    SiftEcologyManager(JavaPlugin plugin, ResonanceManager resonanceManager,
+                       EchoGolemManager echoGolemManager, RiftManager riftManager,
+                       SiftiteContent sharedContent, SiftMobFactory sharedMobFactory) {
         this.plugin = plugin;
         this.resonanceManager = resonanceManager;
         this.echoGolemManager = echoGolemManager;
@@ -72,18 +123,60 @@ public final class SiftEcologyManager implements Listener {
         this.decorationRetryAttemptsKey = new NamespacedKey(plugin, "sift_ecology_retry_attempts");
         this.decorationRetryAtKey = new NamespacedKey(plugin, "sift_ecology_retry_at");
         this.creatureKey = new NamespacedKey(plugin, "sift_creature");
-        this.mobFactory = new SiftMobFactory(plugin);
+        this.blubOwnerKey = new NamespacedKey(plugin, "blub_owner");
+        this.spearThrowAtKey = new NamespacedKey(plugin, "spear_last_throw");
+        this.snifferCorruptionStartKey = new NamespacedKey(plugin, "sniffer_corruption_start");
+        this.snifferFleePathAtKey = new NamespacedKey(plugin, "sniffer_flee_path_at");
+        this.darkSnifferSonicAtKey = new NamespacedKey(plugin, "dark_sniffer_sonic_at");
+        this.darkSnifferSonicTargetKey = new NamespacedKey(plugin, "dark_sniffer_sonic_target");
+        this.darkSnifferCombatTargetKey = new NamespacedKey(plugin, "dark_sniffer_combat_target");
+        this.darkSnifferHomeXKey = new NamespacedKey(plugin, "dark_sniffer_home_x");
+        this.darkSnifferHomeYKey = new NamespacedKey(plugin, "dark_sniffer_home_y");
+        this.darkSnifferHomeZKey = new NamespacedKey(plugin, "dark_sniffer_home_z");
+        this.darkSnifferIdlePathAtKey = new NamespacedKey(plugin, "dark_sniffer_idle_path_at");
+        this.darkSnifferTargetRefreshKey = new NamespacedKey(plugin, "dark_sniffer_target_refresh");
+        this.darkSnifferPathRefreshKey = new NamespacedKey(plugin, "dark_sniffer_path_refresh");
+        this.darkSnifferAttackAtKey = new NamespacedKey(plugin, "dark_sniffer_attack_at");
+        this.darkSnifferNoMeleeTicksKey = new NamespacedKey(plugin, "dark_sniffer_no_melee_ticks");
+        this.darkSnifferSonicWindupKey = new NamespacedKey(plugin, "dark_sniffer_sonic_windup");
+        this.darkSnifferWaveStartKey = new NamespacedKey(plugin, "dark_sniffer_wave_start");
+        this.darkSnifferWaveOriginXKey = new NamespacedKey(plugin, "dark_sniffer_wave_origin_x");
+        this.darkSnifferWaveOriginYKey = new NamespacedKey(plugin, "dark_sniffer_wave_origin_y");
+        this.darkSnifferWaveOriginZKey = new NamespacedKey(plugin, "dark_sniffer_wave_origin_z");
+        this.darkSnifferWaveDirectionXKey = new NamespacedKey(plugin, "dark_sniffer_wave_direction_x");
+        this.darkSnifferWaveDirectionYKey = new NamespacedKey(plugin, "dark_sniffer_wave_direction_y");
+        this.darkSnifferWaveDirectionZKey = new NamespacedKey(plugin, "dark_sniffer_wave_direction_z");
+        this.darkSnifferWaveFlightTicksKey = new NamespacedKey(plugin, "dark_sniffer_wave_flight_ticks");
+        this.darkSnifferWaveIdKey = new NamespacedKey(plugin, "dark_sniffer_wave_id");
+        this.darkSnifferWavePulledKey = new NamespacedKey(plugin, "dark_sniffer_wave_pulled");
+        this.wardenPettingTargetKey = new NamespacedKey(plugin, "warden_petting_target");
+        this.wardenPettingSearchAtKey = new NamespacedKey(plugin, "warden_petting_search_at");
+        this.wardenPettingApproachAtKey = new NamespacedKey(plugin, "warden_petting_approach_at");
+        this.wardenPettingStartKey = new NamespacedKey(plugin, "warden_petting_start");
+        this.wardenPettingHeartAtKey = new NamespacedKey(plugin, "warden_petting_heart_at");
+        this.darkSnifferPettingWardenKey = new NamespacedKey(plugin, "dark_sniffer_petting_warden");
+        // Shared instances are injected by the plugin lifecycle; fall back to local ones only
+        // for standalone/test construction.
+        this.mobFactory = sharedMobFactory != null ? sharedMobFactory : new SiftMobFactory(plugin);
         this.blockBridge = new ExternalBlockBridge(plugin);
-        this.content = new SiftiteContent(plugin);
+        this.content = sharedContent != null ? sharedContent : new SiftiteContent(plugin);
         this.tideTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             tickTide();
             tickIchorWeather();
             tickDarkSniffers();
+            tickBlubs();
+            tickSifterHerds();
         }, 100L, 100L);
+        this.darkSnifferCombatTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            tickDarkSnifferCombat();
+            tickWardenPetting();
+        }, 1L, 1L);
     }
 
     public void shutdown() {
         tideTask.cancel();
+        darkSnifferCombatTask.cancel();
+        sifterHerdAnchors.clear();
     }
 
     public void populateLoadedSpawnChunks() {
@@ -159,7 +252,15 @@ public final class SiftEcologyManager implements Listener {
         long seed = chunk.getWorld().getSeed() ^ ((long) chunk.getX() * 341873128712L)
                 ^ ((long) chunk.getZ() * 132897987541L);
         Random random = new Random(seed);
-        Biome biome = chunk.getBlock(8, Math.max(1, chunk.getWorld().getMinHeight()), 8).getBiome();
+        // Sample the surface biome, not the world's bottom Y. Modern 3D biome noise can
+        // assign a cave biome at minHeight even when the surface belongs to an overgrown
+        // forest or another Sift biome; using that sample misroutes all chunk decoration.
+        int sampleX = chunk.getX() * 16 + 8;
+        int sampleZ = chunk.getZ() * 16 + 8;
+        int surfaceY = chunk.getWorld().getHighestBlockYAt(sampleX, sampleZ);
+        surfaceY = Math.max(chunk.getWorld().getMinHeight(),
+                Math.min(surfaceY, chunk.getWorld().getMaxHeight() - 1));
+        Biome biome = chunk.getBlock(8, surfaceY, 8).getBiome();
         String key = biome.getKey().toString().toLowerCase(Locale.ROOT);
 
         // In strict mode only provider-owned blocks and mobs are content. The
@@ -185,7 +286,7 @@ public final class SiftEcologyManager implements Listener {
             generateAbandonedPortal(chunk, random);
             generationOperations++;
         }
-        if ((key.contains("overgrown") || key.endsWith("carapace")) && random.nextInt(24) == 0) {
+        if ((key.contains("overgrown") || (key.endsWith("carapace") || key.endsWith("sift_wastes"))) && random.nextInt(24) == 0) {
             generateIchorSpring(chunk, random);
             generationOperations++;
         }
@@ -198,23 +299,29 @@ public final class SiftEcologyManager implements Listener {
         }
         spawnSiftWildlife(chunk, key, random);
         generationOperations++;
-        if (key.endsWith("pink_meadows") && random.nextInt(22) == 0) {
+        if ((key.endsWith("pink_meadows") || key.endsWith("overgrown_clearing")) && random.nextInt(22) == 0) {
             summonSinger(chunk, random);
             generationOperations++;
-        } else if (key.endsWith("crystal_spires") && random.nextInt(55) == 0) {
+        } else if ((key.endsWith("crystal_spires") || key.endsWith("siftslate_slopes")) && random.nextInt(55) == 0) {
             summonEchoGolem(chunk, random);
             generationOperations++;
         }
-        if (key.endsWith("shattered_peaks") && plugin.getConfig().getBoolean("content.rift-events", true)
+        if ((key.endsWith("shattered_peaks") || key.endsWith("siftslate_peaks")) && plugin.getConfig().getBoolean("content.rift-events", true)
                 && random.nextInt(120) == 0) {
             openNaturalRift(chunk);
             generationOperations++;
         }
-        if (key.endsWith("bulb_forest") && random.nextInt(160) == 0) {
+        if ((key.endsWith("bulb_forest") || key.endsWith("overgrown_forest")) && random.nextInt(160) == 0) {
             spawnBoss(chunk, EntityType.WARDEN, "Prism Warden", "prism_warden", 180.0, 28.0);
             generationOperations++;
-        } else if (key.endsWith("shattered_peaks") && random.nextInt(120) == 0) {
-            spawnBoss(chunk, EntityType.RAVAGER, "The Sifter", "the_sifter", 220.0, 24.0);
+        } else if ((key.endsWith("shattered_peaks") || key.endsWith("siftslate_peaks")) && random.nextInt(120) == 0) {
+            // Spire Tyrant variant: crimson-named Sifter boss in the peaks; killing it grants
+            // the bundled "tyrant" advancement (see SiftAdvancementManager.onCreatureDeath).
+            boolean tyrant = plugin.getConfig().getBoolean("content.spire_tyrant", false)
+                    && random.nextBoolean();
+            spawnBoss(chunk, EntityType.RAVAGER,
+                    tyrant ? "Spire Tyrant" : "The Sifter",
+                    tyrant ? "spire_tyrant" : "the_sifter", 220.0, 24.0);
             generationOperations++;
         }
         return generationOperations;
@@ -226,18 +333,23 @@ public final class SiftEcologyManager implements Listener {
         generateCharoiteOre(chunk, random);
         generateSiftiteOre(chunk, random);
         spawnSiftWildlife(chunk, biome, random);
-        if (biome.endsWith("pink_meadows") && random.nextInt(22) == 0) summonSinger(chunk, random);
-        else if (biome.endsWith("crystal_spires") && random.nextInt(55) == 0) summonEchoGolem(chunk, random);
-        if (biome.endsWith("shattered_peaks") && plugin.getConfig().getBoolean("content.rift-events", true)
+        if ((biome.endsWith("pink_meadows") || biome.endsWith("overgrown_clearing")) && random.nextInt(22) == 0) summonSinger(chunk, random);
+        else if ((biome.endsWith("crystal_spires") || biome.endsWith("siftslate_slopes")) && random.nextInt(55) == 0) summonEchoGolem(chunk, random);
+        if ((biome.endsWith("shattered_peaks") || biome.endsWith("siftslate_peaks")) && plugin.getConfig().getBoolean("content.rift-events", true)
                 && random.nextInt(120) == 0) openNaturalRift(chunk);
-        if (biome.endsWith("bulb_forest") && random.nextInt(160) == 0)
+        if ((biome.endsWith("bulb_forest") || biome.endsWith("overgrown_forest")) && random.nextInt(160) == 0)
             spawnBoss(chunk, EntityType.WARDEN, "Prism Warden", "prism_warden", 180.0, 28.0);
-        else if (biome.endsWith("shattered_peaks") && random.nextInt(120) == 0)
-            spawnBoss(chunk, EntityType.RAVAGER, "The Sifter", "the_sifter", 220.0, 24.0);
+        else if ((biome.endsWith("shattered_peaks") || biome.endsWith("siftslate_peaks")) && random.nextInt(120) == 0) {
+            boolean tyrant = plugin.getConfig().getBoolean("content.spire_tyrant", false)
+                    && random.nextBoolean();
+            spawnBoss(chunk, EntityType.RAVAGER,
+                    tyrant ? "Spire Tyrant" : "The Sifter",
+                    tyrant ? "spire_tyrant" : "the_sifter", 220.0, 24.0);
+        }
     }
 
     private void decorateStrictSurface(Chunk chunk, String biome, Random random) {
-        if (!(biome.endsWith("pink_meadows") || biome.endsWith("bulb_forest")
+        if (!((biome.endsWith("pink_meadows") || biome.endsWith("overgrown_clearing")) || (biome.endsWith("bulb_forest") || biome.endsWith("overgrown_forest"))
                 || biome.contains("overgrown"))) return;
         World world = chunk.getWorld();
         for (int i = 0; i < 28; i++) {
@@ -258,7 +370,7 @@ public final class SiftEcologyManager implements Listener {
         int z = chunk.getZ() * 16 + 3 + random.nextInt(10);
         int y = world.getHighestBlockYAt(x, z) + 1;
         if (y <= world.getMinHeight() || y >= world.getMaxHeight() - 12) return;
-        boolean forest = biome.endsWith("bulb_forest") || biome.endsWith("pink_meadows")
+        boolean forest = (biome.endsWith("bulb_forest") || biome.endsWith("overgrown_forest")) || (biome.endsWith("pink_meadows") || biome.endsWith("overgrown_clearing"))
                 || biome.contains("overgrown_forest") || biome.contains("overgrown_clearing");
         if (forest) {
             int height = 4 + random.nextInt(4);
@@ -510,7 +622,21 @@ public final class SiftEcologyManager implements Listener {
                 + deferredDecorationRetries.get() + "; last: " + lastProviderPlacementFailure + ")";
     }
 
+    /**
+     * True when the bundled dimension datapack is enabled and its data-driven ore features are
+     * therefore generating ores itself. The Java stand-in veins must not double-generate on top.
+     * Fails closed (false = keep Java generation) if the pack cannot be queried yet.
+     */
+    private boolean dimensionOreFeaturesActive() {
+        return plugin instanceof TheSiftFoundationPlugin foundation
+                && foundation.datapackBridge() != null
+                && foundation.datapackBridge().isDimensionPackEnabled();
+    }
+
     private void generateCharoiteOre(Chunk chunk, Random random) {
+        // Data-driven replacement: the dimension datapack's siftslate_charoite_ore placed feature
+        // covers this when enabled; skip the Java stand-in so the two do not double-generate.
+        if (dimensionOreFeaturesActive()) return;
         if (!plugin.getConfig().getBoolean("content.charoite_ore",
                 plugin.getConfig().getBoolean("charoite.enabled", true))
                 || !plugin.getConfig().getBoolean("content.charoite", true)
@@ -534,12 +660,18 @@ public final class SiftEcologyManager implements Listener {
 
     /** Ore veins required for ordinary survival progression in a biome set with no data-driven features. */
     private void generateSiftResources(Chunk chunk, Random random) {
+        boolean dataDriven = dimensionOreFeaturesActive();
         generateOreVeins(chunk, random, Material.IRON_ORE, 2, -24, 56, 5);
-        generateOreVeins(chunk, random, Material.COAL_ORE, 2, 8, 112, 7);
+        // The dimension datapack's siftslate_coal/diamond/emerald placed features cover these
+        // three ores when enabled; skip only their Java stand-ins so iron/copper/redstone/lapis/
+        // gold keep generating (the pack has no equivalent feature for those yet).
+        if (!dataDriven) {
+            generateOreVeins(chunk, random, Material.COAL_ORE, 2, 8, 112, 7);
+        }
         generateOreVeins(chunk, random, Material.COPPER_ORE, 1, -16, 80, 5);
         generateOreVeins(chunk, random, Material.REDSTONE_ORE, 1, -56, 16, 5);
         generateOreVeins(chunk, random, Material.LAPIS_ORE, 1, -40, 48, 3);
-        if (random.nextInt(4) == 0) generateOreVeins(chunk, random, Material.DIAMOND_ORE, 1, -58, 8, 3);
+        if (!dataDriven && random.nextInt(4) == 0) generateOreVeins(chunk, random, Material.DIAMOND_ORE, 1, -58, 8, 3);
         if (random.nextInt(8) == 0) generateOreVeins(chunk, random, Material.GOLD_ORE, 1, -48, 24, 4);
     }
 
@@ -580,6 +712,9 @@ public final class SiftEcologyManager implements Listener {
     }
 
     private void generateSiftiteOre(Chunk chunk, Random random) {
+        // Data-driven replacement: the dimension datapack's siftslate_siftite_ore placed feature
+        // covers this when enabled; skip the Java stand-in so the two do not double-generate.
+        if (dimensionOreFeaturesActive()) return;
         if (!plugin.getConfig().getBoolean("content.siftite_ore",
                 plugin.getConfig().getBoolean("siftite.enabled", true))
                 || !plugin.getConfig().getBoolean("content.siftite", true)
@@ -704,6 +839,12 @@ public final class SiftEcologyManager implements Listener {
         World world = chunk.getWorld();
         int count = 1 + random.nextInt(3);
         for (int i = 0; i < count; i++) {
+            // Honor the content.blub / content.sifter toggles from config.yml: species that are
+            // disabled must not spawn in the wild. Previously these keys were display-only.
+            if (!plugin.getConfig().getBoolean("content.blub", true)
+                    && biome.endsWith("carapace")) continue;
+            if (!plugin.getConfig().getBoolean("content.sifter", true)
+                    && biome.contains("sift_wastes")) continue;
             int x = chunk.getX() * 16 + 2 + random.nextInt(12);
             int z = chunk.getZ() * 16 + 2 + random.nextInt(12);
             int y = world.getHighestBlockYAt(x, z) + 1;
@@ -818,14 +959,84 @@ public final class SiftEcologyManager implements Listener {
         }
     }
 
+    /**
+     * Right-click in air with a Siftite Spear throws it as a projectile. This wires the
+     * {@code siftite.spear-reach} config knob (previously only surfaced by /sift doctor) into
+     * actual gameplay: the throw range is clamped to that value and the spear consumes one
+     * durability point per throw.
+     */
+    @EventHandler
+    public void onSpearThrow(PlayerInteractEvent event) {
+        if (event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_AIR) return;
+        var hand = event.getHand();
+        if (hand != org.bukkit.inventory.EquipmentSlot.HAND) return; // avoid double-fire per off-hand swing
+        var item = event.getItem();
+        if (item == null || !content.is(item, "siftite_spear")) return;
+        Player player = event.getPlayer();
+        long now = System.currentTimeMillis();
+        var pdc = player.getPersistentDataContainer();
+        Long last = pdc.get(spearThrowAtKey, PersistentDataType.LONG);
+        if (last != null && now - last < 500L) return; // simple cooldown against double-fire
+        pdc.set(spearThrowAtKey, PersistentDataType.LONG, now);
+
+        double reach = Math.max(1.0, plugin.getConfig().getDouble("siftite.spear-reach", 4.5));
+        Location eye = player.getEyeLocation();
+        org.bukkit.entity.Item projectile = eye.getWorld().dropItem(eye, item.clone());
+        projectile.setVelocity(eye.getDirection().normalize().multiply(reach));
+        projectile.setCanPlayerPickup(false);
+        projectile.setCanMobPickup(false);
+        projectile.setPickupDelay(60); // ~3s until the thrown spear can be looted again
+        projectile.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING, "thrown_siftite_spear");
+
+        // Consume one durability point from the held spear via ItemStack#damage so the client's
+        // held-item state stays in sync; when the spear breaks, clear the hand slot.
+        org.bukkit.inventory.ItemStack damaged = item.damage(1, player);
+        player.getInventory().setItem(hand, damaged == null || damaged.getType().isAir() ? null : damaged);
+    }
+
     @EventHandler
     public void onSiftBossDeath(EntityDeathEvent event) {
         String id = event.getEntity().getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING);
-        if ("prism_warden".equals(id) || "the_sifter".equals(id)) {
-            event.getDrops().add(new SiftiteContent(plugin).item(Material.ECHO_SHARD,
+        if ("prism_warden".equals(id) || "the_sifter".equals(id) || "spire_tyrant".equals(id)) {
+            event.getDrops().add(content.item(Material.ECHO_SHARD,
                     "heart_of_the_sift", "Heart of the Sift"));
-            event.getDrops().add(new SiftiteContent(plugin).item(Material.AMETHYST_SHARD,
+            event.getDrops().add(content.item(Material.AMETHYST_SHARD,
                     "sift_shard", "Sift Shard"));
+            // Spire Fragment is a fan-made token for the bundled tyrant.json advancement icon.
+            // The reference mod has no such item; admins can disable the whole variant with
+            // content.spire_tyrant (default off), which also removes this drop.
+            if (plugin.getConfig().getBoolean("content.spire_tyrant", false)) {
+                int fragments = "spire_tyrant".equals(id) ? 2 : 1;
+                for (int i = 0; i < fragments; i++) {
+                    ItemStack fragment = content.item(Material.AMETHYST_SHARD,
+                            "spire_fragment", "Spire Fragment");
+                    if (fragment != null) event.getDrops().add(fragment);
+                }
+            }
+        }
+        // Reference-mod parity (Sifter): drops raw_sifter_meat, which smelts to cooked_sifter_meat.
+        if ("sifter".equals(id)) {
+            ItemStack raw = content.item(Material.BEEF, "raw_sifter_meat", "Raw Sifter Meat");
+            if (raw != null) event.getDrops().add(raw);
+        }
+        // Blub tamed by the owner who killed it keeps nothing; wild/tamed Blub drops its own meat
+        // so the food chain (Blub -> Dark Sniffer) reads correctly in survival.
+        if ("blub".equals(id)) {
+            ItemStack meat = content.item(Material.MUTTON, "blub_meat", "Blub Meat");
+            if (meat != null) event.getDrops().add(meat);
+        }
+    }
+
+    /** Smelt Raw Sifter Meat into Cooked Sifter Meat (mod parity for the food chain). */
+    @EventHandler(ignoreCancelled = true)
+    public void onSmeltSifterMeat(org.bukkit.event.inventory.FurnaceSmeltEvent event) {
+        // When the registry owns real furnace recipes (recipes.enabled), let them resolve the
+        // output; this listener is only the belt-and-braces path for strict-provider setups.
+        if (plugin.getConfig().getBoolean("recipes.enabled", true)) return;
+        ItemStack source = event.getSource();
+        if (source.getType() == Material.BEEF && content.is(source, "raw_sifter_meat")) {
+            ItemStack cooked = content.item(Material.COOKED_BEEF, "cooked_sifter_meat", "Cooked Sifter Meat");
+            if (cooked != null) event.setResult(cooked);
         }
     }
 
@@ -853,6 +1064,7 @@ public final class SiftEcologyManager implements Listener {
             case "thornback" -> { type = EntityType.TURTLE; display = "Thornback"; }
             case "glimmerwing" -> { type = EntityType.BEE; display = "Glimmerwing"; }
             case "the_sifter" -> { type = EntityType.RAVAGER; display = "The Sifter"; }
+            case "spire_tyrant" -> { type = EntityType.RAVAGER; display = "Spire Tyrant"; }
             case "sifter" -> { type = EntityType.RAVAGER; display = "Sifter"; }
             case "frost_stalker" -> { type = EntityType.STRAY; display = "Frost Stalker"; }
             case "sunspore" -> { type = EntityType.MOOSHROOM; display = "Sunspore"; }
@@ -860,10 +1072,29 @@ public final class SiftEcologyManager implements Listener {
             case "shardling" -> { type = EntityType.ENDERMITE; display = "Shardling"; }
             case "prism_warden" -> { type = EntityType.WARDEN; display = "Prism Warden"; }
             case "prismite" -> { type = EntityType.SILVERFISH; display = "Prismite"; }
+            case "rift_walker" -> { type = EntityType.ENDERMAN; display = "Rift Walker"; }
+            case "sift_wastes_stalker" -> { type = EntityType.WITCH; display = "Sift Wastes Stalker"; }
             default -> { return false; }
         }
 
-        boolean boss = id.equals("the_sifter") || id.equals("prism_warden");
+        boolean boss = id.equals("the_sifter") || id.equals("prism_warden") || id.equals("spire_tyrant");
+        // Mod parity (Sifter): herds cluster around a shared anchor instead of scattering.
+        if ("sifter".equals(id)) {
+            Location anchor = sifterHerdAnchors.get(location.getWorld());
+            if (anchor == null || anchor.distanceSquared(location) > 1600) {
+                location = location.clone();
+                if (anchor != null) {
+                    Vector toward = anchor.toVector().subtract(location.toVector()).normalize()
+                            .multiply(24);
+                    location = location.add(toward);
+                }
+            } else {
+                Vector offset = new Vector(java.util.concurrent.ThreadLocalRandom.current().nextDouble() * 12 - 6,
+                        0, java.util.concurrent.ThreadLocalRandom.current().nextDouble() * 12 - 6);
+                location = anchor.clone().add(offset);
+            }
+            sifterHerdAnchors.put(location.getWorld(), location.clone());
+        }
         Entity entity = mobFactory.spawn(id, location, type);
         if (entity == null) return false;
         entity.setPersistent(true);
@@ -873,8 +1104,10 @@ public final class SiftEcologyManager implements Listener {
         if (entity instanceof LivingEntity living) {
             living.setRemoveWhenFarAway(false);
             if (boss) {
-                double health = id.equals("the_sifter") ? 220.0 : 180.0;
-                double damage = id.equals("the_sifter") ? 24.0 : 28.0;
+                // Spire Tyrant mirrors the Sifter boss statline (220 HP / 24 dmg); Prism Warden keeps 180/28.
+                boolean sifterLine = id.equals("the_sifter") || id.equals("spire_tyrant");
+                double health = sifterLine ? 220.0 : 180.0;
+                double damage = sifterLine ? 24.0 : 28.0;
                 if (living.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH) != null) {
                     living.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).setBaseValue(health);
                     living.setHealth(health);
@@ -882,9 +1115,64 @@ public final class SiftEcologyManager implements Listener {
                 if (living.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE) != null) {
                     living.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE).setBaseValue(damage);
                 }
+            } else {
+                // Non-boss Sift mobs previously kept their vanilla stand-in stats; apply the
+                // reference mod's per-mob defaults (config-overridable via mobs.<id>.* keys).
+                SiftMobFactory.applyAttributes(living, modMobStats(id));
             }
         }
         return true;
+    }
+
+    /**
+     * Per-mob base attributes mirroring the reference mod (docs/mod-gap-analysis.md §5).
+     * Config paths {@code mobs.<id>.max-health / movement-speed / attack-damage / knockback-resist}
+     * override each value so server owners can tune without recompiling.
+     */
+    private java.util.Map<String, Double> modMobStats(String id) {
+        java.util.Map<String, Double> stats = new java.util.HashMap<>();
+        switch (id) {
+            case "sifter" -> {
+                stats.put("MAX_HEALTH", plugin.getConfig().getDouble("mobs.sifter.max-health", 40.0));
+                stats.put("MOVEMENT_SPEED", plugin.getConfig().getDouble("mobs.sifter.movement-speed", 0.31));
+                stats.put("ATTACK_DAMAGE", plugin.getConfig().getDouble("mobs.sifter.attack-damage", 10.0));
+            }
+            case "dark_sniffer" -> {
+                stats.put("MAX_HEALTH", plugin.getConfig().getDouble("mobs.dark_sniffer.max-health", 40.0));
+                stats.put("MOVEMENT_SPEED", plugin.getConfig().getDouble("mobs.dark_sniffer.movement-speed", 0.1));
+                stats.put("ATTACK_DAMAGE", plugin.getConfig().getDouble("mobs.dark_sniffer.attack-damage", 7.0));
+                stats.put("KNOCKBACK_RESISTANCE",
+                        plugin.getConfig().getDouble("mobs.dark_sniffer.knockback-resist", 0.75));
+            }
+            case "blub" -> {
+                stats.put("MAX_HEALTH", plugin.getConfig().getDouble("mobs.blub.max-health", 20.0));
+                stats.put("MOVEMENT_SPEED", plugin.getConfig().getDouble("mobs.blub.movement-speed", 0.3));
+                stats.put("ATTACK_DAMAGE", plugin.getConfig().getDouble("mobs.blub.attack-damage", 3.0));
+            }
+            default -> {
+                return java.util.Map.of();
+            }
+        }
+        return stats;
+    }
+
+    /**
+     * Reference-mod parity: Sifters travel in herds. Every herd member walks back toward the
+     * world's last-known anchor when it strays too far, reproducing the mod's group movement
+     * without a custom AI goal (which would need NMS). Runs on the existing ecology tick.
+     */
+    private void tickSifterHerds() {
+        World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
+        if (sift == null) return;
+        Location anchor = sifterHerdAnchors.get(sift);
+        if (anchor == null) return;
+        for (Entity entity : sift.getEntities()) {
+            if (!(entity instanceof Mob mob)) continue;
+            if (!"sifter".equals(entity.getPersistentDataContainer()
+                    .get(creatureKey, PersistentDataType.STRING))) continue;
+            if (mob.getLocation().distanceSquared(anchor) <= 900) continue;
+            mob.getPathfinder().moveTo(anchor);
+        }
     }
 
     private boolean isSift(World world) {
@@ -960,21 +1248,665 @@ public final class SiftEcologyManager implements Listener {
         }
     }
 
+    /**
+     * Paper approximation of the mod's Dark Sniffer combat loop. This runs every tick so the
+     * 10-tick wind-up and 1.5-block/tick travelling wave do not become a single instant pull.
+     * State is persisted on the entity, so a chunk unload safely interrupts/restarts combat.
+     */
+    private void tickDarkSnifferCombat() {
+        World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
+        if (sift == null) return;
+        long now = System.currentTimeMillis();
+        for (Entity entity : sift.getEntities()) {
+            if (entity.getType() != EntityType.SNIFFER || !(entity instanceof Mob sniffer)) continue;
+            var pdc = entity.getPersistentDataContainer();
+            if (!"dark_sniffer".equals(pdc.get(creatureKey, PersistentDataType.STRING))) {
+                // Reference behavior: ordinary Sniffers flee from a Dark Sniffer within 20 blocks.
+                // Refresh the destination at most every 750 ms to avoid restarting pathfinding each tick.
+                Entity threat = null;
+                double nearestThreatDistance = 20.0 * 20.0;
+                for (Entity nearby : entity.getNearbyEntities(20, 20, 20)) {
+                    if (nearby.getType() != EntityType.SNIFFER
+                            || !"dark_sniffer".equals(nearby.getPersistentDataContainer()
+                            .get(creatureKey, PersistentDataType.STRING))) continue;
+                    double distance = entity.getLocation().distanceSquared(nearby.getLocation());
+                    if (distance < nearestThreatDistance) {
+                        nearestThreatDistance = distance;
+                        threat = nearby;
+                    }
+                }
+                if (threat != null) {
+                    Long lastFleePath = pdc.get(snifferFleePathAtKey, PersistentDataType.LONG);
+                    if (lastFleePath == null || now - lastFleePath >= 750L || sniffer.getPathfinder().hasPath() == false) {
+                        Vector away = entity.getLocation().toVector().subtract(threat.getLocation().toVector());
+                        away.setY(0);
+                        if (away.lengthSquared() < 0.0001) away = new Vector(1, 0, 0);
+                        Location destination = entity.getLocation().clone().add(away.normalize().multiply(12));
+                        if (sniffer.getPathfinder().moveTo(destination, 1.25)) {
+                            pdc.set(snifferFleePathAtKey, PersistentDataType.LONG, now);
+                        }
+                    }
+                } else if (pdc.has(snifferFleePathAtKey, PersistentDataType.LONG)) {
+                    pdc.remove(snifferFleePathAtKey);
+                }
+                continue;
+            }
+
+            // Petting temporarily suppresses combat. Clear orphaned ownership if the
+            // Warden unloaded, died, or abandoned this target before cleanup could run.
+            String pettingWardenId = pdc.get(darkSnifferPettingWardenKey, PersistentDataType.STRING);
+            if (pettingWardenId != null) {
+                Entity pettingWarden = null;
+                try {
+                    pettingWarden = Bukkit.getEntity(UUID.fromString(pettingWardenId));
+                } catch (IllegalArgumentException ignored) {
+                    // Invalid persisted UUID: treat the petting claim as orphaned.
+                }
+                boolean stillPetting = pettingWarden instanceof org.bukkit.entity.Warden warden
+                        && warden.isValid() && !warden.isDead()
+                        && entity.getUniqueId().toString().equals(warden.getPersistentDataContainer()
+                        .get(wardenPettingTargetKey, PersistentDataType.STRING));
+                if (!stillPetting) {
+                    pdc.remove(darkSnifferPettingWardenKey);
+                } else {
+                    clearDarkSnifferWave(pdc);
+                    pdc.remove(darkSnifferCombatTargetKey);
+                    pdc.remove(darkSnifferNoMeleeTicksKey);
+                    sniffer.setTarget(null);
+                    sniffer.getPathfinder().stopPathfinding();
+                    continue;
+                }
+            }
+
+            // The reference mob does not enter combat in Peaceful difficulty.
+            // Cancel any persisted pursuit/wind-up as soon as the world switches to Peaceful.
+            if (sift.getDifficulty() == Difficulty.PEACEFUL) {
+                clearDarkSnifferWave(pdc);
+                pdc.remove(darkSnifferCombatTargetKey);
+                pdc.remove(darkSnifferNoMeleeTicksKey);
+                sniffer.setTarget(null);
+                sniffer.getPathfinder().stopPathfinding();
+                continue;
+            }
+
+            String targetId = pdc.get(darkSnifferSonicTargetKey, PersistentDataType.STRING);
+            Long windupAt = pdc.get(darkSnifferSonicWindupKey, PersistentDataType.LONG);
+            Long waveStart = pdc.get(darkSnifferWaveStartKey, PersistentDataType.LONG);
+            if (targetId != null && windupAt != null) {
+                Player target = Bukkit.getPlayer(UUID.fromString(targetId));
+                if (target == null || !target.isValid() || target.isDead()
+                        || !target.getWorld().equals(sift)
+                        || !sniffer.hasLineOfSight(target)
+                        || entity.getLocation().distanceSquared(target.getLocation()) > 32.0 * 32.0) {
+                    clearDarkSnifferWave(pdc);
+                    continue;
+                }
+                if (waveStart == null) {
+                    if (now - windupAt < 500L) {
+                        sniffer.lookAt(target);
+                        continue;
+                    }
+                    Vector origin = sniffer.getEyeLocation().toVector();
+                    Vector targetPos = target.getEyeLocation().toVector();
+                    Vector direct = targetPos.clone().subtract(origin);
+                    double distance = direct.length();
+                    if (distance < 0.001) {
+                        clearDarkSnifferWave(pdc);
+                        continue;
+                    }
+                    double leadTicks = Math.min(20.0, distance / 1.5);
+                    Vector velocity = target.getVelocity();
+                    Vector predicted = targetPos.clone().add(new Vector(
+                            velocity.getX() * leadTicks, 0, velocity.getZ() * leadTicks));
+                    Vector direction = predicted.subtract(origin);
+                    if (direction.lengthSquared() < 0.000001) direction = direct;
+                    double predictedDistance = direction.length();
+                    direction.normalize();
+                    int flightTicks = Math.max(1, (int) Math.ceil((predictedDistance + 7.5) / 1.5));
+                    String waveId = entity.getUniqueId() + ":" + now;
+                    pdc.set(darkSnifferWaveOriginXKey, PersistentDataType.DOUBLE, origin.getX());
+                    pdc.set(darkSnifferWaveOriginYKey, PersistentDataType.DOUBLE, origin.getY());
+                    pdc.set(darkSnifferWaveOriginZKey, PersistentDataType.DOUBLE, origin.getZ());
+                    pdc.set(darkSnifferWaveDirectionXKey, PersistentDataType.DOUBLE, direction.getX());
+                    pdc.set(darkSnifferWaveDirectionYKey, PersistentDataType.DOUBLE, direction.getY());
+                    pdc.set(darkSnifferWaveDirectionZKey, PersistentDataType.DOUBLE, direction.getZ());
+                    pdc.set(darkSnifferWaveFlightTicksKey, PersistentDataType.INTEGER, flightTicks);
+                    pdc.set(darkSnifferWaveStartKey, PersistentDataType.LONG, now);
+                    pdc.set(darkSnifferWaveIdKey, PersistentDataType.STRING, waveId);
+                    pdc.set(darkSnifferSonicAtKey, PersistentDataType.LONG, now);
+                    sniffer.getWorld().playSound(sniffer.getLocation(), Sound.ENTITY_WARDEN_SONIC_CHARGE, 1.0f, 0.7f);
+                    continue;
+                }
+                int flightTicks = pdc.getOrDefault(darkSnifferWaveFlightTicksKey, PersistentDataType.INTEGER, 1);
+                int age = (int) Math.max(0, (now - waveStart) / 50L);
+                if (age >= flightTicks) {
+                    clearDarkSnifferWave(pdc);
+                    continue;
+                }
+                Vector origin = new Vector(
+                        pdc.getOrDefault(darkSnifferWaveOriginXKey, PersistentDataType.DOUBLE, sniffer.getX()),
+                        pdc.getOrDefault(darkSnifferWaveOriginYKey, PersistentDataType.DOUBLE, sniffer.getY() + 1),
+                        pdc.getOrDefault(darkSnifferWaveOriginZKey, PersistentDataType.DOUBLE, sniffer.getZ()));
+                Vector direction = new Vector(
+                        pdc.getOrDefault(darkSnifferWaveDirectionXKey, PersistentDataType.DOUBLE, 0.0),
+                        pdc.getOrDefault(darkSnifferWaveDirectionYKey, PersistentDataType.DOUBLE, 0.0),
+                        pdc.getOrDefault(darkSnifferWaveDirectionZKey, PersistentDataType.DOUBLE, 1.0));
+                Vector previous = origin.clone().add(direction.clone().multiply(1.5 * Math.max(0, age - 1)));
+                Vector current = origin.clone().add(direction.clone().multiply(1.5 * age));
+                String waveId = pdc.get(darkSnifferWaveIdKey, PersistentDataType.STRING);
+                Location waveLoc = current.toLocation(sift);
+                sift.spawnParticle(Particle.SONIC_BOOM, waveLoc, 1);
+                sift.spawnParticle(Particle.SWEEP_ATTACK, waveLoc, 2, 0.15, 0.15, 0.15, 0);
+                for (Entity candidate : sift.getNearbyEntities(waveLoc, 2, 2, 2)) {
+                    if (!(candidate instanceof LivingEntity victim) || victim == entity || victim.isDead()) continue;
+                    var victimPdc = victim.getPersistentDataContainer();
+                    if (waveId != null && waveId.equals(victimPdc.get(darkSnifferWavePulledKey, PersistentDataType.STRING))) continue;
+                    Vector center = victim.getLocation().toVector().add(
+                            new Vector(0, victim.getHeight() * 0.5, 0));
+                    if (distanceSquaredToSegment(center, previous, current) > 0.8 * 0.8) continue;
+                    Vector pull = entity.getLocation().toVector().subtract(victim.getLocation().toVector()).multiply(0.3);
+                    victim.setVelocity(victim.getVelocity().add(pull));
+                    if (waveId != null) victimPdc.set(darkSnifferWavePulledKey, PersistentDataType.STRING, waveId);
+                    victim.getWorld().playSound(victim.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 0.35f, 1.15f);
+                }
+                continue;
+            }
+
+            // Refresh the combat target periodically. Dark Sniffers hunt survival/adventure
+            // players and ordinary Sniffers, but never other Dark Sniffers.
+            String combatTargetId = pdc.get(darkSnifferCombatTargetKey, PersistentDataType.STRING);
+            Long refreshAt = pdc.get(darkSnifferTargetRefreshKey, PersistentDataType.LONG);
+            LivingEntity combatTarget = null;
+            if (combatTargetId != null) {
+                try {
+                    Entity found = Bukkit.getEntity(UUID.fromString(combatTargetId));
+                    if (found instanceof LivingEntity living && living.isValid() && !living.isDead()
+                            && living.getWorld().equals(sift) && entity.getLocation().distanceSquared(living.getLocation()) <= 32.0 * 32.0
+                            && isDarkSnifferCombatTarget(living, entity)) {
+                        combatTarget = living;
+                    }
+                } catch (IllegalArgumentException ignored) {
+                    // Invalid persisted UUID: clear it and acquire a fresh target below.
+                }
+            }
+            if (combatTarget == null || refreshAt == null || now >= refreshAt) {
+                LivingEntity nearest = null;
+                double nearestDistanceSquared = 32.0 * 32.0;
+                for (Entity nearby : sift.getNearbyEntities(entity.getLocation(), 32, 12, 32)) {
+                    if (!(nearby instanceof LivingEntity living) || living == entity || living.isDead()
+                            || !isDarkSnifferCombatTarget(living, entity)) continue;
+                    double distanceSquared = entity.getLocation().distanceSquared(living.getLocation());
+                    if (distanceSquared < nearestDistanceSquared) {
+                        nearestDistanceSquared = distanceSquared;
+                        nearest = living;
+                    }
+                }
+                combatTarget = nearest;
+                pdc.set(darkSnifferTargetRefreshKey, PersistentDataType.LONG, now + 500L);
+                if (combatTarget == null) {
+                    pdc.remove(darkSnifferCombatTargetKey);
+                    pdc.remove(darkSnifferNoMeleeTicksKey);
+                    sniffer.setTarget(null);
+                    // Mirror the mod's home anchor and calm wandering rather than leaving
+                    // idle Dark Sniffers frozen after their first spawn or combat encounter.
+                    Location home;
+                    Double homeX = pdc.get(darkSnifferHomeXKey, PersistentDataType.DOUBLE);
+                    Double homeY = pdc.get(darkSnifferHomeYKey, PersistentDataType.DOUBLE);
+                    Double homeZ = pdc.get(darkSnifferHomeZKey, PersistentDataType.DOUBLE);
+                    if (homeX == null || homeY == null || homeZ == null) {
+                        home = entity.getLocation();
+                        pdc.set(darkSnifferHomeXKey, PersistentDataType.DOUBLE, home.getX());
+                        pdc.set(darkSnifferHomeYKey, PersistentDataType.DOUBLE, home.getY());
+                        pdc.set(darkSnifferHomeZKey, PersistentDataType.DOUBLE, home.getZ());
+                    } else {
+                        home = new Location(sift, homeX, homeY, homeZ);
+                    }
+                    double homeDistance = entity.getLocation().distanceSquared(home);
+                    Long idlePathAt = pdc.get(darkSnifferIdlePathAtKey, PersistentDataType.LONG);
+                    if (homeDistance > 10000.0) {
+                        if (!sniffer.getPathfinder().hasPath()) {
+                            sniffer.getPathfinder().moveTo(home, 0.1);
+                            pdc.set(darkSnifferIdlePathAtKey, PersistentDataType.LONG, now + 1500L);
+                        }
+                    } else if (idlePathAt == null || now >= idlePathAt || !sniffer.getPathfinder().hasPath()) {
+                        if (java.util.concurrent.ThreadLocalRandom.current().nextInt(30) == 0) {
+                            Location wander = entity.getLocation().clone().add(
+                                    java.util.concurrent.ThreadLocalRandom.current().nextDouble(-12, 13), 0,
+                                    java.util.concurrent.ThreadLocalRandom.current().nextDouble(-12, 13));
+                            sniffer.getPathfinder().moveTo(wander, 0.1);
+                        }
+                        pdc.set(darkSnifferIdlePathAtKey, PersistentDataType.LONG, now + 1500L);
+                    }
+                    continue;
+                }
+                pdc.set(darkSnifferCombatTargetKey, PersistentDataType.STRING, combatTarget.getUniqueId().toString());
+            }
+            sniffer.setTarget(combatTarget);
+            sniffer.lookAt(combatTarget);
+
+            double targetDistanceSquared = entity.getLocation().distanceSquared(combatTarget.getLocation());
+            int noMeleeTicks = pdc.getOrDefault(darkSnifferNoMeleeTicksKey, PersistentDataType.INTEGER, 0);
+            if (targetDistanceSquared > 3.15 * 3.15) {
+                noMeleeTicks = Math.min(8, noMeleeTicks + 1);
+                pdc.set(darkSnifferNoMeleeTicksKey, PersistentDataType.INTEGER, noMeleeTicks);
+                Long pathAt = pdc.get(darkSnifferPathRefreshKey, PersistentDataType.LONG);
+                if (pathAt == null || now >= pathAt) {
+                    sniffer.getPathfinder().moveTo(combatTarget, 1.2);
+                    pdc.set(darkSnifferPathRefreshKey, PersistentDataType.LONG, now + 300L);
+                }
+            } else {
+                pdc.set(darkSnifferNoMeleeTicksKey, PersistentDataType.INTEGER, 0);
+                sniffer.getPathfinder().stopPathfinding();
+                Long attackAt = pdc.get(darkSnifferAttackAtKey, PersistentDataType.LONG);
+                if (attackAt == null || now - attackAt >= 1_200L) {
+                    combatTarget.damage(7.0, sniffer);
+                    Vector knockback = combatTarget.getLocation().toVector()
+                            .subtract(entity.getLocation().toVector());
+                    knockback.setY(0);
+                    if (knockback.lengthSquared() > 0.0001) {
+                        knockback.normalize().multiply(0.75);
+                        knockback.setY(0.25);
+                        combatTarget.setVelocity(combatTarget.getVelocity().add(knockback));
+                    }
+                    pdc.set(darkSnifferAttackAtKey, PersistentDataType.LONG, now);
+                    sniffer.getWorld().playSound(sniffer.getLocation(), Sound.ENTITY_SNIFFER_HURT, 0.8f, 0.75f);
+                }
+            }
+
+            // Sonic Sniff is a ranged attack used only after the Dark Sniffer has failed
+            // to reach melee range for eight ticks, matching the reference mob's combat loop.
+            Long lastSonicAt = pdc.get(darkSnifferSonicAtKey, PersistentDataType.LONG);
+            boolean sonicReady = lastSonicAt == null || now - lastSonicAt >= 5_000L;
+            if (combatTarget instanceof Player player && targetDistanceSquared >= 25.0
+                    && noMeleeTicks >= 8 && sonicReady && sniffer.hasLineOfSight(player)) {
+                pdc.set(darkSnifferSonicTargetKey, PersistentDataType.STRING, player.getUniqueId().toString());
+                pdc.set(darkSnifferSonicWindupKey, PersistentDataType.LONG, now);
+                pdc.remove(darkSnifferWaveStartKey);
+                sniffer.getPathfinder().stopPathfinding();
+                sift.playSound(entity.getLocation(), Sound.ENTITY_SNIFFER_SNIFFING, 1.0f, 0.7f);
+            }
+        }
+    }
+
+    /**
+     * Paper approximation of the reference mod's calm-Warden / Dark Sniffer bonding.
+     * The Bukkit API does not expose the Warden's complete internal anger/vibration memories,
+     * so we use its public target state as the calmness guard.
+     */
+    private void tickWardenPetting() {
+        World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
+        if (sift == null) return;
+        long now = System.currentTimeMillis();
+        for (Entity entity : sift.getEntities()) {
+            if (!(entity instanceof org.bukkit.entity.Warden warden) || !warden.isValid() || warden.isDead()) continue;
+            var pdc = warden.getPersistentDataContainer();
+            String targetId = pdc.get(wardenPettingTargetKey, PersistentDataType.STRING);
+            if (targetId != null) {
+                Entity candidate = null;
+                try {
+                    candidate = Bukkit.getEntity(UUID.fromString(targetId));
+                } catch (IllegalArgumentException ignored) {
+                    // Invalid persisted UUID: abandon this petting attempt.
+                }
+                boolean calm = warden.getTarget() == null;
+                if (!(candidate instanceof Mob darkSniffer) || !darkSniffer.isValid() || darkSniffer.isDead()
+                        || !darkSniffer.getWorld().equals(sift)
+                        || darkSniffer.getLocation().distanceSquared(warden.getLocation()) > 324.0
+                        || !"dark_sniffer".equals(darkSniffer.getPersistentDataContainer()
+                        .get(creatureKey, PersistentDataType.STRING)) || !calm) {
+                    stopWardenPetting(warden, candidate, false, now);
+                    continue;
+                }
+
+                var snifferPdc = darkSniffer.getPersistentDataContainer();
+                snifferPdc.set(darkSnifferPettingWardenKey, PersistentDataType.STRING, warden.getUniqueId().toString());
+                warden.lookAt(darkSniffer);
+                if (darkSniffer.getLocation().distanceSquared(warden.getLocation()) > 12.25) {
+                    Long approachAt = pdc.get(wardenPettingApproachAtKey, PersistentDataType.LONG);
+                    if (approachAt == null) {
+                        pdc.set(wardenPettingApproachAtKey, PersistentDataType.LONG, now);
+                        approachAt = now;
+                    }
+                    if (now - approachAt > 12_000L) {
+                        stopWardenPetting(warden, darkSniffer, false, now);
+                    } else {
+                        warden.getPathfinder().moveTo(darkSniffer, 0.55);
+                    }
+                } else {
+                    warden.getPathfinder().stopPathfinding();
+                    Long pettingAt = pdc.get(wardenPettingStartKey, PersistentDataType.LONG);
+                    if (pettingAt == null) {
+                        pdc.set(wardenPettingStartKey, PersistentDataType.LONG, now);
+                        pettingAt = now;
+                    }
+                    Long heartAt = pdc.get(wardenPettingHeartAtKey, PersistentDataType.LONG);
+                    if (heartAt == null || now - heartAt >= 1_000L) {
+                        sift.spawnParticle(Particle.HEART,
+                                darkSniffer.getLocation().add(0, 1.7, 0), 1, 0.18, 0.08, 0.18, 0);
+                        pdc.set(wardenPettingHeartAtKey, PersistentDataType.LONG, now);
+                    }
+                    if (now - pettingAt >= 5_000L) stopWardenPetting(warden, darkSniffer, true, now);
+                }
+                continue;
+            }
+
+            Long searchAt = pdc.get(wardenPettingSearchAtKey, PersistentDataType.LONG);
+            if (searchAt != null && now < searchAt) continue;
+            if (warden.getTarget() != null) continue;
+            // First search after 40–80 seconds; successful petting rests for two minutes.
+            if (searchAt == null) {
+                pdc.set(wardenPettingSearchAtKey, PersistentDataType.LONG,
+                        now + java.util.concurrent.ThreadLocalRandom.current().nextLong(40_000L, 80_001L));
+                continue;
+            }
+            Mob nearest = null;
+            double nearestDistance = 18.0 * 18.0;
+            for (Entity nearby : warden.getNearbyEntities(18, 10, 18)) {
+                if (!(nearby instanceof Mob mob) || mob.getType() != EntityType.SNIFFER || mob.isDead()
+                        || !"dark_sniffer".equals(mob.getPersistentDataContainer()
+                        .get(creatureKey, PersistentDataType.STRING))) continue;
+                var snifferPdc = mob.getPersistentDataContainer();
+                if (snifferPdc.has(darkSnifferCombatTargetKey, PersistentDataType.STRING)
+                        || snifferPdc.has(darkSnifferSonicWindupKey, PersistentDataType.LONG)
+                        || snifferPdc.has(darkSnifferWaveStartKey, PersistentDataType.LONG)
+                        || snifferPdc.has(darkSnifferPettingWardenKey, PersistentDataType.STRING)) continue;
+                double distance = mob.getLocation().distanceSquared(warden.getLocation());
+                if (distance < nearestDistance) {
+                    nearestDistance = distance;
+                    nearest = mob;
+                }
+            }
+            if (nearest == null) {
+                pdc.set(wardenPettingSearchAtKey, PersistentDataType.LONG, now + 15_000L);
+                continue;
+            }
+            pdc.set(wardenPettingTargetKey, PersistentDataType.STRING, nearest.getUniqueId().toString());
+            pdc.set(wardenPettingApproachAtKey, PersistentDataType.LONG, now);
+            pdc.remove(wardenPettingStartKey);
+            pdc.remove(wardenPettingHeartAtKey);
+            nearest.getPersistentDataContainer().set(darkSnifferPettingWardenKey,
+                    PersistentDataType.STRING, warden.getUniqueId().toString());
+        }
+    }
+
+    private void stopWardenPetting(org.bukkit.entity.Warden warden, Entity target, boolean completed, long now) {
+        if (target != null) {
+            var targetPdc = target.getPersistentDataContainer();
+            String owner = targetPdc.get(darkSnifferPettingWardenKey, PersistentDataType.STRING);
+            if (warden.getUniqueId().toString().equals(owner)) targetPdc.remove(darkSnifferPettingWardenKey);
+            if (target instanceof Mob mob) mob.getPathfinder().stopPathfinding();
+        }
+        var pdc = warden.getPersistentDataContainer();
+        pdc.remove(wardenPettingTargetKey);
+        pdc.remove(wardenPettingApproachAtKey);
+        pdc.remove(wardenPettingStartKey);
+        pdc.remove(wardenPettingHeartAtKey);
+        pdc.set(wardenPettingSearchAtKey, PersistentDataType.LONG,
+                now + (completed ? 120_000L : 30_000L));
+        warden.getPathfinder().stopPathfinding();
+    }
+
+    private boolean isDarkSnifferCombatTarget(LivingEntity target, Entity darkSniffer) {
+        if (target instanceof Player player) {
+            return player.isOnline() && player.getGameMode() != org.bukkit.GameMode.CREATIVE
+                    && player.getGameMode() != org.bukkit.GameMode.SPECTATOR;
+        }
+        return target.getType() == EntityType.SNIFFER && target != darkSniffer
+                && !"dark_sniffer".equals(target.getPersistentDataContainer()
+                .get(creatureKey, PersistentDataType.STRING));
+    }
+
+    private static double distanceSquaredToSegment(Vector point, Vector start, Vector end) {
+        Vector segment = end.clone().subtract(start);
+        double lengthSquared = segment.lengthSquared();
+        if (lengthSquared < 1.0E-9) return point.distanceSquared(start);
+        double t = Math.max(0, Math.min(1, point.clone().subtract(start).dot(segment) / lengthSquared));
+        Vector closest = start.clone().add(segment.multiply(t));
+        return point.distanceSquared(closest);
+    }
+
+    private void clearDarkSnifferWave(org.bukkit.persistence.PersistentDataContainer pdc) {
+        pdc.remove(darkSnifferSonicTargetKey);
+        pdc.remove(darkSnifferSonicWindupKey);
+        pdc.remove(darkSnifferWaveStartKey);
+        pdc.remove(darkSnifferWaveOriginXKey);
+        pdc.remove(darkSnifferWaveOriginYKey);
+        pdc.remove(darkSnifferWaveOriginZKey);
+        pdc.remove(darkSnifferWaveDirectionXKey);
+        pdc.remove(darkSnifferWaveDirectionYKey);
+        pdc.remove(darkSnifferWaveDirectionZKey);
+        pdc.remove(darkSnifferWaveFlightTicksKey);
+        pdc.remove(darkSnifferWaveIdKey);
+    }
+
     private void tickDarkSniffers() {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
         if (sift == null) return;
-        for (Player target : sift.getPlayers()) {
-            for (Entity entity : target.getNearbyEntities(18, 10, 18)) {
-                if (!(entity instanceof LivingEntity living) || entity.getType() != EntityType.SNIFFER) continue;
-                String id = entity.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING);
-                if (!"dark_sniffer".equals(id)) continue;
-                Vector pull = living.getLocation().toVector().subtract(target.getLocation().toVector());
-                if (pull.lengthSquared() < 0.01) continue;
-                pull.normalize().multiply(0.28).setY(0.18);
-                target.setVelocity(target.getVelocity().multiply(0.45).add(pull));
-                target.playSound(target.getLocation(), Sound.ENTITY_WARDEN_SONIC_BOOM, 0.25f, 1.6f);
-                sift.spawnParticle(Particle.SONIC_BOOM, target.getLocation().add(0, 1, 0), 1);
+        // Use the world's persisted game-time clock, not wall-clock milliseconds:
+        // infection should advance while the world ticks and must pause while the server is offline.
+        long now = sift.getFullTime();
+        // The source mod infects a Sniffer when it ENTERS its DIGGING state while
+        // the block beneath the point 2.25 blocks ahead of its head is sculk.
+        // Paper cannot inject into Sniffer.transitionTo(), so sample the state here;
+        // once infection starts, the saved tick count persists even after digging ends.
+        long infectionTicks = Math.max(1, plugin.getConfig().getInt("mobs.dark-sniffer.corruption-ticks", 600));
+        java.util.List<Entity> conversions = new java.util.ArrayList<>();
+        for (Entity entity : sift.getEntities()) {
+            if (!(entity instanceof org.bukkit.entity.Sniffer sniffer)) continue;
+            var pdc = entity.getPersistentDataContainer();
+            if (pdc.has(creatureKey, PersistentDataType.STRING)) continue; // already a Dark Sniffer
+            Long infectionStartedAt = pdc.get(snifferCorruptionStartKey, PersistentDataType.LONG);
+            // Older builds stored epoch milliseconds here; reset that legacy value safely.
+            if (infectionStartedAt != null && infectionStartedAt > now + 1200L) {
+                infectionStartedAt = null;
+                pdc.remove(snifferCorruptionStartKey);
             }
+            Location loc = entity.getLocation();
+            if (infectionStartedAt == null) {
+                if (sniffer.getState() != org.bukkit.entity.Sniffer.State.DIGGING) continue;
+                Vector forward = loc.getDirection().setY(0).normalize();
+                if (forward.lengthSquared() < 0.0001) continue;
+                Location sniffedBlock = loc.clone().add(forward.multiply(2.25));
+                Block sculkBelowSnout = sniffedBlock.getBlock().getRelative(0, -1, 0);
+                if (sculkBelowSnout.getType() != Material.SCULK) continue;
+                infectionStartedAt = now;
+                pdc.set(snifferCorruptionStartKey, PersistentDataType.LONG, infectionStartedAt);
+                sift.spawnParticle(Particle.WITCH, loc.clone().add(0, 1.5, 0), 6, 0.4, 0.3, 0.4, 0.1);
+                continue;
+            }
+            // Infection is irreversible in the reference mod and is saved with the Sniffer.
+            if (now - infectionStartedAt >= infectionTicks) conversions.add(entity);
+        }
+        // Convert after iteration so removal never disturbs the live entity list mid-scan.
+        // Spawn first: if a provider refuses the replacement, keep the original Sniffer alive.
+        for (Entity entity : conversions) {
+            Location loc = entity.getLocation();
+            if (!(entity instanceof LivingEntity original)) continue;
+            double originalHealth = original.getHealth();
+            java.util.Set<UUID> nearbyBefore = new java.util.HashSet<>();
+            for (Entity nearby : loc.getWorld().getNearbyEntities(loc, 4, 4, 4)) {
+                nearbyBefore.add(nearby.getUniqueId());
+            }
+            if (!summonCreature("dark_sniffer", loc)) {
+                plugin.getLogger().warning("Could not convert Sniffer to Dark Sniffer at "
+                        + loc.getWorld().getName() + ":" + loc.getBlockX() + ":" + loc.getBlockY()
+                        + ":" + loc.getBlockZ() + "; keeping the original Sniffer.");
+                continue;
+            }
+            // summonCreature is a boolean public API; identify only the replacement spawned
+            // by this call so we can preserve the source mod's absolute-health conversion rule.
+            LivingEntity replacement = null;
+            double nearestDistance = Double.MAX_VALUE;
+            for (Entity nearby : loc.getWorld().getNearbyEntities(loc, 4, 4, 4)) {
+                if (!(nearby instanceof LivingEntity living) || nearbyBefore.contains(nearby.getUniqueId())) continue;
+                if (!"dark_sniffer".equals(nearby.getPersistentDataContainer()
+                        .get(creatureKey, PersistentDataType.STRING))) continue;
+                double distance = nearby.getLocation().distanceSquared(loc);
+                if (distance < nearestDistance) {
+                    nearestDistance = distance;
+                    replacement = living;
+                }
+            }
+            if (replacement == null) {
+                plugin.getLogger().warning("Dark Sniffer spawned but could not be identified at "
+                        + loc.getWorld().getName() + ":" + loc.getBlockX() + ":" + loc.getBlockY()
+                        + ":" + loc.getBlockZ() + "; keeping the original Sniffer to avoid data loss.");
+                continue;
+            }
+            if (replacement.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH) != null) {
+                replacement.setHealth(Math.max(0.1, Math.min(originalHealth,
+                        replacement.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getValue())));
+            }
+            replacement.setPersistent(original.isPersistent());
+            replacement.setRemoveWhenFarAway(original.getRemoveWhenFarAway());
+            if (original.getCustomName() != null) replacement.setCustomName(original.getCustomName());
+            replacement.setCustomNameVisible(original.isCustomNameVisible());
+            entity.getPersistentDataContainer().remove(snifferCorruptionStartKey);
+            entity.remove();
+            sift.playSound(loc, Sound.ENTITY_SNIFFER_DIGGING, 0.8f, 0.6f);
+            sift.spawnParticle(Particle.LARGE_SMOKE, loc.clone().add(0, 1, 0), 20, 0.5, 0.6, 0.5, 0.05);
+        }
+    }
+
+    /**
+     * Reference-mod parity: Wardens never treat Dark Sniffers as valid targets.
+     * EntityTargetLivingEntityEvent covers normal AI target selection and retaliation;
+     * the Dark Sniffer is identified by our content tag rather than its vanilla entity type.
+     */
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onWardenTargetDarkSniffer(EntityTargetLivingEntityEvent event) {
+        if (!(event.getEntity() instanceof org.bukkit.entity.Warden)) return;
+        LivingEntity target = event.getTarget();
+        if (target == null) return;
+        if ("dark_sniffer".equals(target.getPersistentDataContainer()
+                .get(creatureKey, PersistentDataType.STRING))) {
+            event.setCancelled(true);
+        }
+    }
+
+    /**
+     * Reference-mod parity (Blub): right-clicking a wild Blub with a Soul Block tames it.
+     * The tamed Blub follows its owner and defends them against hostile mobs. Sitting is not
+     * implemented because a Rabbit has no leash/sit path without an item in hand; the mod's
+     * "sit" state is a GeckoLib animation we cannot mirror on a vanilla stand-in.
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void onBlubInteract(PlayerInteractEntityEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        Entity target = event.getRightClicked();
+        if (!"blub".equals(target.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING))) {
+            return;
+        }
+        Player player = event.getPlayer();
+        var pdc = target.getPersistentDataContainer();
+        String ownerId = pdc.get(blubOwnerKey, PersistentDataType.STRING);
+        ItemStack hand = player.getInventory().getItemInMainHand();
+        if (ownerId == null && content.is(hand, "soul_block")) {
+            if (!plugin.getConfig().getBoolean("content.blub", true)) return;
+            consumeOne(player, hand);
+            pdc.set(blubOwnerKey, PersistentDataType.STRING, player.getUniqueId().toString());
+            if (target instanceof LivingEntity living) living.setRemoveWhenFarAway(false);
+            player.sendMessage("\u00a7dThe Blub accepts your Soul Block and follows you.");
+            event.setCancelled(true);
+        } else if (ownerId != null && ownerId.equals(player.getUniqueId().toString())) {
+            // Already yours: a small heart response, mirroring the mod's bond feedback.
+            target.getWorld().spawnParticle(Particle.HEART, target.getLocation().add(0, 0.6, 0), 3);
+            event.setCancelled(true);
+        }
+    }
+
+    /**
+     * Mod-parity spawn eggs: right-clicking a block with a tagged Sift spawn egg summons the
+     * matching creature through the normal {@link #summonCreature} path (provider-first spawn,
+     * config stats, PDC tagging). Vanilla stand-in eggs carry our content id in their PDC, so
+     * this never interferes with real vanilla eggs.
+     */
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
+    public void onSpawnEggUse(PlayerInteractEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        ItemStack hand = event.getItem();
+        if (hand == null || !hand.getType().name().endsWith("_SPAWN_EGG")) return;
+        String species = content.idOf(hand);
+        if (species == null) return;
+        Player player = event.getPlayer();
+        if (!plugin.getConfig().getBoolean("spawn-eggs.enabled", true)) {
+            event.setCancelled(true);
+            player.sendMessage("\u00a7cSift spawn eggs are disabled by configuration.");
+            return;
+        }
+        if (!"op".equals(plugin.getConfig().getString("spawn-eggs.permission-mode", "op"))
+                || player.isOp()) {
+            event.setCancelled(true); // cancel the vanilla egg before it spawns anything
+            Block clicked = event.getClickedBlock();
+            Location at = clicked.getLocation().add(0.5, 1.0, 0.5);
+            // Special mobs keep their dedicated managers so soul-event/charoite wiring applies.
+            boolean spawned = switch (species) {
+                case "echo_golem" -> echoGolemManager.summonEchoGolem(at) != null;
+                case "singer" -> resonanceManager.summonSinger(at) != null;
+                default -> summonCreature(species, at);
+            };
+            if (spawned) {
+                consumeOne(player, hand);
+            } else {
+                player.sendMessage("\u00a7cUnknown Sift creature: " + species);
+            }
+        }
+    }
+
+    /** Follow + defend tick for tamed Blubs, batched per world instead of per player. */
+    private void tickBlubs() {
+        World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
+        if (sift == null) return;
+        for (Entity entity : sift.getEntities()) {
+            if (!(entity instanceof Mob blub)) continue;
+            var pdc = blub.getPersistentDataContainer();
+            if (!"blub".equals(pdc.get(creatureKey, PersistentDataType.STRING))) continue;
+            String ownerId = pdc.get(blubOwnerKey, PersistentDataType.STRING);
+            if (ownerId == null) continue;
+            Player owner;
+            try {
+                owner = Bukkit.getPlayer(UUID.fromString(ownerId));
+            } catch (IllegalArgumentException ignored) {
+                continue;
+            }
+            if (owner == null || !owner.isOnline() || owner.getWorld() != sift) continue;
+            // Defend: target the most recent hostile attacker of the owner within range,
+            // otherwise follow (teleport-lead like the mod's seated/following behaviour).
+            boolean defending = false;
+            if (blub.getTarget() == null) {
+                for (Entity holder : sift.getNearbyEntities(owner.getLocation(), 8, 4, 8)) {
+                    if (!(holder instanceof Mob hostile)) continue;
+                    if (hostile.getTarget() == owner && hostile.getLocation()
+                            .distanceSquared(blub.getLocation()) < 64) {
+                        blub.setTarget(hostile);
+                        defending = true;
+                        break;
+                    }
+                }
+            } else if (blub.getTarget() instanceof Mob hostile && hostile.getTarget() == owner) {
+                defending = true;
+            }
+            double distance = blub.getLocation().distanceSquared(owner.getLocation());
+            if (!defending && distance > 25) {
+                if (distance > 900) {
+                    Location anchor = owner.getLocation().add(0, 0.2, 0);
+                    if (blub.teleport(anchor)) {
+                        sift.spawnParticle(Particle.POOF, anchor, 4, 0.2, 0.2, 0.2, 0);
+                    }
+                } else {
+                    // Walk toward the owner using Paper's Pathfinder API (no NMS needed).
+                    blub.getPathfinder().moveTo(owner.getLocation());
+                }
+            }
+        }
+    }
+
+    private void consumeOne(Player player, ItemStack hand) {
+        if (hand.getAmount() <= 1) {
+            player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
+        } else {
+            hand.setAmount(hand.getAmount() - 1);
         }
     }
 }

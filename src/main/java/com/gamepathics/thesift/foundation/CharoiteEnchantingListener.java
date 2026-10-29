@@ -15,10 +15,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 /** Lapis-compatible Charoite enchanting approximation. */
 public final class CharoiteEnchantingListener implements Listener {
+    private final JavaPlugin plugin;
     private final NamespacedKey contentKey;
     private final NamespacedKey charoiteEnchantedKey;
 
     public CharoiteEnchantingListener(JavaPlugin plugin) {
+        this.plugin = plugin;
         contentKey = new NamespacedKey(plugin, "content");
         charoiteEnchantedKey = new NamespacedKey(plugin, "charoite_enchanted");
     }
@@ -48,6 +50,7 @@ public final class CharoiteEnchantingListener implements Listener {
         meta.getPersistentDataContainer().set(charoiteEnchantedKey, PersistentDataType.BYTE, (byte) 1);
         item.setItemMeta(meta);
         event.setItem(item);
+        SiftAdvancementGrant.grant(plugin, event.getEnchanter(), "better_enchanter");
     }
 
     @EventHandler

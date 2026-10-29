@@ -45,46 +45,46 @@ class ConfigMigrationTest {
     }
 
     @Test
-    void migrate_whenConfigVersionMissing_defaultsToVersion1AndMigratesTo3() {
+    void migrate_whenConfigVersionMissing_defaultsToVersion1AndMigratesToCurrent() {
         // config-version not set, defaults to 1
         boolean result = migrate();
         
         assertTrue(result);
-        assertEquals(3, config.getInt("config-version"));
+        assertEquals(ConfigMigration.CURRENT_VERSION, config.getInt("config-version"));
         assertEquals(1, saveCalls);
     }
 
     @Test
-    void migrate_whenConfigVersionIs1_migratesTo3() {
+    void migrate_whenConfigVersionIs1_migratesToCurrent() {
         config.set("config-version", 1);
         
         boolean result = migrate();
         
         assertTrue(result);
-        assertEquals(3, config.getInt("config-version"));
+        assertEquals(ConfigMigration.CURRENT_VERSION, config.getInt("config-version"));
         assertEquals(1, saveCalls);
     }
 
     @Test
-    void migrate_whenConfigVersionIs3_noMigrationNeeded() {
-        config.set("config-version", 3);
+    void migrate_whenConfigVersionIsCurrent_noMigrationNeeded() {
+        config.set("config-version", ConfigMigration.CURRENT_VERSION);
         
         boolean result = migrate();
         
         assertTrue(result);
-        assertEquals(3, config.getInt("config-version"));
+        assertEquals(ConfigMigration.CURRENT_VERSION, config.getInt("config-version"));
         // saveConfig should not be called since already at current version
         assertEquals(0, saveCalls);
     }
 
     @Test
     void migrate_whenConfigVersionIsNewer_returnsFalseAndLogsSevere() {
-        config.set("config-version", 4); // newer than CURRENT_VERSION (3)
+        config.set("config-version", ConfigMigration.CURRENT_VERSION + 1); // newer than supported
         
         boolean result = migrate();
         
         assertFalse(result);
-        assertEquals(4, config.getInt("config-version")); // unchanged
+        assertEquals(ConfigMigration.CURRENT_VERSION + 1, config.getInt("config-version")); // unchanged
         assertEquals(0, saveCalls);
     }
 
@@ -108,7 +108,7 @@ class ConfigMigrationTest {
         assertEquals("ichor_spring", state.getString("blocks.world:4:5:6"));
         assertFalse(config.contains("runtime.ichor-cauldrons"));
         assertFalse(config.contains("runtime.ichor-blocks"));
-        assertEquals(3, config.getInt("config-version"));
+        assertEquals(ConfigMigration.CURRENT_VERSION, config.getInt("config-version"));
 
         File backup = new File(dataFolder, "config.yml.pre-ichor-state-migration.bak");
         assertTrue(backup.isFile());
@@ -161,11 +161,11 @@ class ConfigMigrationTest {
         assertTrue(migrate());
 
         assertFalse(new File(dataFolder, "ichor-state.yml").exists());
-        assertEquals(3, config.getInt("config-version"));
+        assertEquals(ConfigMigration.CURRENT_VERSION, config.getInt("config-version"));
     }
 
     @Test
     void currentVersionIs3() {
-        assertEquals(3, ConfigMigration.CURRENT_VERSION);
+        assertEquals(4, ConfigMigration.CURRENT_VERSION);
     }
 }

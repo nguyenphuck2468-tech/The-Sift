@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:clamp",
+  "input": {
+    "type": "minecraft:add",
+    "left": 0.5,
+    "right": {
+      "type": "minecraft:mul",
+      "left": 0.85,
+      "right": {
+        "type": "minecraft:noise",
+        "noise": "thesift:terrace_warp",
+        "xz_scale": 0.48,
+        "y_scale": 0.0
+      }
+    }
+  },
+  "min": 0.0,
+  "max": 1.0
+}

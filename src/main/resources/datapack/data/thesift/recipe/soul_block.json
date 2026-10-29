@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "S": "minecraft:soul_soil",
+    "G": "minecraft:glowstone_dust"
+  },
+  "pattern": [
+    "SGS",
+    "GSG",
+    "SGS"
+  ],
+  "result": {
+    "count": 1,
+    "id": "minecraft:soul_sand",
+    "components": {
+      "minecraft:custom_data": {"PublicBukkitValues": {"thesift:content": "soul_block"}},
+      "minecraft:custom_name": {"text": "Soul Block", "color": "light_purple", "italic": false}
+    }
+  }
+}

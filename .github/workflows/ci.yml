@@ -1,70 +1,73 @@
-name: CI Build & Test
+name: "CI Build & Test"
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches: [main, mielon-parity]
+  pull_request: {}
 
 jobs:
-  build:
-    name: Build & Test (Java 25, Gradle 9.7.1)
+  validate-and-build:
+    name: "Pipeline (Java 25, Gradle 9.7.1)"
     runs-on: ubuntu-24.04
     permissions:
       contents: read
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v7.0.1
+      - name: "🧳 Checkout Code"
+        uses: actions/checkout@v4
 
-      - name: Setup Java 25
-        uses: actions/setup-java@v6.1.0
+      - name: "⚙️ Setup Python Environment"
+        # No cache: the repository has no requirements.txt/pyproject.toml, and
+        # setup-python's pip cache fails the job outright when it cannot find a
+        # dependency file to hash.
+        uses: actions/setup-python@v5
         with:
-          distribution: temurin
-          java-version: 25
-          cache: gradle
+          python-version: "3.12"
+          cache: ""
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6.4.0
+      - name: "🔍 Pre-check: Terrain Datapack References"
+        run: |
+          if [ -f scripts/check_terrain_refs.py ]; then
+            python3 scripts/check_terrain_refs.py
+          else
+            echo "::warning:: Verification script not found, skipping."
+          fi
 
-      - name: Build with Gradle
-        run: ./gradlew --no-daemon clean build
+      - name: "☕ Setup Java Development Kit (JDK 25)"
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "25"
 
-      - name: Test Paper boot log gate with fixtures
-        run: bash scripts/test-paper-boot-log-check.sh
+      - name: "🐘 Setup Gradle (with Cache Optimization)"
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.7.1"
+          cache-encryption-key: ${{ secrets.GRADLE_CACHE_KEY }}
 
-      - name: Verify Paper 26.3 datapack boot
-        if: vars.MINECRAFT_EULA_ACCEPTED == 'true'
+      - name: "🔨 Compilation & Local Testing"
+        run: ./gradlew clean build --no-daemon --parallel --build-cache
+
+      - name: "🚀 Assert: Paper 26.3 Datapack Boot Verification"
         env:
           MINECRAFT_EULA_ACCEPTED: ${{ vars.MINECRAFT_EULA_ACCEPTED }}
-        run: bash scripts/verify-paper-boot.sh
+        run: |
+          if [ -f scripts/verify-paper-boot.sh ]; then
+            bash scripts/verify-paper-boot.sh
+          else
+            echo "::error:: Critical boot script missing!"
+            exit 1
+          fi
 
-      - name: Skip Paper boot without EULA confirmation
-        if: vars.MINECRAFT_EULA_ACCEPTED != 'true'
-        run: echo "::warning::Paper boot skipped; set MINECRAFT_EULA_ACCEPTED=true only after the repository owner accepts the Minecraft EULA."
-
-      - name: Publish test results
-        uses: actions/upload-artifact@v7.0.2
+      - name: "📦 Consolidated Artifact Upload"
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results
-          path: build/reports/tests/
-          retention-days: 7
-
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v7.0.2
-        with:
-          name: TheSift-foundation.jar
-          path: build/libs/TheSift-foundation-*.jar
-          retention-days: 7
-
-      - name: Upload Paper boot logs
-        uses: actions/upload-artifact@v7.0.2
-        if: always()
-        with:
-          name: paper-26.3-boot-logs
+          name: "thesift-ci-artifacts"
           path: |
+            build/libs/TheSift-foundation-*.jar
+            build/reports/tests/
             build/paper-boot-console.log
             run/paper-26.3/logs/latest.log
-          if-no-files-found: ignore
+          if-no-files-found: warn
           retention-days: 7

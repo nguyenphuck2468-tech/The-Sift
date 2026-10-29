@@ -1,0 +1,26 @@
+{
+  "parent": "thesift:root",
+  "display": {
+    "icon": {
+      "id": "minecraft:paper",
+      "components": {
+        "minecraft:item_model": "thesift:ichor_bucket"
+      }
+    },
+    "title": "Blood of the Gods",
+    "description": "Fill a bucket with Ichor",
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

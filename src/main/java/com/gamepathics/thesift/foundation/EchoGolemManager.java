@@ -35,27 +35,59 @@ import java.util.UUID;
 public final class EchoGolemManager implements Listener {
     private static final String ECHO_GOLEM_ID = "echo_golem";
     private final JavaPlugin plugin;
-    private final SiftiteContent content;
+    private SiftiteContent content;
     private final NamespacedKey entityKey;
     private final NamespacedKey ownerKey;
-    private final NamespacedKey contentKey;
     private final NamespacedKey cargoKey;
-    private final SiftMobFactory mobFactory;
+    private SiftMobFactory mobFactory;
     private final Map<UUID, BossBar> bars = new HashMap<>();
     private long tick;
 
+    /**
+     * Shared content registry: prefers the plugin-wide instance when The Sift is running as a
+     * live plugin (one ExternalItemBridge/cache); falls back to a local one in unit tests where
+     * MockBukkit does not register this class as a plugin.
+     */
+    private SiftiteContent sharedContent() {
+        if (content == null) {
+            content = plugin instanceof TheSiftFoundationPlugin foundation
+                    ? foundation.siftiteContent() : new SiftiteContent(plugin);
+        }
+        return content;
+    }
+
+    /** Shared mob factory, resolved the same way as {@link #sharedContent()}. */
+    private SiftMobFactory sharedMobFactory() {
+        if (mobFactory == null) {
+            mobFactory = plugin instanceof TheSiftFoundationPlugin foundation
+                    ? foundation.mobFactory() : new SiftMobFactory(plugin);
+        }
+        return mobFactory;
+    }
+
     public EchoGolemManager(JavaPlugin plugin) {
-        this(plugin, new SiftiteContent(plugin));
+        this.plugin = plugin;
+        this.entityKey = new NamespacedKey(plugin, "echo_golem_entity");
+        this.ownerKey = new NamespacedKey(plugin, "echo_golem_owner");
+        this.cargoKey = new NamespacedKey(plugin, "echo_golem_soul_block");
     }
 
     EchoGolemManager(JavaPlugin plugin, SiftiteContent content) {
-        this.plugin = plugin;
+        this(plugin);
         this.content = content;
-        this.entityKey = new NamespacedKey(plugin, "echo_golem_entity");
-        this.ownerKey = new NamespacedKey(plugin, "echo_golem_owner");
-        this.contentKey = new NamespacedKey(plugin, "content");
-        this.cargoKey = new NamespacedKey(plugin, "echo_golem_soul_block");
-        this.mobFactory = new SiftMobFactory(plugin);
+    }
+
+    EchoGolemManager(JavaPlugin plugin, SiftiteContent content, SiftMobFactory mobFactory) {
+        this(plugin, content);
+        this.mobFactory = mobFactory;
+    }
+
+    SiftiteContent content() {
+        return sharedContent();
+    }
+
+    SiftMobFactory mobFactory() {
+        return sharedMobFactory();
     }
 
     public void start() {
@@ -72,21 +104,23 @@ public final class EchoGolemManager implements Listener {
     }
 
     public LivingEntity summonEchoGolem(Location location) {
-        LivingEntity golem = mobFactory.spawn(ECHO_GOLEM_ID, location, EntityType.IRON_GOLEM);
+        LivingEntity golem = sharedMobFactory().spawn(ECHO_GOLEM_ID, location, EntityType.IRON_GOLEM);
         if (golem == null) return null;
         golem.getPersistentDataContainer().set(entityKey, PersistentDataType.STRING, ECHO_GOLEM_ID);
         golem.setCustomName("§b§lEcho Golem");
         golem.setCustomNameVisible(true);
         golem.setPersistent(true);
-        if (golem instanceof Mob mob) mob.setCanPickupItems(false);
+        // Reference-mod parity: the Echo Golem is a neutral guardian. It never
+        // attacks players and only bonds with one that offers it an Echo Shard.
+        if (golem instanceof Mob mob) {
+            mob.setCanPickupItems(false);
+            mob.setTarget(null);
+        }
         var maxHealth = golem.getAttribute(Attribute.MAX_HEALTH);
         if (maxHealth != null) {
-            maxHealth.setBaseValue(plugin.getConfig().getDouble("echo-golem.max-health", 80.0));
+            maxHealth.setBaseValue(plugin.getConfig().getDouble("echo-golem.max-health", 34.0));
             golem.setHealth(maxHealth.getValue());
         }
-        var attackDamage = golem.getAttribute(Attribute.ATTACK_DAMAGE);
-        if (attackDamage != null) attackDamage.setBaseValue(
-                plugin.getConfig().getDouble("echo-golem.attack-damage", 12.0));
         var movementSpeed = golem.getAttribute(Attribute.MOVEMENT_SPEED);
         if (movementSpeed != null) movementSpeed.setBaseValue(0.28);
         var knockback = golem.getAttribute(Attribute.KNOCKBACK_RESISTANCE);
@@ -112,24 +146,38 @@ public final class EchoGolemManager implements Listener {
             updateBars();
             return;
         }
+        // Fan-made resonance heal pulse. The reference mod's Echo Golem has no healing
+        // behaviour at all (its only stat is MAX_HEALTH 34), so this mechanic is gated off
+        // by default; admins can opt in with echo-golem.heal-enabled: true. Charoite kinship
+        // (protectedByCharoite) only widens the radius when the pulse is enabled — it never
+        // makes the heal world-wide on its own.
+        if (!plugin.getConfig().getBoolean("echo-golem.heal-enabled", false)) {
+            updateBars();
+            return;
+        }
         java.util.Set<UUID> seen = new java.util.HashSet<>();
         double range = Math.max(1, plugin.getConfig().getDouble("echo-golem.resonance-range", 20.0));
+        // Scan each world once (chunk-based) instead of per-player entity queries: cheaper and
+        // avoids duplicate/missed pulses when several players stand near the same golem.
         for (World world : Bukkit.getWorlds()) {
-            for (Player nearbyPlayer : world.getPlayers()) {
-                for (Entity entity : nearbyPlayer.getNearbyEntities(range, range, range)) {
+            for (Player centerPlayer : world.getPlayers()) {
+                for (Entity entity : world.getNearbyEntities(centerPlayer.getLocation(), range, range, range)) {
                     if (!(entity instanceof LivingEntity golem) || !isEchoGolem(entity)
                             || !seen.add(entity.getUniqueId())) continue;
                     Location center = entity.getLocation();
                     world.spawnParticle(Particle.END_ROD, center.clone().add(0, 1.5, 0), 1);
                     world.playSound(center, Sound.ENTITY_WARDEN_HEARTBEAT, 0.3f, 0.8f);
                     Player owner = owner(entity);
-                    if (owner != null && owner.getWorld().equals(world)
-                            && owner.getLocation().distanceSquared(center) <= range * range) {
-                        double heal = plugin.getConfig().getDouble("echo-golem.heal-amount", 4.0);
-                        owner.setHealth(Math.min(owner.getHealth() + heal,
-                                owner.getAttribute(Attribute.MAX_HEALTH) == null ? 20.0
-                                        : owner.getAttribute(Attribute.MAX_HEALTH).getValue()));
-                        world.spawnParticle(Particle.HEART, owner.getLocation().add(0, 1.2, 0), 2);
+                    if (owner != null && owner.getWorld().equals(world)) {
+                        double effectiveRange = protectedByCharoite(owner) ? range * 2 : range;
+                        if (owner.getLocation().distanceSquared(center) <= effectiveRange * effectiveRange) {
+                            double heal = plugin.getConfig().getDouble("echo-golem.heal-amount", 4.0);
+                            Location ownerLocation = owner.getLocation();
+                            owner.setHealth(Math.min(owner.getHealth() + heal,
+                                    owner.getAttribute(Attribute.MAX_HEALTH) == null ? 20.0
+                                            : owner.getAttribute(Attribute.MAX_HEALTH).getValue()));
+                            world.spawnParticle(Particle.HEART, ownerLocation.add(0, 1.2, 0), 2);
+                        }
                     }
                 }
             }
@@ -173,16 +221,25 @@ public final class EchoGolemManager implements Listener {
         return bars.size();
     }
 
-    private boolean protectedByCharoite(Player player) {
+    /**
+     * Reference-mod parity: a player carrying Charoite is treated as kin by the Echo Golem.
+     * Currently the golem never targets players at all (see {@link #onEchoGolemTarget}), so this
+     * helper only gates the resonance heal pulse; keep it in sync with ResonanceManager's
+     * Singer charoite check.
+     */
+    boolean protectedByCharoite(Player player) {
         if (!plugin.getConfig().getBoolean("echo-golem.charoite-protection", true)) {
             return false;
         }
-        for (ItemStack stack : player.getInventory().getContents()) {
-            if (stack != null && stack.hasItemMeta()
-                    && "charoite".equals(stack.getItemMeta().getPersistentDataContainer()
-                    .get(new NamespacedKey(plugin, "content"), PersistentDataType.STRING))) {
-                return true;
-            }
+        var inventory = player.getInventory();
+        return hasTaggedCharoite(inventory.getStorageContents())
+                || hasTaggedCharoite(inventory.getArmorContents())
+                || hasTaggedCharoite(new ItemStack[]{inventory.getItemInOffHand()});
+    }
+
+    private boolean hasTaggedCharoite(ItemStack[] items) {
+        for (ItemStack stack : items) {
+            if (sharedContent().is(stack, "charoite")) return true;
         }
         return false;
     }
@@ -203,7 +260,7 @@ public final class EchoGolemManager implements Listener {
         }
         if (plugin.getConfig().getBoolean("echo-golem.drop-siftite", true)) {
             // Drop Siftite Ingot
-            ItemStack drop = content.item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot");
+            ItemStack drop = sharedContent().item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot");
             if (drop != null) event.getDrops().add(drop);
         }
     }
@@ -233,16 +290,15 @@ public final class EchoGolemManager implements Listener {
             return;
         }
         if (owner == null || !owner.equals(player.getUniqueId().toString())) return;
-        String heldId = hand.hasItemMeta() ? hand.getItemMeta().getPersistentDataContainer()
-                .get(contentKey, PersistentDataType.STRING) : null;
+        boolean holdingSoulBlock = sharedContent().is(hand, "soul_block");
         boolean carrying = pdc.has(cargoKey, PersistentDataType.BYTE);
-        if ("soul_block".equals(heldId) && !carrying) {
+        if (holdingSoulBlock && !carrying) {
             consumeOne(player);
             pdc.set(cargoKey, PersistentDataType.BYTE, (byte) 1);
             player.sendMessage("§bThe Echo Golem takes the Soul Block.");
             event.setCancelled(true);
         } else if (carrying && hand.getType().isAir()) {
-            ItemStack soul = content.forId("soul_block");
+            ItemStack soul = sharedContent().forId("soul_block");
             if (soul == null) {
                 player.sendMessage("Soul Block item is unavailable from the configured provider. Run /sift doctor.");
                 event.setCancelled(true);

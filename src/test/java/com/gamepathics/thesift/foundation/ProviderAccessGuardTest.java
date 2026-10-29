@@ -21,7 +21,21 @@ class ProviderAccessGuardTest {
 
     @Test
     void pistonMovementTracksPushAndPullDirection() {
-        assertEquals(BlockFace.EAST, SoulBlockListener.movementDirection(BlockFace.EAST, false));
-        assertEquals(BlockFace.WEST, SoulBlockListener.movementDirection(BlockFace.EAST, true));
+        // Extend: block moves in the reported direction.
+        assertEquals(BlockFace.EAST,  SoulBlockListener.movementDirection(BlockFace.EAST,  false));
+        assertEquals(BlockFace.WEST,  SoulBlockListener.movementDirection(BlockFace.WEST,  false));
+        assertEquals(BlockFace.NORTH, SoulBlockListener.movementDirection(BlockFace.NORTH, false));
+        assertEquals(BlockFace.SOUTH, SoulBlockListener.movementDirection(BlockFace.SOUTH, false));
+        assertEquals(BlockFace.UP,    SoulBlockListener.movementDirection(BlockFace.UP,    false));
+        assertEquals(BlockFace.DOWN,  SoulBlockListener.movementDirection(BlockFace.DOWN,  false));
+
+        // Retract: block moves in the opposite of the reported direction.
+        assertEquals(BlockFace.WEST,  SoulBlockListener.movementDirection(BlockFace.EAST,  true));
+        assertEquals(BlockFace.EAST,  SoulBlockListener.movementDirection(BlockFace.WEST,  true));
+        assertEquals(BlockFace.SOUTH, SoulBlockListener.movementDirection(BlockFace.NORTH, true));
+        assertEquals(BlockFace.NORTH, SoulBlockListener.movementDirection(BlockFace.SOUTH, true));
+        assertEquals(BlockFace.DOWN,  SoulBlockListener.movementDirection(BlockFace.UP,    true));
+        assertEquals(BlockFace.UP,    SoulBlockListener.movementDirection(BlockFace.DOWN,  true));
     }
 }
+

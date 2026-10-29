@@ -1,0 +1,26 @@
+{
+  "parent": "thesift:smells_creepy",
+  "display": {
+    "icon": {
+      "id": "minecraft:paper",
+      "components": {
+        "minecraft:item_model": "thesift:sculkflower"
+      }
+    },
+    "title": "Planting the Dark",
+    "description": "Plant the Sculkflower on Sculk",
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "done": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "done"
+    ]
+  ]
+}

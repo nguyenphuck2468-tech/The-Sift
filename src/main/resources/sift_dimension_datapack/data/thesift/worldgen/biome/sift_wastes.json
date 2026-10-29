@@ -23,10 +23,9 @@
     }
   },
   "carvers": [
-    "minecraft:cave",
-    "minecraft:cave_extra_underground",
-    "minecraft:canyon",
-    "thesift:sift_cave"
+    "thesift:cave",
+    "thesift:cave_extra_underground",
+    "thesift:canyon"
   ],
   "downfall": 0.15,
   "effects": {
@@ -45,11 +44,13 @@
     [],
     [],
     [
-      "thesift:charoite_ore",
-      "thesift:siftite_ore"
+      "thesift:siftslate_coal_ore",
+      "thesift:siftslate_coal_ore_surface",
+      "thesift:siftslate_diamond_ore",
+      "thesift:siftslate_emerald_ore",
+      "thesift:siftslate_charoite_ore",
+      "thesift:siftslate_siftite_ore"
     ],
-    [],
-    [],
     [],
     [],
     [],

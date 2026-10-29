@@ -4,53 +4,80 @@ import org.bukkit.Bukkit;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.advancement.Advancement;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.event.inventory.SmithItemEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
-import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.List;
 
-/** Grants the bundled advancement tree through Bukkit's public advancement API. */
+/**
+ * Grants the bundled advancement tree, which mirrors the reference mod's 22 advancements. Entries that use
+ * vanilla triggers (Ancient City visit, biome visits) are handled by the datapack itself; the rest are
+ * awarded from here or from the managers that own the event (Rift, Singer, Charoite enchanting, portal).
+ *
+ * <p>Not wired yet (their mechanics do not exist in the plugin): {@code like_father_and_son},
+ * {@code friend_of_the_sift}, {@code food_chain}, {@code false_alarm}, {@code smells_creepy},
+ * {@code planting_the_dark}, {@code spicewood}.
+ */
 public final class SiftAdvancementManager implements Listener {
     private static final String SIFT_WORLD = "thesift:the_sift";
     private final JavaPlugin plugin;
     private final NamespacedKey contentKey;
-    private final NamespacedKey creatureKey;
 
     public SiftAdvancementManager(JavaPlugin plugin) {
         this.plugin = plugin;
         this.contentKey = new NamespacedKey(plugin, "content");
-        this.creatureKey = new NamespacedKey(plugin, "sift_creature");
     }
 
     @EventHandler
     public void onEnterSift(PlayerChangedWorldEvent event) {
-        if (isSift(event.getPlayer().getWorld())) grant(event.getPlayer(), "root");
+        if (isSift(event.getPlayer().getWorld())) grant(event.getPlayer(), "root", "story/brave_the_unknown");
     }
 
     @EventHandler
     public void onPickup(EntityPickupItemEvent event) {
         if (!(event.getEntity() instanceof Player player)) return;
         String id = contentId(event.getItem().getItemStack());
-        if ("charoite".equals(id) || "siftite_nugget".equals(id)) grant(player, "shard");
-        if ("rift_key".equals(id)) grant(player, "rift_key");
+        if ("charoite".equals(id)) grant(player, "kinda_purpleish");
+        if ("siftite_nugget".equals(id)) grant(player, "sifted_nugget");
     }
 
     @EventHandler
     public void onCraft(CraftItemEvent event) {
-        String id = contentId(event.getRecipe().getResult());
-        if (isSiftiteGear(id)
-                && event.getWhoClicked() instanceof Player player) grant(player, "shard_gear");
+        if (isSiftiteGear(contentId(event.getRecipe().getResult()))
+                && event.getWhoClicked() instanceof Player player) checkSiftiteSetNextTick(player);
+    }
+
+    @EventHandler
+    public void onSmith(SmithItemEvent event) {
+        if (isSiftiteGear(contentId(event.getInventory().getResult()))
+                && event.getWhoClicked() instanceof Player player) checkSiftiteSetNextTick(player);
+    }
+
+    /** Mod advancement "Keep Inventory": die while carrying Siftite equipment. */
+    @EventHandler
+    public void onDeath(PlayerDeathEvent event) {
+        for (ItemStack drop : event.getDrops()) {
+            String id = contentId(drop);
+            if (id != null && id.startsWith("siftite_")
+                    && !"siftite_nugget".equals(id) && !"siftite_ingot".equals(id)) {
+                grant(event.getEntity(), "keep_inventory");
+                return;
+            }
+        }
     }
 
     private boolean isSiftiteGear(String id) {
@@ -63,31 +90,34 @@ public final class SiftAdvancementManager implements Listener {
         };
     }
 
+    private void checkSiftiteSetNextTick(Player player) {
+        plugin.getServer().getScheduler().runTask(plugin, () -> {
+            boolean helmet = false, chest = false, legs = false, boots = false;
+            var inventory = player.getInventory();
+            java.util.List<ItemStack> all = new java.util.ArrayList<>(java.util.Arrays.asList(inventory.getContents()));
+            for (ItemStack piece : all) {
+                String id = contentId(piece);
+                if ("siftite_helmet".equals(id)) helmet = true;
+                else if ("siftite_chestplate".equals(id)) chest = true;
+                else if ("siftite_leggings".equals(id)) legs = true;
+                else if ("siftite_boots".equals(id)) boots = true;
+            }
+            if (helmet && chest && legs && boots) grant(player, "cover_me_in_siftite");
+        });
+    }
+
     @EventHandler
     public void onConsume(PlayerItemConsumeEvent event) {
-        if ("ichor_bottle".equals(contentId(event.getItem()))) grant(event.getPlayer(), "storm");
+        if ("ichor_bottle".equals(contentId(event.getItem()))) grant(event.getPlayer(), "blood_of_the_gods");
     }
 
     /** IchorListener cancels vanilla consumption and handles bottle effects from this interaction. */
-    @EventHandler(priority = org.bukkit.event.EventPriority.MONITOR)
+    @EventHandler(priority = EventPriority.MONITOR)
     public void onIchorBottleDrink(PlayerInteractEvent event) {
-        if (event.getHand() != org.bukkit.inventory.EquipmentSlot.HAND
-                || event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_AIR
+        if (event.getHand() != EquipmentSlot.HAND
+                || event.getAction() != Action.RIGHT_CLICK_AIR
                 || !"ichor_bottle".equals(contentId(event.getItem()))) return;
-        grant(event.getPlayer(), "storm");
-    }
-
-    @EventHandler
-    public void onCreatureDeath(EntityDeathEvent event) {
-        var dead = event.getEntity();
-        String id = dead.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING);
-        Player killer = dead.getKiller();
-        if (killer == null || id == null) return;
-        switch (id) {
-            case "prism_warden" -> grant(killer, "warden", "prismatic");
-            case "the_sifter", "sifter" -> grant(killer, "sifter");
-            default -> { }
-        }
+        grant(event.getPlayer(), "blood_of_the_gods");
     }
 
     private String contentId(ItemStack item) {

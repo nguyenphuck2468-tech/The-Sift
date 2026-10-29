@@ -1,0 +1,80 @@
+{
+  "type": "minecraft:range_choice",
+  "input": "thesift:giant_cliff_offset",
+  "min_inclusive": -1000000.0,
+  "max_exclusive": 0.01,
+  "when_in_range": {
+    "type": "minecraft:mul",
+    "left": {
+      "type": "minecraft:add",
+      "left": 0.72,
+      "right": {
+        "type": "minecraft:mul",
+        "left": 0.28,
+        "right": "thesift:terrain_intensity"
+      }
+    },
+    "right": {
+      "type": "minecraft:range_choice",
+      "input": "thesift:shelf_region_field",
+      "min_inclusive": 0.74,
+      "max_exclusive": 1000000.0,
+      "when_in_range": {
+        "type": "minecraft:range_choice",
+        "input": "thesift:shelf_region_field",
+        "min_inclusive": 0.74,
+        "max_exclusive": 0.81,
+        "when_in_range": {
+          "type": "minecraft:add",
+          "left": 0.115,
+          "right": {
+            "type": "minecraft:mul",
+            "left": 0.016,
+            "right": {
+              "type": "minecraft:noise",
+              "noise": "thesift:terrain_detail",
+              "xz_scale": 0.44,
+              "y_scale": 0.0
+            }
+          }
+        },
+        "when_out_of_range": {
+          "type": "minecraft:range_choice",
+          "input": "thesift:shelf_region_field",
+          "min_inclusive": 0.81,
+          "max_exclusive": 0.87,
+          "when_in_range": {
+            "type": "minecraft:add",
+            "left": 0.255,
+            "right": {
+              "type": "minecraft:mul",
+              "left": 0.02,
+              "right": {
+                "type": "minecraft:noise",
+                "noise": "thesift:terrain_detail",
+                "xz_scale": 0.38,
+                "y_scale": 0.0
+              }
+            }
+          },
+          "when_out_of_range": {
+            "type": "minecraft:add",
+            "left": 0.42,
+            "right": {
+              "type": "minecraft:mul",
+              "left": 0.024,
+              "right": {
+                "type": "minecraft:noise",
+                "noise": "thesift:terrain_detail",
+                "xz_scale": 0.33,
+                "y_scale": 0.0
+              }
+            }
+          }
+        }
+      },
+      "when_out_of_range": 0.0
+    }
+  },
+  "when_out_of_range": 0.0
+}

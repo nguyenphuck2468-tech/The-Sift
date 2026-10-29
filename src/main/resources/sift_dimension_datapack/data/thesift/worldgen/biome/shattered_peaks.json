@@ -29,12 +29,7 @@
       "modifier": "append"
     }
   },
-  "carvers": [
-    "minecraft:cave",
-    "minecraft:cave_extra_underground",
-    "minecraft:canyon",
-    "thesift:sift_cave"
-  ],
+  "carvers": [],
   "downfall": 0.4,
   "effects": {
     "water_color": "#46c6d4",
@@ -49,18 +44,13 @@
     [],
     [],
     [
-      "thesift:crystal_spire",
-      "thesift:charoite_ore",
-      "thesift:siftite_ore"
-    ],
-    [],
-    [],
-    [],
-    [],
-    [
-      "thesift:ichor_lake"
-    ],
-    []
+      "thesift:siftslate_coal_ore",
+      "thesift:siftslate_coal_ore_surface",
+      "thesift:siftslate_diamond_ore",
+      "thesift:siftslate_emerald_ore",
+      "thesift:siftslate_charoite_ore",
+      "thesift:siftslate_siftite_ore"
+    ]
   ],
   "has_precipitation": false,
   "temperature": 0.7

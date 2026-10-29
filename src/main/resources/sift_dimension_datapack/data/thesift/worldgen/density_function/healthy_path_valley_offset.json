@@ -1,0 +1,38 @@
+{
+  "type": "minecraft:range_choice",
+  "input": {
+    "type": "minecraft:noise",
+    "noise": "thesift:canyon_selector",
+    "xz_scale": 1.0,
+    "y_scale": 0.0
+  },
+  "min_inclusive": -0.72,
+  "max_exclusive": 0.72,
+  "when_in_range": {
+    "type": "minecraft:mul",
+    "left": -0.94,
+    "right": {
+      "type": "minecraft:clamp",
+      "input": {
+        "type": "minecraft:add",
+        "left": 0.036,
+        "right": {
+          "type": "minecraft:mul",
+          "left": -1.0,
+          "right": {
+            "type": "minecraft:abs",
+            "input": {
+              "type": "minecraft:noise",
+              "noise": "thesift:healthy_paths",
+              "xz_scale": 1.0,
+              "y_scale": 0.0
+            }
+          }
+        }
+      },
+      "min": 0.0,
+      "max": 0.036
+    }
+  },
+  "when_out_of_range": 0.0
+}

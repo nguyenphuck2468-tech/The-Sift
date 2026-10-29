@@ -8,6 +8,8 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeModifier;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.RecipeChoice;
+import org.bukkit.inventory.FurnaceRecipe;
 import org.bukkit.inventory.ShapedRecipe;
 import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -16,11 +18,16 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.inventory.PrepareSmithingEvent;
+import org.bukkit.inventory.CookingRecipe;
 import org.bukkit.inventory.EquipmentSlotGroup;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -30,17 +37,37 @@ public final class SiftiteContent implements Listener {
     private final JavaPlugin plugin;
     private final NamespacedKey idKey;
     private final ExternalItemBridge externalItems;
+    private final java.util.Set<NamespacedKey> ownedRecipeKeys = ConcurrentHashMap.newKeySet();
 
     public SiftiteContent(JavaPlugin plugin) {
+        this(plugin, new ExternalItemBridge(plugin));
+    }
+
+    /** Shared wiring: reuse one ExternalItemBridge (and its provider caches) across registries. */
+    SiftiteContent(JavaPlugin plugin, ExternalItemBridge externalItems) {
         this.plugin = Objects.requireNonNull(plugin);
         this.idKey = new NamespacedKey(plugin, "content");
-        this.externalItems = new ExternalItemBridge(plugin);
+        this.externalItems = Objects.requireNonNull(externalItems);
+    }
+
+    /** Unregisters exactly the recipes registered by this plugin instance. */
+    public void removeRecipes() {
+        Server server = plugin.getServer();
+        // Do not sweep the entire namespace: datapacks or other integrations may legitimately
+        // register recipes under thesift. Track the exact keys this instance added instead.
+        for (NamespacedKey key : ownedRecipeKeys) {
+            server.removeRecipe(key);
+        }
+        ownedRecipeKeys.clear();
     }
 
     public void registerRecipes() {
         Server server = plugin.getServer();
         for (String key : java.util.List.of("charoite", "siftite_nugget", "siftite_ingot",
-                "siftite_upgrade_smithing_template")) server.removeRecipe(new NamespacedKey(plugin, key));
+                "siftite_upgrade_smithing_template", "smelt_raw_sifter_meat", "smelt_blub_meat",
+                "blub_campfire")) {
+            server.removeRecipe(new NamespacedKey(plugin, key));
+        }
         for (String key : java.util.List.of("siftite_sword", "siftite_axe", "siftite_pickaxe",
                 "siftite_shovel", "siftite_hoe", "siftite_helmet", "siftite_chestplate",
                 "siftite_leggings", "siftite_boots")) server.removeRecipe(new NamespacedKey(plugin, key));
@@ -52,6 +79,22 @@ public final class SiftiteContent implements Listener {
             addShaped("charoite", item(Material.LAPIS_LAZULI, "charoite", "Charoite"),
                     " C ", "CAC", " C ", 'C', Material.AMETHYST_SHARD, 'A', Material.AMETHYST_BLOCK);
         }
+        // Reference-mod parity: Cooked Sifter Meat / Cooked Blub Meat come from smelting the
+        // raw drops (see SiftEcologyManager#onEntityDeath), so they must be obtainable even
+        // when FurnaceSmeltEvent is cancelled by other plugins.
+        registerFurnish("smelt_raw_sifter_meat",
+                item(Material.BEEF, "raw_sifter_meat", "Raw Sifter Meat"),
+                item(Material.COOKED_BEEF, "cooked_sifter_meat", "Cooked Sifter Meat"));
+        registerFurnish("smelt_blub_meat",
+                item(Material.MUTTON, "blub_meat", "Blub Meat"),
+                item(Material.COOKED_MUTTON, "cooked_blub_meat", "Cooked Blub Meat"));
+        // Campfire parity for the Blub food chain. Registered in Java (not the bundled
+        // datapack) with an ExactChoice so ONLY the tagged blub_meat cooks here — a
+        // material-only datapack recipe on minecraft:mutton would let plain vanilla mutton
+        // produce Cooked Blub Meat and race the vanilla campfire recipe.
+        registerCampfire("blub_campfire",
+                item(Material.MUTTON, "blub_meat", "Blub Meat"),
+                item(Material.COOKED_MUTTON, "cooked_blub_meat", "Cooked Blub Meat"));
         if (enabled("siftite_nugget", "siftite.enabled")) {
             addShapeless("siftite_nugget", item(Material.IRON_NUGGET, "siftite_nugget", "Siftite Nugget"),
                     Material.IRON_NUGGET, Material.AMETHYST_SHARD);
@@ -105,9 +148,31 @@ public final class SiftiteContent implements Listener {
         if (!providerItem) meta.setDisplayName("§d" + name);
         meta.getPersistentDataContainer().set(idKey, PersistentDataType.STRING, id);
         if (!providerItem && hasItemModel(id)) meta.setItemModel(NamespacedKey.fromString("thesift:" + id));
-        if (id.startsWith("siftite_") && !id.equals("siftite_upgrade_smithing_template")) addAttributes(meta, id);
+        if (id.startsWith("siftite_") && !id.equals("siftite_upgrade_smithing_template")) {
+            addAttributes(meta, id);
+            applyDurabilityMultiplier(result, meta, id);
+        }
         result.setItemMeta(meta);
         return result;
+    }
+
+    /**
+     * Applies {@code siftite.durability-multiplier} from config.yml to freshly crafted Siftite
+     * gear by raising the item's custom max-damage above its vanilla base (Paper Damageable
+     * meta). This makes the config knob a real gameplay effect instead of a dead flag surfaced
+     * only in {@code /sift doctor}. Damage stays clamped at 0; the extra headroom lives in
+     * getMaxDamage(), which is how vanilla treats items that have bonus durability.
+     */
+    private void applyDurabilityMultiplier(ItemStack result, ItemMeta meta, String id) {
+        double multiplier = plugin.getConfig().getDouble("siftite.durability-multiplier", 1.2);
+        if (multiplier <= 1.0 || result.getType().getMaxDurability() <= 0) return;
+        if (!(meta instanceof org.bukkit.inventory.meta.Damageable damageable)) return;
+        int extra = (int) Math.round(result.getType().getMaxDurability() * (multiplier - 1.0));
+        if (extra <= 0) return;
+        // getMaxDamage() throws unless a custom ceiling was set before, so fall back to the
+        // material's vanilla durability as the baseline.
+        int base = damageable.hasMaxDamage() ? damageable.getMaxDamage() : result.getType().getMaxDurability();
+        damageable.setMaxDamage(base + extra);
     }
 
     private boolean hasItemModel(String id) {
@@ -125,6 +190,17 @@ public final class SiftiteContent implements Listener {
         if (stack == null || !stack.hasItemMeta()) return false;
         return id.equals(stack.getItemMeta().getPersistentDataContainer()
                 .get(idKey, PersistentDataType.STRING));
+    }
+
+    /** The content id stamped on this stack's PDC, or null when the stack is not Sift content. */
+    public String idOf(ItemStack stack) {
+        if (stack == null || !stack.hasItemMeta()) return null;
+        return stack.getItemMeta().getPersistentDataContainer().get(idKey, PersistentDataType.STRING);
+    }
+
+    /** The PDC key this registry stamps item IDs under; lets other managers read tags directly. */
+    public NamespacedKey idKey() {
+        return idKey;
     }
 
     public ItemStack forId(String id) {
@@ -191,14 +267,27 @@ public final class SiftiteContent implements Listener {
             case "thornback" -> Material.TURTLE_SPAWN_EGG;
             case "glimmerwing" -> Material.BEE_SPAWN_EGG;
             case "the_sifter" -> Material.RAVAGER_SPAWN_EGG;
+            case "spire_tyrant" -> Material.RAVAGER_SPAWN_EGG; // crimson Sifter-variant boss
             case "frost_stalker" -> Material.STRAY_SPAWN_EGG;
             case "sunspore" -> Material.MOOSHROOM_SPAWN_EGG;
             case "drifter" -> Material.ENDERMAN_SPAWN_EGG;
             case "shardling" -> Material.ENDERMITE_SPAWN_EGG;
             case "prism_warden" -> Material.WARDEN_SPAWN_EGG;
-            case "lumen_tulip" -> Material.TORCHFLOWER_SEEDS;
+            case "lumen_tulip", "sculkflower_seeds" -> Material.TORCHFLOWER_SEEDS;
+            case "sculkflower" -> Material.POPPY;
             case "prismite" -> Material.SILVERFISH_SPAWN_EGG;
             case "loomer" -> Material.RABBIT_SPAWN_EGG;
+            // Remaining spec mobs get vanilla stand-in spawn eggs so every id in
+            // integrations/content-spec.json resolves through forId().
+            case "echo_golem" -> Material.IRON_GOLEM_SPAWN_EGG;
+            case "singer" -> Material.ALLAY_SPAWN_EGG;
+            case "dark_sniffer" -> Material.SNIFFER_SPAWN_EGG;
+            case "rift_walker" -> Material.ENDERMAN_SPAWN_EGG;
+            case "sift_wastes_stalker" -> Material.WITCH_SPAWN_EGG;
+            case "raw_sifter_meat" -> Material.BEEF;
+            case "cooked_sifter_meat" -> Material.COOKED_BEEF;
+            case "blub_meat" -> Material.MUTTON;
+            case "cooked_blub_meat" -> Material.COOKED_MUTTON;
             default -> null;
         };
         if (material == null) return null;
@@ -236,6 +325,7 @@ public final class SiftiteContent implements Listener {
                 org.bukkit.inventory.RecipeChoice.exactChoice(
                         item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot")));
         server.addRecipe(recipe);
+        ownedRecipeKeys.add(recipeKey);
     }
 
     private void addTemplateRecipe() {
@@ -248,20 +338,138 @@ public final class SiftiteContent implements Listener {
                 Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE));
         recipe.addIngredient(exact(item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot")));
         plugin.getServer().addRecipe(recipe);
+        ownedRecipeKeys.add(recipeKey);
     }
 
-    /** Tagged Siftite materials must not be accepted by vanilla material-only recipes. */
+    /** Tagged Siftite materials must not be accepted by recipes that don't declare them. */
     @EventHandler
     public void onPrepareCraft(PrepareItemCraftEvent event) {
-        if (isPluginRecipe(event.getRecipe())) {
-            return;
+        blockTaggedItemsOutsideExactChoices(event.getRecipe(), event.getInventory().getMatrix(),
+                () -> event.getInventory().setResult(null));
+    }
+
+    /**
+     * Core per-slot guard, extracted as a pure function so tests can assert the exact
+     * decision without depending on MockBukkit's crafting pipeline.
+     *
+     * Semantics (review P0/P2): a tagged siftite item may only pass through a FOREIGN
+     * recipe when some ExactChoice declared BY THAT RECIPE matches it — same material
+     * AND carrying the plugin's content tag. MaterialChoice/TagChoice compare bare
+     * material/type only, so a siftite_ingot dropped into a vanilla NETHERITE_INGOT
+     * craft satisfies NO declared exact choice and the result gets blanked: no leak
+     * vector. (The old `choice.test(ingredient)` form was unsound: MaterialChoice.test()
+     * returns true for any stack of the listed material, tagged or not.)
+     *
+     * Recipes owned by this plugin are whitelisted wholesale — they were authored with
+     * exact choices around their own tagged items. The guard NEVER writes nulls back
+     * into the matrix: PrepareItemCraftEvent fires for every candidate recipe matching
+     * the grid, and clearing slots would physically delete the player's ingredients
+     * whenever an unrelated foreign recipe is evaluated (review P1). Only the RESULT
+     * is blanked, which prevents the undesired craft from producing anything while
+     * keeping items intact.
+     */
+    static boolean blockTaggedItemsOutsideExactChoices(org.bukkit.inventory.Recipe recipe,
+                                                       ItemStack[] matrix, Runnable blockAction) {
+        if (matrix == null) return false;
+        // Only keyed crafting recipes can be ownership-checked. An unkeyed recipe has no
+        // namespace to compare against, so it is conservatively treated as foreign and the
+        // guard still applies — never silently skip because isOwnRecipe() returned false.
+        if (recipe instanceof Keyed && isOwnRecipe(recipe)) return false;
+        List<ItemStack> exactOptions = exactChoiceOptions(recipe);
+        boolean blocked = false;
+        for (ItemStack ingredient : matrix) {
+            if (!isSiftiteItemStatic(ingredient)) continue;
+            if (exactOptions.stream().anyMatch(option -> option.isSimilar(ingredient))) continue;
+            blocked = true;
         }
-        for (ItemStack ingredient : event.getInventory().getMatrix()) {
-            if (isSiftiteItem(ingredient)) {
-                event.getInventory().setResult(null);
-                return;
+        if (blocked) blockAction.run();
+        return blocked;
+    }
+
+    /** Every concrete ItemStack an ExactChoice of this recipe would accept. */
+    static List<ItemStack> exactChoiceOptions(org.bukkit.inventory.Recipe recipe) {
+        List<ItemStack> options = new ArrayList<>();
+        for (RecipeChoice choice : recipeChoices(recipe)) {
+            if (choice instanceof RecipeChoice.ExactChoice exact) {
+                options.addAll(exact.getChoices());
+            } else if (choice instanceof RecipeChoice.PredicateChoice predicate) {
+                // A PredicateChoice with a base stack documents intent for a specific item;
+                // include it so predicate-based datapack-style recipes whitelist correctly.
+                ItemStack base = predicate.getItemStack();
+                if (base != null) options.add(base);
             }
         }
+        return options;
+    }
+
+    /** Every RecipeChoice a keyed recipe declares, using the Paper 26.3 recipe APIs. */
+    static List<RecipeChoice> recipeChoices(org.bukkit.inventory.Recipe recipe) {
+        List<RecipeChoice> choices = new ArrayList<>();
+        try {
+            if (recipe instanceof ShapedRecipe shaped) {
+                for (Map.Entry<Character, RecipeChoice> entry : shaped.getChoiceMap().entrySet()) {
+                    choices.add(entry.getValue());
+                }
+            } else if (recipe instanceof ShapelessRecipe shapeless) {
+                choices.addAll(shapeless.getChoiceList());
+            } else if (recipe instanceof CookingRecipe<?> cooking) {
+                // Covers FurnaceRecipe, CampfireRecipe, SmokingRecipe and BlastFurnaceRecipe:
+                // these expose their input through CookingRecipe#getInputChoice(), not a
+                // getIngredient() accessor (which does not exist on the Paper API).
+                RecipeChoice input = cooking.getInputChoice();
+                if (input != null) choices.add(input);
+            }
+        } catch (RuntimeException exception) {
+            return List.of();
+        }
+        return choices;
+    }
+
+    /**
+     * Leak heuristic (review P2): true when a recipe declares ONLY bare MaterialChoices
+     * while still accepting some siftite-tagged stand-in item — i.e. a vanilla/material-only
+     * recipe that siftite items could sneak into (plain NETHERITE_INGOT crafts, other
+     * plugins' recipes on shared materials). Recipes that declare any non-material choice
+     * (ExactChoice, PredicateChoice, TagChoice) were authored around specific items and rely
+     * on exact matching instead. This predicate documents/pins the leak surface; the actual
+     * enforcement is the per-slot ownership-aware guard in onPrepareCraft, which blanks any
+     * tagged slot that no declared ExactChoice of a foreign recipe matches exactly.
+     */
+    static boolean recipeIntendsTaggedItems(org.bukkit.inventory.Recipe recipe, NamespacedKey idKey) {
+        List<RecipeChoice> choices = recipeChoices(recipe);
+        if (choices.isEmpty()) return false;
+        for (RecipeChoice choice : choices) {
+            if (choice == null) continue;
+            // Any non-material choice means the recipe matches specific items exactly —
+            // it is not a material-only leak vector.
+            if (!(choice instanceof RecipeChoice.MaterialChoice)) return false;
+        }
+        // Material-only recipe: would ANY of its choices swallow a siftite-tagged item?
+        for (RecipeChoice choice : choices) {
+            if (choice != null && choice.test(taggedStandIn(choice, idKey))) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Builds a siftite-tagged stand-in for one declared choice: same material the choice
+     * accepts (first candidate of a MaterialChoice), carrying the {@code siftite_probe}
+     * content id, so we can ask the choice directly whether it would let a tagged item
+     * through. Falls back to AIR (test returns false) when the choice names no material.
+     */
+    private static ItemStack taggedStandIn(RecipeChoice choice, NamespacedKey idKey) {
+        Material base = Material.AIR;
+        if (choice instanceof RecipeChoice.MaterialChoice material) {
+            Collection<? extends Material> options = material.getChoices();
+            if (options != null && !options.isEmpty()) base = options.iterator().next();
+        }
+        ItemStack probe = new ItemStack(base);
+        ItemMeta meta = probe.getItemMeta();
+        if (base.isItem() && meta != null) {
+            meta.getPersistentDataContainer().set(idKey, PersistentDataType.STRING, "siftite_probe");
+            probe.setItemMeta(meta);
+        }
+        return probe;
     }
 
     @EventHandler
@@ -281,9 +489,56 @@ public final class SiftiteContent implements Listener {
         return id != null && id.startsWith("siftite_");
     }
 
+    /** Static twin of {@link #isSiftiteItem} for the pure guard function (same PDC contract). */
+    private static boolean isSiftiteItemStatic(ItemStack item) {
+        if (item == null || !item.hasItemMeta()) return false;
+        try {
+            String id = item.getItemMeta().getPersistentDataContainer()
+                    .get(SIFTITE_ID_KEY, PersistentDataType.STRING);
+            return id != null && id.startsWith("siftite_");
+        } catch (RuntimeException exception) {
+            return false;
+        }
+    }
+
     private boolean isPluginRecipe(org.bukkit.inventory.Recipe recipe) {
-        return recipe instanceof Keyed keyed
-                && keyed.getKey().getNamespace().equals(plugin.getName().toLowerCase(Locale.ROOT));
+        // Same ownership semantics as the craft guard: NamespacedKey namespaces are always
+        // lowercase, so compare against PLUGIN_NAMESPACE (plugin.getName() lower-cased).
+        return isOwnRecipe(recipe);
+    }
+
+    /**
+     * Namespace under which this plugin registers every recipe. NamespacedKey enforces
+     * lowercase namespaces, so ownership comparisons MUST lower-case the plugin display
+     * name ("TheSift" -> "thesift"). The previous un-lowercased comparison could never
+     * match, which made isOwnRecipe always false: the ghost-recipe sweep removed nothing
+     * and every plugin recipe was wrongly treated as foreign (review finding on 1172ce4).
+     */
+    static final String PLUGIN_NAMESPACE = "thesift";
+    /** Canonical content-tag key shared by instance and static guard paths. */
+    static final NamespacedKey SIFTITE_ID_KEY = safeKey(PLUGIN_NAMESPACE, "content");
+
+    private static NamespacedKey safeKey(String namespace, String key) {
+        try {
+            return new NamespacedKey(namespace, key);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
+    }
+
+    /**
+     * True only for recipes registered by THIS plugin instance. Ownership is proven via the
+     * recipe's own NamespacedKey: every addShaped/addShapeless/registerFurnish/registerCampfire
+     * call builds its key with {@code new NamespacedKey(plugin, ...)} — plugin.getName()
+     * lower-cased equals {@link #PLUGIN_NAMESPACE}.
+     */
+    static boolean isOwnRecipe(org.bukkit.inventory.Recipe recipe) {
+        if (!(recipe instanceof Keyed keyed)) return false;
+        try {
+            return keyed.getKey().getNamespace().equals(PLUGIN_NAMESPACE);
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
     }
 
     private void addShaped(String key, ItemStack result, String row1, String row2, String row3, Object... ingredients) {
@@ -298,6 +553,7 @@ public final class SiftiteContent implements Listener {
             else recipe.setIngredient(symbol, (Material) value);
         }
         plugin.getServer().addRecipe(recipe);
+        ownedRecipeKeys.add(recipeKey);
     }
 
     private void addShapeless(String key, ItemStack result, Material... ingredients) {
@@ -306,6 +562,33 @@ public final class SiftiteContent implements Listener {
         ShapelessRecipe recipe = new ShapelessRecipe(recipeKey, result);
         for (Material ingredient : ingredients) recipe.addIngredient(ingredient);
         plugin.getServer().addRecipe(recipe);
+        ownedRecipeKeys.add(recipeKey);
+    }
+
+    /** Register a furnace smelting recipe from a tagged item to its cooked counterpart. */
+    private void registerFurnish(String key, ItemStack input, ItemStack output) {
+        // Config kill-switch: with recipes.enabled=false the food chain still works through the
+        // FurnaceSmeltEvent fallback listener in SiftEcologyManager instead of a real recipe.
+        if (!plugin.getConfig().getBoolean("recipes.enabled", true)) return;
+        if (input == null || output == null) return;
+        NamespacedKey recipeKey = new NamespacedKey(plugin, key);
+        plugin.getServer().removeRecipe(recipeKey);
+        FurnaceRecipe recipe = new FurnaceRecipe(recipeKey, output,
+                RecipeChoice.exactChoice(input), 0.35f, 10);
+        plugin.getServer().addRecipe(recipe);
+        ownedRecipeKeys.add(recipeKey);
+    }
+
+    /** Campfire twin of {@link #registerFurnish}: ExactChoice input so vanilla mutton cannot cook here. */
+    private void registerCampfire(String key, ItemStack input, ItemStack output) {
+        if (!plugin.getConfig().getBoolean("recipes.enabled", true)) return;
+        if (input == null || output == null) return;
+        NamespacedKey recipeKey = new NamespacedKey(plugin, key);
+        plugin.getServer().removeRecipe(recipeKey);
+        org.bukkit.inventory.CampfireRecipe recipe = new org.bukkit.inventory.CampfireRecipe(
+                recipeKey, output, RecipeChoice.exactChoice(input), 0.35f, 600);
+        plugin.getServer().addRecipe(recipe);
+        ownedRecipeKeys.add(recipeKey);
     }
 
     private org.bukkit.inventory.RecipeChoice exact(ItemStack item) {

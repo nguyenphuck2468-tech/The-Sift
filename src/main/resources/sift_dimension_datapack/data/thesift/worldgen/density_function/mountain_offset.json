@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:mul",
+  "left": "thesift:mountain_raw_offset",
+  "right": {
+    "type": "minecraft:gradient",
+    "from_value": 1.0,
+    "to_value": 0.08,
+    "axis": "y",
+    "tiling": "clamp_to_edge",
+    "from_coordinate": 220,
+    "to_coordinate": 255
+  }
+}

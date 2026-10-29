@@ -30,6 +30,8 @@ class ResonanceManagerTest {
         plugin = MockBukkit.createMockPlugin("TheSift");
         plugin.getConfig().set("providers.strict", false);
         plugin.getConfig().set("resonance.singer.pulse-seconds", 1);
+        // The pulse mechanic is now opt-in (the reference mod's Singer is peaceful).
+        plugin.getConfig().set("resonance.singer.attack-enabled", true);
         manager = new ResonanceManager(plugin);
     }
 
@@ -143,6 +145,58 @@ class ResonanceManagerTest {
         manager.onEntityAddedToWorld(event);
 
         assertEquals(1, manager.trackedBossBarCount());
+    }
+
+    @Test
+    void singerDamageIsCancelledOutsideSoulEvent() {
+        var world = server.addSimpleWorld("singer-invul");
+        Allay singer = world.spawn(new Location(world, 0, 64, 0), Allay.class);
+        singer.getPersistentDataContainer().set(new NamespacedKey(plugin, "resonance_entity"),
+                PersistentDataType.STRING, "singer");
+        Player attacker = server.addPlayer();
+
+        org.bukkit.event.entity.EntityDamageByEntityEvent hit =
+                new org.bukkit.event.entity.EntityDamageByEntityEvent(
+                        attacker, singer, org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                        org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.PLAYER_ATTACK)
+                                .withCausingEntity(singer).withDirectEntity(singer).build(),
+                        5.0);
+        manager.onSingerDamaged(hit);
+
+        assertTrue(hit.isCancelled(), "Singer must be invulnerable outside its soul event");
+        assertFalse(manager.inSoulEvent(singer.getUniqueId()));
+    }
+
+    @Test
+    void singerCanBeDamagedDuringSoulEventWindow() {
+        var world = server.addSimpleWorld("singer-soulev");
+        Allay singer = world.spawn(new Location(world, 0, 64, 0), Allay.class);
+        singer.getPersistentDataContainer().set(new NamespacedKey(plugin, "resonance_entity"),
+                PersistentDataType.STRING, "singer");
+        Player attacker = server.addPlayer();
+        // Simulate what onBarter does after consuming a tagged Soul Block: store an expiry
+        // timestamp in the future in the soulEventUntil map.
+        java.util.UUID id = singer.getUniqueId();
+        try {
+            java.lang.reflect.Field f = ResonanceManager.class.getDeclaredField("soulEventUntil");
+            f.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            java.util.Map<java.util.UUID, Long> map =
+                    (java.util.Map<java.util.UUID, Long>) f.get(manager);
+            map.put(id, System.currentTimeMillis() + 60_000L);
+        } catch (ReflectiveOperationException e) {
+            fail(e);
+        }
+
+        assertTrue(manager.inSoulEvent(id));
+        org.bukkit.event.entity.EntityDamageByEntityEvent hit =
+                new org.bukkit.event.entity.EntityDamageByEntityEvent(
+                        attacker, singer, org.bukkit.event.entity.EntityDamageEvent.DamageCause.ENTITY_ATTACK,
+                        org.bukkit.damage.DamageSource.builder(org.bukkit.damage.DamageType.PLAYER_ATTACK)
+                                .withCausingEntity(singer).withDirectEntity(singer).build(),
+                        5.0);
+        manager.onSingerDamaged(hit);
+        assertFalse(hit.isCancelled(), "damage must pass through during the soul event");
     }
 
     private Player playerNearSinger() {

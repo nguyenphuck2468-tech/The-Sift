@@ -1,0 +1,42 @@
+{
+  "type": "minecraft:entity",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:beef",
+          "functions": [
+            {
+              "function": "minecraft:set_components",
+              "components": {
+                "minecraft:custom_data": {"PublicBukkitValues": {"thesift:content": "raw_sifter_meat"}},
+                "minecraft:custom_name": {"text": "Raw Sifter Meat", "color": "light_purple", "italic": false}
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "rolls": 1,
+      "bonus_rolls": 0.5,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "minecraft:amethyst_shard",
+          "functions": [
+            {
+              "function": "minecraft:set_components",
+              "components": {
+                "minecraft:custom_data": {"PublicBukkitValues": {"thesift:content": "sift_shard"}},
+                "minecraft:custom_name": {"text": "Sift Shard", "color": "light_purple", "italic": false}
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

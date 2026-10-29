@@ -17,18 +17,29 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     private IchorContent ichorContent;
     private IchorState ichorState;
     private SiftiteContent siftiteContent;
+    private SiftMobFactory sharedMobFactory;
     private ResonanceManager resonanceManager;
     private EchoGolemManager echoGolemManager;
     private RiftManager riftManager;
     private SiftDimensionManager siftDimensionManager;
     private AncientCityGateManager ancientCityGateManager;
     private SiftEcologyManager siftEcologyManager;
+    private SculkflowerManager sculkflowerManager;
     private SiftAdvancementManager advancementManager;
     private ProviderReadiness providerReadiness;
     private ProviderApiProbe providerApiProbe;
+    private DatapackManagerBridge datapackBridge;
+    private ResourcePackBridge resourcePackBridge;
+
+    /** Bridge used by other managers (e.g. ore generation) to query bundled pack state. */
+    public DatapackManagerBridge datapackBridge() {
+        return datapackBridge;
+    }
 
     @Override
     public void onEnable() {
+        datapackBridge = new DatapackManagerBridge(this);
+        resourcePackBridge = new ResourcePackBridge(this);
         registerCommand("sift", new BasicCommand() {
             @Override
             public void execute(CommandSourceStack source, String[] args) {
@@ -51,6 +62,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
+        enforceDependencyMode();
         loadContentFlags();
         providerReadiness = new ProviderReadiness(this);
         providerApiProbe = new ProviderApiProbe(this);
@@ -69,27 +81,31 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                 || contentRegistry.isEnabled(ContentId.SIFTITE_INGOT)
                 || contentRegistry.isEnabled(ContentId.SIFTITE_ORE)
                 || contentRegistry.isEnabled(ContentId.SOUL_BLOCK)) {
-            siftiteContent = new SiftiteContent(this);
+            // Created through the shared accessor so later managers reuse the same instance.
+            siftiteContent = sharedContent();
             siftiteContent.registerRecipes();
             getServer().getPluginManager().registerEvents(siftiteContent, this);
             getServer().getPluginManager().registerEvents(new SiftiteListener(this, siftiteContent), this);
             getServer().getPluginManager().registerEvents(new SiftiteRecoveryManager(this), this);
             getServer().getPluginManager().registerEvents(new CharoiteEnchantingListener(this), this);
         }
+        // One shared content registry + mob factory for every manager, created lazily so a
+        // fully-disabled feature set does not pay the cost of an unused ExternalItemBridge.
         if (contentRegistry.isEnabled(ContentId.SINGER) && contentRegistry.isEnabled(ContentId.RESONANCE)) {
-            resonanceManager = new ResonanceManager(this);
+            resonanceManager = new ResonanceManager(this, sharedContent(), sharedMobFactory());
             getServer().getPluginManager().registerEvents(resonanceManager, this);
             resonanceManager.start();
         }
         if (contentRegistry.isEnabled(ContentId.ECHO_GOLEM)) {
-            if (siftiteContent == null) siftiteContent = new SiftiteContent(this);
-            echoGolemManager = new EchoGolemManager(this, siftiteContent);
+            echoGolemManager = new EchoGolemManager(this, sharedContent(), sharedMobFactory());
             getServer().getPluginManager().registerEvents(echoGolemManager, this);
             echoGolemManager.start();
         }
         if (contentRegistry.isEnabled(ContentId.RIFT)) {
-            riftManager = new RiftManager(this, providerReadiness);
+            riftManager = new RiftManager(this, providerReadiness, sharedContent(), sharedMobFactory());
             getServer().getPluginManager().registerEvents(riftManager, this);
+            getServer().getPluginManager().registerEvents(riftManager.ancientCityPortal(), this);
+            if (resonanceManager != null) riftManager.ancientCityPortal().setSingerSpawner(resonanceManager::summonSinger);
             riftManager.start();
         }
         if (contentRegistry.isEnabled(ContentId.SIFT_DIMENSION)) {
@@ -98,22 +114,97 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                     resonanceManager);
             getServer().getPluginManager().registerEvents(ancientCityGateManager, this);
             ancientCityGateManager.start();
-            siftEcologyManager = new SiftEcologyManager(this, resonanceManager, echoGolemManager, riftManager);
+            siftEcologyManager = new SiftEcologyManager(this, resonanceManager, echoGolemManager,
+                    riftManager, sharedContent(), sharedMobFactory());
             getServer().getPluginManager().registerEvents(siftEcologyManager, this);
             siftEcologyManager.populateLoadedSpawnChunks();
+            sculkflowerManager = new SculkflowerManager(this, sharedContent());
+            getServer().getPluginManager().registerEvents(sculkflowerManager, this);
             advancementManager = new SiftAdvancementManager(this);
             getServer().getPluginManager().registerEvents(advancementManager, this);
         }
         if (contentRegistry.isEnabled(ContentId.SOUL_BLOCK)) {
-            getServer().getPluginManager().registerEvents(new SoulBlockListener(this, siftiteContent), this);
+            getServer().getPluginManager().registerEvents(new SoulBlockListener(this, sharedContent()), this);
         }
+        getServer().getPluginManager().registerEvents(new DarkSnifferDiggingGiftListener(this), this);
         registerContentPluginReloadHooks();
+        getServer().getPluginManager().registerEvents(new SiftResourcePackListener(this, resourcePackBridge), this);
         // Keep a delayed initial refresh as a fallback for providers without a load event.
         getServer().getScheduler().runTaskLater(this, () -> {
+            datapackBridge.stageBundledPacks();
+            resourcePackBridge.prepare();
             refreshContentRecipes();
             reportProviderReadiness();
         }, 200L);
+        // Runs on the first tick, after every plugin (including ones that depend on The Sift) has enabled.
+        getServer().getScheduler().runTask(this, this::verifyRequiredPlugins);
         getLogger().info("The Sift fan-made Paper 26.3 plugin enabled; not affiliated with Mojang or Microsoft.");
+    }
+
+    /** The Sift depends fully on provider plugins: vanilla fallback mode is not available. */
+
+    /** Lazily creates and returns the single shared {@link SiftiteContent} used by all managers. */
+    private SiftiteContent sharedContent() {
+        if (siftiteContent == null) siftiteContent = new SiftiteContent(this);
+        return siftiteContent;
+    }
+
+    /** Lazily creates and returns the single shared {@link SiftMobFactory} used by all managers. */
+    private SiftMobFactory sharedMobFactory() {
+        if (sharedMobFactory == null) sharedMobFactory = new SiftMobFactory(this);
+        return sharedMobFactory;
+    }
+
+    /** Shared content registry for tests/advanced integrations; never null after first use. */
+    public SiftiteContent siftiteContent() {
+        return sharedContent();
+    }
+
+    /** Shared mob factory for tests/advanced integrations. */
+    public SiftMobFactory mobFactory() {
+        return sharedMobFactory();
+    }
+
+    private void enforceDependencyMode() {
+        // providers.strict is honoured as configured: false enables the documented vanilla
+        // fallback for development/CI (see README and docs/TESTING.md). The mode only affects
+        // content resolution, never plugin lifecycle.
+        if (!getConfig().getBoolean("providers.strict", true)) {
+            getLogger().warning("providers.strict: false - vanilla fallback placement is active"
+                    + " (development mode; not recommended for production).");
+        }
+    }
+
+    private void verifyRequiredPlugins() {
+        if (!isEnabled() || !getConfig().getBoolean("requirements.enabled", true)) return;
+        java.util.List<String> missing = RequiredPlugins.missing(getConfig(), this::requirementPresent);
+        if (missing.isEmpty()) return;
+        // Soft-dependency policy: paper-plugin.yml declares every provider dependency as
+        // required:false and the README describes them as optional. We therefore warn loudly
+        // instead of disabling the plugin mid-session (a /sift reload must never take the
+        // plugin down). Set requirements.hard-stop: true to restore the old self-disable rule.
+        if (getConfig().getBoolean("requirements.hard-stop", false)) {
+            getLogger().severe("The Sift is disabled because required plugins are missing:");
+            for (String line : missing) getLogger().severe(" - " + line);
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+        getLogger().warning("Optional provider plugins are missing; some The Sift features stay"
+                + " degraded until they are installed:");
+        for (String line : missing) getLogger().warning(" - " + line);
+    }
+
+    private boolean requirementPresent(String token) {
+        if (token.regionMatches(true, 0, "service:", 0, 8)) {
+            var services = getServer().getServicesManager();
+            return switch (token.substring(8).toLowerCase(java.util.Locale.ROOT)) {
+                case "item" -> !services.getRegistrations(com.gamepathics.thesift.foundation.api.SiftItemProvider.class).isEmpty();
+                case "block" -> !services.getRegistrations(com.gamepathics.thesift.foundation.api.SiftBlockProvider.class).isEmpty();
+                case "mob" -> !services.getRegistrations(com.gamepathics.thesift.foundation.api.SiftMobProvider.class).isEmpty();
+                default -> false;
+            };
+        }
+        return getServer().getPluginManager().isPluginEnabled(token);
     }
 
     private void registerContentPluginReloadHooks() {
@@ -143,6 +234,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     private void refreshContentRecipes() {
         if (ichorContent != null) ichorContent.registerRecipes();
         if (siftiteContent != null) siftiteContent.registerRecipes();
+        if (sculkflowerManager != null) sculkflowerManager.registerRecipes();
     }
 
     private void reportProviderReadiness() {
@@ -168,6 +260,9 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                 for (Player player : dimension.getPlayers()) player.teleport(safeWorld.getSpawnLocation());
             }
         }
+        if (ichorContent != null) ichorContent.removeRecipes();
+        if (siftiteContent != null) siftiteContent.removeRecipes();
+        if (sculkflowerManager != null) sculkflowerManager.removeRecipes();
         if (ichorState != null) {
             ichorState.shutdown();
         }
@@ -197,11 +292,51 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                 sender.sendMessage("The Sift config is newer than this build; reload was rejected.");
                 return true;
             }
+            enforceDependencyMode();
             loadContentFlags();
             providerReadiness.invalidate();
             refreshContentRecipes();
+            verifyRequiredPlugins();
             reportProviderReadiness();
+            datapackBridge.stageBundledPacks();
+            resourcePackBridge.prepare();
             sender.sendMessage("The Sift config was reloaded. Restart the server to apply content flag changes.");
+            sender.sendMessage(datapackBridge.status());
+            return true;
+        }
+        if (args.length >= 2 && args[0].equalsIgnoreCase("datapack")) {
+            if (args.length == 2 && args[1].equalsIgnoreCase("list")) {
+                datapackBridge.report(sender);
+                return true;
+            }
+            if (args.length == 3) {
+                boolean enable = args[1].equalsIgnoreCase("enable");
+                if (!enable && !args[1].equalsIgnoreCase("disable")) {
+                    sender.sendMessage("Usage: /sift datapack <list|enable|disable> [name]");
+                    return true;
+                }
+                sender.sendMessage(datapackBridge.setEnabled(args[2], enable)
+                        ? "Datapack '" + args[2] + "' " + (enable ? "enabled" : "disabled") + " and applied."
+                        : "Datapack '" + args[2] + "' not discovered yet; run /datapack list or restart.");
+                return true;
+            }
+            sender.sendMessage("Usage: /sift datapack <list|enable|disable> [name]");
+            return true;
+        }
+        if (args.length >= 2 && args[0].equalsIgnoreCase("resourcepack")) {
+            boolean force = args.length >= 3 && args[2].equalsIgnoreCase("force");
+            if (sender instanceof Player player) {
+                resourcePackBridge.sendTo(player, force);
+                sender.sendMessage("The Sift resource pack sent to you (" + (force ? "forced" : "additive") + ").");
+            } else {
+                // Broadcast only makes sense when delivery can actually happen.
+                if (!resourcePackBridge.canDeliver()) {
+                    sender.sendMessage("No resource-pack provider plugin detected and resource-pack.server-url"
+                            + " is empty; set an http(s) download URL or install a provider before broadcasting.");
+                    return true;
+                }
+                resourcePackBridge.broadcastToPlayers(sender, force);
+            }
             return true;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("doctor")) {
@@ -373,7 +508,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             }
             return true;
         }
-        sender.sendMessage("Usage: /sift <doctor|reload|dimension|locate|return|give <item> <player>|summon <species> [player]>");
+        sender.sendMessage("Usage: /sift <doctor|reload|datapack <list|enable|disable>|resourcepack [force]|dimension|locate|return|give <item> <player>|summon <species> [player]>");
         return true;
     }
 
@@ -395,14 +530,16 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
 
     static java.util.List<String> commandSuggestions(String[] args, java.util.Collection<String> players) {
         java.util.List<String> candidates;
-        if (args.length == 1) candidates = java.util.List.of("doctor", "reload", "dimension", "locate", "return", "give", "summon");
+        if (args.length == 1) candidates = java.util.List.of("doctor", "reload", "datapack", "resourcepack", "dimension", "locate", "return", "give", "summon");
+        else if (args.length == 2 && args[0].equalsIgnoreCase("datapack")) candidates = java.util.List.of("list", "enable", "disable");
+        else if (args.length == 3 && args[0].equalsIgnoreCase("datapack") && !args[1].equalsIgnoreCase("list")) candidates = java.util.List.of("dimension", "progression");
         else if (args.length == 2 && args[0].equalsIgnoreCase("give")) candidates = java.util.List.of(
                 "ichor_bottle", "rift_key", "soul_block", "sonorous_deepslate", "siftslate", "charoite",
                 "siftite_ingot", "siftite_nugget", "siftite_upgrade_smithing_template");
         else if (args.length == 2 && args[0].equalsIgnoreCase("summon")) candidates = java.util.List.of(
                 "singer", "echo_golem", "rift", "blub", "dark_sniffer", "bulb", "loomer", "wisp",
                 "violet_wisp", "koi", "hollow_bulb", "glowbell", "thornback", "glimmerwing",
-                "the_sifter", "sifter", "frost_stalker", "sunspore", "drifter", "shardling",
+                "the_sifter", "spire_tyrant", "sifter", "frost_stalker", "sunspore", "drifter", "shardling",
                 "prism_warden", "prismite", "lumen_tulip");
         else if (args.length == 3 && (args[0].equalsIgnoreCase("give")
                 || args[0].equalsIgnoreCase("summon"))) candidates = java.util.List.copyOf(players);

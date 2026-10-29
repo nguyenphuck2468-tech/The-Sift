@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:add",
+  "left": "thesift:mountain_foothill_mask",
+  "right": {
+    "type": "minecraft:add",
+    "left": "thesift:mountain_slope_mask",
+    "right": {
+      "type": "minecraft:mul",
+      "left": "thesift:mountain_mask",
+      "right": "thesift:mountain_peak_shape"
+    }
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "type": "minecraft:range_choice",
+  "input": {
+    "type": "minecraft:add",
+    "left": {
+      "type": "minecraft:noise",
+      "noise": "thesift:giant_cliff_selector",
+      "xz_scale": 0.72,
+      "y_scale": 0.0
+    },
+    "right": {
+      "type": "minecraft:mul",
+      "left": 0.1,
+      "right": {
+        "type": "minecraft:noise",
+        "noise": "thesift:terrace_warp",
+        "xz_scale": 0.9,
+        "y_scale": 0.0
+      }
+    }
+  },
+  "min_inclusive": 0.7,
+  "max_exclusive": 1000000.0,
+  "when_in_range": {
+    "type": "minecraft:range_choice",
+    "input": {
+      "type": "minecraft:add",
+      "left": {
+        "type": "minecraft:noise",
+        "noise": "thesift:giant_cliff_selector",
+        "xz_scale": 0.72,
+        "y_scale": 0.0
+      },
+      "right": {
+        "type": "minecraft:mul",
+        "left": 0.1,
+        "right": {
+          "type": "minecraft:noise",
+          "noise": "thesift:terrace_warp",
+          "xz_scale": 0.9,
+          "y_scale": 0.0
+        }
+      }
+    },
+    "min_inclusive": 0.7,
+    "max_exclusive": 0.82,
+    "when_in_range": 0.19,
+    "when_out_of_range": 0.46
+  },
+  "when_out_of_range": 0.0
+}

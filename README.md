@@ -46,15 +46,50 @@ These keys are retained for compatibility. The comments beside them in
 `src/main/resources/config.yml` mark the exact keys that are presently
 informational or have no gameplay effect; do not treat those values as working
 controls. This includes `content.siftslate`, `content.healthy_sculk`,
-`content.overgrown_willow`, `content.siftite_spear`, `content.blub`,
-`content.sifter`, `echo-golem.resonance-damage`,
+`content.overgrown_willow`,
+`echo-golem.resonance-damage`,
 `echo-golem.slowness-seconds`, `echo-golem.slowness-amplifier`,
 `echo-golem.mining-fatigue-seconds`,
-`echo-golem.mining-fatigue-amplifier`, `echo-golem.charoite-protection`,
+`echo-golem.mining-fatigue-amplifier`,
 `charoite.material`, `siftite.ingot-material`, `siftite.nugget-material`,
-`siftite.template-material`, `siftite.smithing-only`,
-`siftite.durability-multiplier`, and `siftite.spear-reach`. Existing config
+`siftite.template-material`, and `siftite.smithing-only`. Existing config
 files keep these keys; they have not been removed or migrated.
+
+Keys activated in the latest parity pass (previously informational):
+`content.blub` and `content.sifter` now gate Sift ecology spawning and the
+Blub Soul Block taming interaction; `content.siftite_spear` gates recipes for
+the spear; `siftite.durability-multiplier` adds bonus durability to freshly
+crafted Siftite tools/weapons; `siftite.spear-reach` sets the thrown-spear
+reach; and `echo-golem.charoite-protection` extends resonance healing to
+Charoite holders.
+
+### Advancement coverage
+
+The bundled progression datapack mirrors the reference mod's 22 advancements (`root`, 3 under `story/`, 18
+under the main tab), ported from its MIT-licensed source with the mod's own titles and descriptions. Biome and
+Ancient City visits use vanilla triggers; the rest are awarded by gameplay events.
+
+Wired: `root`, `story/brave_the_unknown`, `story/fallen_civilization`, `story/song_of_the_past`, `rifter`,
+`rift_resonance`, `blood_of_the_gods` (approximated by Ichor bottles), `certified_sifter`, `kinda_purpleish`,
+`sifted_nugget`, `cover_me_in_siftite`, `keep_inventory`, `better_enchanter`, `pitch_perfect`.
+
+Not wired yet because the mechanic does not exist in the plugin: `like_father_and_son`, `friend_of_the_sift`,
+`food_chain`, `false_alarm`, `smells_creepy`, `planting_the_dark`, `spicewood` (and `blub`, which depends on
+the Blub bond being awarded from the taming code). Earlier plugin-only advancements (Prismatic, Matriarch,
+Tyrant, ...) were removed because they have no counterpart in the mod. See `docs/mod-gap-analysis.md`.
+
+### Spawn eggs (mod parity)
+
+The reference mod ships a spawn egg for every Sift creature. The plugin maps
+each creature content id onto a vanilla stand-in egg material (e.g.
+`dark_sniffer` → Sniffer egg, `spire_tyrant` → Ravager egg) and a listener in
+the ecology manager intercepts right-clicks with tagged eggs: the vanilla
+spawn is cancelled and the creature is summoned through the normal provider-
+first `summonCreature` path (config stats, PDC tagging, Singer/Echo Golem
+special handling). Untagged vanilla eggs are untouched. Behaviour is gated by
+`spawn-eggs.enabled` and `spawn-eggs.permission-mode` (`op` or `all`) in
+`config.yml`. Custom-textured egg items still require the resource pack and
+are tracked as unverified in `docs/parity-matrix.md`.
 
 ## Current foundation scope
 
@@ -80,6 +115,13 @@ files keep these keys; they have not been removed or migrated.
   Glimmerwings, Sunspores, Hollow Bulbs, Prismites, Shardlings, Thornbacks,
   Blubs, Frost Stalkers, and Drifters. Singer, Echo Golem, Prism Warden, and
   The Sifter encounters can also appear naturally in selected biomes.
+- Food chain parity with the reference mod: Sifters drop Raw Sifter Meat
+  (smelts to Cooked Sifter Meat) and Blubs drop Blub Meat (smelts to Cooked
+  Blub Meat); both furnace recipes are registered by the plugin itself. The
+  bundled progression datapack now also ships matching loot tables
+  (`thesift:loot_table/entity/sifter|blub`), and all plugin-owned recipes respect `recipes.enabled` in
+  config.yml and are unregistered on disable/reload so no ghost recipes
+  survive a hot swap.
 - Rare natural Rift events in Shattered Peaks, using the existing opening,
   wave, resonance-pulse, closing, and reward flow.
 - `/sift summon <species> [player]` for direct prototype spawns, including

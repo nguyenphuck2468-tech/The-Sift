@@ -455,3 +455,12 @@ Historical live Paper launch attempt (2026-10-25; resolved by progression-pack c
 - Candidate approach was clear along either long side (391–394 passable blocks out of 396 in a 6-deep × 22-wide × 3-high volume); short ends were blocked (3/18 passable). This does not establish a unique front or the exact eight-Sonorous-block path.
 - Read-only observer and isolated server live under ignored `run/ancient-city-survey/`. Its broad scan caused repeated watchdog warnings; it was stopped before scanning all six. No TheSift, provider, or custom datapack was present.
 - Verification: **ĐÃ CHẠY THẬT** for server/version, six located structures, two surveyed frames and their candidate approaches; **CHƯA CHẠY** for full survey, provider behavior, or A2–A4. No code or worldgen product changes made.
+
+## Terrain port (mielon-parity, 2026-10-25)
+
+Terrain now comes from the mod's datapack: `scripts/port_mod_terrain.py <mod data root> .`
+regenerates noise/density/carver/noise_settings, the dimension biome source and the
+dimension type (0..256). `scripts/check_terrain_refs.py` verifies references and runs in CI.
+Siftslate/growth/sculk terrain blocks are vanilla stand-ins (see parity matrix). The
+change was written without a Java 25/Paper toolchain: run `./gradlew clean build` and the
+Paper boot gate before merging, then delete and regenerate any existing `the_sift` world.
