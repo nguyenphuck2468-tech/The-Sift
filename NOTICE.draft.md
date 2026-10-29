@@ -1,4 +1,4 @@
-# NOTICE draft (not a license grant)
+# NOTICE (provenance working draft — not a license grant)
 
 This is a provenance working note. It does not license this repository or
 state that a third-party license applies to files in it.
@@ -94,15 +94,20 @@ survival-mode acquisition path for the standalone plugin.
 
 ## Verified third-party material included
 
-None has been verified as included by this audit. Do not treat reference
-research as proof that code, assets, or other material was copied or licensed.
+The MIT-licensed data and behavioural ports from Mielon's The Sift listed in
+the sections above are verified inclusions, and the four Sculkflower textures
+are verified byte-for-byte copies. Everything else attributed to third-party
+contributors (ImpSteve, Fuzja Jądrowa, Echo_Dev, StrawberrySushi_) is NOT
+included; do not treat reference research as proof that anything beyond the
+listed files was copied or licensed.
 
 ## Research reference only
 
 - Mielon's The Sift: <https://github.com/Arta48/Mielons-The-Sift>. Its MIT
-  license was observed in the reference repository, but this audit did not
-  establish that any repository file here is a copy or derivative of a
-  particular file from it. No attribution claim is made for this project.
+  license was observed in the reference repository and applies to the ported
+  terrain data, worldgen features, biome wiring, portal structures and
+  behavioural ports listed in the sections above; keep the MIT copyright and
+  permission notice with any final NOTICE/LICENSE.
 - NeoForge Port: <https://github.com/MikiKox1/mielons-the-sift-neoforge-port>.
   Used as a data reference for worldgen parity.
 

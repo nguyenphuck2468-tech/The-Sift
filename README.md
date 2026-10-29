@@ -26,11 +26,12 @@ gradle build -PpaperApiVersion=<paper-api-version>
 
 The plugin registers its dimension datapack through Paper's datapack-discovery
 lifecycle. This requires Paper's plugin loader and Paper 26.3 or newer. The
-dimension selects among five original biomes and ten more biome
-names from the community mod reference: Overgrown Forest/Clearing/Slopes,
-Siftslate biomes, Ichor Snowy Peaks, Sift Wastes, and Sift Deep Dark. It has
-custom sky, fog, and ambient settings. It currently uses Overworld noise and
-built-in stand-ins where the relevant provider or implementation is absent.
+dimension generates 15 biomes: the ten from the community mod reference
+(Overgrown Forest/Clearing/Slopes/Peaks, Siftslate biomes, Ichor Snowy Peaks,
+Sift Wastes, Sift Deep Dark) plus five fan-made ones, over the mod's ported
+noise router with the three ported carvers wired into every biome. It has
+custom sky, fog, and ambient settings; custom blocks use vanilla stand-ins
+where the relevant provider or implementation is absent.
 This is a Paper 26.3 implementation; provider parsing and live-server behavior
 remain unverified until recorded in the parity matrix.
 
@@ -94,7 +95,7 @@ are tracked as unverified in `docs/parity-matrix.md`.
 ## Current foundation scope
 
 - Gradle/Java 25 build.
-- Versioned plugin configuration (`config-version: 3`).
+- Versioned plugin configuration (`config-version: 4`).
 - Refusal to rewrite configs newer than this build.
 - Registry for Siftslate, Ichor, Charoite, Siftite, Resonance, Rift content,
   and the current mob stand-ins.
@@ -315,7 +316,7 @@ On Paper 26.3, use `/sift dimension` to create/load and enter the dimension.
 The console command creates/loads it without a player; players can enter with
 the same command. Use `/sift return` to return to the Overworld spawn.
 `/datapack list enabled` should show `TheSift/dimension`. Current worldgen
-uses the Meadow biome and Overworld terrain settings.
+uses the mod's multi-noise biome source over the ported noise settings (vanilla stand-in blocks; see docs/parity-matrix.md).
 
 The dimension is stored in the same world save as the Overworld, Nether, and
 End. Paper's dimension-aware world storage places it under
