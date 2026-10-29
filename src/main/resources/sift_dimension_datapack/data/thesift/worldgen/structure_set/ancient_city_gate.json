@@ -1,0 +1,18 @@
+{
+  "structures": [
+    {
+      "structure": "thesift:ancient_city_gate",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "salt": 123456789,
+    "exclusion_zone": {
+      "chunk_count": 16,
+      "other_set": "thesift:ancient_city_gate"
+    },
+    "spacing": 40,
+    "separation": 20
+  }
+}

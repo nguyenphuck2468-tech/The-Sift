@@ -1,0 +1,71 @@
+[
+  {
+    "type": "minecraft:sequence",
+    "rules": [
+      {
+        "type": "minecraft:band",
+        "direction": "vertical",
+        "priority": 100,
+        "min_y": -64,
+        "max_y": 320,
+        "content": {
+          "type": "minecraft:condition",
+          "conditions": [
+            {
+              "type": "minecraft:biome",
+              "values": [
+                "thesift:pink_meadows",
+                "thesift:bulb_forest",
+                "thesift:carapace",
+                "thesift:overgrown_clearing",
+                "thesift:overgrown_forest",
+                "thesift:overgrown_forest_slopes"
+              ]
+            }
+          ],
+          "true": {
+            "type": "minecraft:band",
+            "direction": "vertical",
+            "min_y": -64,
+            "max_y": 320,
+            "content": {
+              "type": "minecraft:weighted_random",
+              "entries": [
+                {
+                  "weight": 5,
+                  "data": {
+                    "type": "minecraft:state_provider",
+                    "state": {
+                      "Name": "thesift:sift_grass"
+                    }
+                  }
+                },
+                {
+                  "weight": 1,
+                  "data": {
+                    "type": "minecraft:state_provider",
+                    "state": {
+                      "Name": "minecraft:dirt"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "false": {
+            "type": "minecraft:band",
+            "direction": "vertical",
+            "min_y": -64,
+            "max_y": 320,
+            "content": {
+              "type": "minecraft:state_provider",
+              "state": {
+                "Name": "thesift:siftstone"
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+]

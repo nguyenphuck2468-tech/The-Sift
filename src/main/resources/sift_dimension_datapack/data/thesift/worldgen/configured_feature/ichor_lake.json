@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:lake",
+  "config": {
+    "state": {
+      "Name": "thesift:ichor_water"
+    },
+    "barrier": {
+      "Name": "thesift:siftslate"
+    }
+  }
+}

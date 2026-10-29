@@ -1,0 +1,78 @@
+[08:20:49] [main/INFO]: Starting provider: vanilla/Registries for world
+[08:20:57] [main/INFO]: vanilla/Registries for world finished after 8339 ms
+[08:20:57] [main/INFO]: Starting provider: vanilla/Registries for reloadable
+[08:21:11] [main/INFO]: vanilla/Registries for reloadable finished after 13642 ms
+[08:21:11] [main/INFO]: Starting provider: vanilla/Tags for minecraft:block
+[08:21:11] [main/INFO]: vanilla/Tags for minecraft:block finished after 605 ms
+[08:21:11] [main/INFO]: Starting provider: vanilla/Tags for minecraft:item
+[08:21:12] [main/INFO]: vanilla/Tags for minecraft:item finished after 408 ms
+[08:21:12] [main/INFO]: Starting provider: vanilla/Tags for minecraft:worldgen/biome
+[08:21:12] [main/INFO]: vanilla/Tags for minecraft:worldgen/biome finished after 314 ms
+[08:21:12] [main/INFO]: Starting provider: vanilla/Tags for minecraft:banner_pattern
+[08:21:12] [main/INFO]: vanilla/Tags for minecraft:banner_pattern finished after 23 ms
+[08:21:12] [main/INFO]: Starting provider: vanilla/Tags for minecraft:worldgen/structure
+[08:21:12] [main/INFO]: vanilla/Tags for minecraft:worldgen/structure finished after 65 ms
+[08:21:12] [main/INFO]: Starting provider: vanilla/Tags for minecraft:damage_type
+[08:21:12] [main/INFO]: vanilla/Tags for minecraft:damage_type finished after 71 ms
+[08:21:12] [main/INFO]: Starting provider: vanilla/Tags for minecraft:dialog
+[08:21:12] [main/INFO]: vanilla/Tags for minecraft:dialog finished after 4 ms
+[08:21:12] [main/INFO]: Starting provider: vanilla/Tags for minecraft:entity_type
+[08:21:12] [main/INFO]: vanilla/Tags for minecraft:entity_type finished after 97 ms
+[08:21:12] [main/INFO]: Starting provider: vanilla/Tags for minecraft:worldgen/flat_level_generator_preset
+[08:21:12] [main/INFO]: vanilla/Tags for minecraft:worldgen/flat_level_generator_preset finished after 3 ms
+[08:21:12] [main/INFO]: Starting provider: vanilla/Tags for minecraft:fluid
+[08:21:12] [main/INFO]: vanilla/Tags for minecraft:fluid finished after 17 ms
+[08:21:12] [main/INFO]: Starting provider: vanilla/Tags for minecraft:game_event
+[08:21:12] [main/INFO]: vanilla/Tags for minecraft:game_event finished after 10 ms
+[08:21:12] [main/INFO]: Starting provider: vanilla/Tags for minecraft:instrument
+[08:21:13] [main/INFO]: vanilla/Tags for minecraft:instrument finished after 6 ms
+[08:21:13] [main/INFO]: Starting provider: vanilla/Tags for minecraft:painting_variant
+[08:21:13] [main/INFO]: vanilla/Tags for minecraft:painting_variant finished after 3 ms
+[08:21:13] [main/INFO]: Starting provider: vanilla/Tags for minecraft:point_of_interest_type
+[08:21:13] [main/INFO]: vanilla/Tags for minecraft:point_of_interest_type finished after 7 ms
+[08:21:13] [main/INFO]: Starting provider: vanilla/Tags for minecraft:worldgen/world_preset
+[08:21:13] [main/INFO]: vanilla/Tags for minecraft:worldgen/world_preset finished after 6 ms
+[08:21:13] [main/INFO]: Starting provider: vanilla/Tags for minecraft:enchantment
+[08:21:13] [main/INFO]: vanilla/Tags for minecraft:enchantment finished after 47 ms
+[08:21:13] [main/INFO]: Starting provider: vanilla/Tags for minecraft:timeline
+[08:21:13] [main/INFO]: vanilla/Tags for minecraft:timeline finished after 7 ms
+[08:21:13] [main/INFO]: Starting provider: vanilla/Tags for minecraft:potion
+[08:21:13] [main/INFO]: vanilla/Tags for minecraft:potion finished after 9 ms
+[08:21:13] [main/INFO]: Starting provider: vanilla/Tags for minecraft:villager_trade
+[08:21:13] [main/INFO]: vanilla/Tags for minecraft:villager_trade finished after 127 ms
+[08:21:13] [main/INFO]: Starting provider: vanilla/Tags for minecraft:worldgen/feature
+[08:21:13] [main/INFO]: vanilla/Tags for minecraft:worldgen/feature finished after 4 ms
+[08:21:13] [main/INFO]: Starting provider: vanilla/Biome Parameters
+[08:21:13] [main/INFO]: vanilla/Biome Parameters finished after 510 ms
+[08:21:13] [main/INFO]: Starting provider: vanilla/Default Components
+[08:21:17] [main/INFO]: vanilla/Default Components finished after 4056 ms
+[08:21:17] [main/INFO]: Starting provider: vanilla/Block List
+[08:21:18] [main/INFO]: vanilla/Block List finished after 746 ms
+[08:21:18] [main/INFO]: Starting provider: vanilla/Command Syntax
+[08:21:19] [main/INFO]: vanilla/Command Syntax finished after 1064 ms
+[08:21:19] [main/INFO]: Starting provider: vanilla/Registry Dump
+[08:21:19] [main/INFO]: vanilla/Registry Dump finished after 72 ms
+[08:21:19] [main/INFO]: Starting provider: vanilla/Packet Report
+[08:21:20] [main/INFO]: vanilla/Packet Report finished after 428 ms
+[08:21:20] [main/INFO]: Starting provider: vanilla/Datapack Structure
+[08:21:20] [main/INFO]: vanilla/Datapack Structure finished after 8 ms
+[08:21:20] [main/INFO]: Starting provider: vanilla/Json RPC API schema
+[08:21:20] [main/INFO]: vanilla/Json RPC API schema finished after 9 ms
+[08:21:20] [main/INFO]: Starting provider: trade_rebalance/Registries for world
+[08:21:20] [main/INFO]: trade_rebalance/Registries for world finished after 198 ms
+[08:21:20] [main/INFO]: Starting provider: trade_rebalance/Registries for reloadable
+[08:21:20] [main/INFO]: trade_rebalance/Registries for reloadable finished after 13 ms
+[08:21:20] [main/INFO]: Starting provider: trade_rebalance/Pack Metadata
+[08:21:20] [main/INFO]: trade_rebalance/Pack Metadata finished after 4 ms
+[08:21:20] [main/INFO]: Starting provider: trade_rebalance/Tags for minecraft:enchantment
+[08:21:20] [main/INFO]: trade_rebalance/Tags for minecraft:enchantment finished after 16 ms
+[08:21:20] [main/INFO]: Starting provider: trade_rebalance/Tags for minecraft:villager_trade
+[08:21:20] [main/INFO]: trade_rebalance/Tags for minecraft:villager_trade finished after 23 ms
+[08:21:20] [main/INFO]: Starting provider: redstone_experiments/Pack Metadata
+[08:21:20] [main/INFO]: redstone_experiments/Pack Metadata finished after 3 ms
+[08:21:20] [main/INFO]: Starting provider: minecart_improvements/Pack Metadata
+[08:21:20] [main/INFO]: minecart_improvements/Pack Metadata finished after 2 ms
+[08:21:20] [main/INFO]: Starting provider: vanilla/SNBT -> NBT
+[08:21:20] [main/INFO]: vanilla/SNBT -> NBT finished after 1 ms
+[08:21:20] [main/INFO]: All providers took: 31017 ms
+[08:21:20] [main/INFO]: Caching: total files: 10038, old count: 0, new count: 10038, removed stale: 0, written: 10038

@@ -785,3 +785,25 @@ Strengthened the local unpushed follow-up to require all of the following in the
 Added `scripts/test-paper-boot-log-check.sh` to exercise a healthy fixture and intentionally bad fixtures for enable failure, plugin load failure, and missing strict-lock output. **ĐÃ TEST TỰ ĐỘNG:** Git Bash `-n` syntax checks and all four log fixtures passed. This does not start Paper and does not set/read the EULA Actions variable. No Paper boot or CI run was started during this follow-up.
 
 **Owner action required:** the repository Actions variable `MINECRAFT_EULA_ACCEPTED=true` is still set by the prior Codex turn without explicit owner authorization. Await a clear keep/remove decision; no EULA-dependent boot step or push that would trigger that workflow has been run in this follow-up.
+# A1 Ancient City survey (Paper 26.3 build 222; Java 25.0.4, 2026-10-25)
+
+The owner authorized an isolated local Paper survey before product changes. A temporary read-only survey plugin was kept only in ignored `run/ancient-city-survey/`; the server used seed `264026`, no TheSift plugin, no optional content providers, and no custom datapacks. It located six distinct Ancient Cities. Detailed Reinforced Deepslate scanning completed for two before a broad synchronous chunk scan triggered repeated Paper watchdog warnings. The survey harness was stopped; this is not evidence of a Paper terrain-generation defect. No product code or worldgen was changed.
+
+Both completed scans found one connected rectangular Reinforced Deepslate frame made of 56 blocks: 22 blocks wide × 8 high × 1 thick, at Y=-35..-28. Its orientation differs between the two cities, so A2 must derive orientation instead of hard-coding a world axis.
+
+| City sample | Ancient City bounds | Frame min..max (inclusive) | Orientation | Candidate approach volume, 6 blocks out × 22 wide × 3 high | Passable |
+|---|---|---|---|---|---|
+| 1 | `1544,-64,-1798..1767,-10,-1558` | `1648,-35,-1691..1648,-28,-1670` | Long axis Z | west `1642,-35,-1691..1647,-33,-1670` | 393/396 |
+| 1 | same | same | Long axis Z | east `1649,-35,-1691..1654,-33,-1670` | 394/396 |
+| 2 | `11818,-64,519..12064,-10,742` | `11926,-35,624..11947,-28,624` | Long axis X | north `11926,-35,618..11947,-33,623` | 391/396 |
+| 2 | same | same | Long axis X | south `11926,-35,625..11947,-33,630` | 394/396 |
+
+The short-end corridors were obstructed in these samples (3/18 passable), while both long-side approaches were nearly clear at the lowest three frame levels. These are candidate access faces, not a confirmed canonical “front”: both long sides are open, and frame orientation varies. The observations do not establish where the eight Sonorous Deepslate blocks sit or whether city blocks may be replaced. A2 still needs a collision/room policy before any placement.
+
+**Verification:** **ĐÃ CHẠY THẬT** for Paper version, six locate results, and the two frame/approach scans; **CHƯA CHẠY** for a complete multi-city frame scan (watchdog interrupted the broad scan), provider parity, gate placement, or A2–A4. Raw logs are in ignored `run/ancient-city-survey/logs/latest.log`; the relevant lines are transcribed above. No provider YAML parsing is claimed.
+
+## EULA workflow and next steps
+
+The local workflow now runs Paper boot only when `vars.MINECRAFT_EULA_ACCEPTED == 'true'`; otherwise it emits an Actions warning and skips the Paper boot. This makes an absent variable non-fatal. The variable currently exists and is true, however, and the owner's keep/delete decision remains unanswered. Commit `74bdaafdb3afc9270f43d7de87681d72eea84691` and the workflow gate edit remain unpushed: pushing now would cause Actions to execute the EULA-gated boot using that unconfirmed value. No GitHub variable was changed.
+
+The owner selected the next development path: use `strict: false` only in a separate local dev setup for A2–A4 logic, explicitly not as provider-parity evidence, then test E1 with Nexo + MythicMobs installed by the owner. Work stopped after A1 as requested; no A2 code has begun. Await answers to the main prompt's questions 1–6 before A2.

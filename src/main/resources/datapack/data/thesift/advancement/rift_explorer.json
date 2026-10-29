@@ -1,0 +1,22 @@
+{
+  "display": {
+    "icon": {
+      "item": "thesift:rift_key"
+    },
+    "title": "Rift Explorer",
+    "description": "Enter The Sift dimension through a Rift",
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "thesift:root",
+  "criteria": {
+    "entered_sift": {
+      "trigger": "minecraft:changed_dimension",
+      "conditions": {
+        "to": "thesift:the_sift"
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:cave",
+  "config": {
+    "probability": 0.015,
+    "y": {
+      "type": "minecraft:uniform",
+      "value": {
+        "min_inclusive": -64,
+        "max_inclusive": 320
+      }
+    },
+    "yScale": 1.0,
+    "lava_level": -55,
+    "aquifers_enabled": true,
+    "global_probability": 1.0,
+    "replaceable": "#minecraft:cave_replaceables"
+  }
+}

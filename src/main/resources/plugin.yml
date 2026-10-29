@@ -9,8 +9,7 @@ softdepend: [Nexo, ItemsAdder, Oraxen, MythicMobs, EliteMobs, ModelEngine, Geyse
 commands:
   sift:
     description: The Sift administration command
-    usage: "/sift <doctor|reload|dimension|return|give <item> <player>|summon <species> [player]>"
-    permission: thesift.foundation.admin
+    usage: "/sift <doctor|reload|dimension|locate|return|give <item> <player>|summon <species> [player]>"
 
 permissions:
   thesift.foundation.admin:

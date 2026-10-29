@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:random_patch",
+  "config": {
+    "tries": 32,
+    "xz_spread": 4,
+    "y_spread": 1,
+    "feature": {
+      "type": "minecraft:simple_block",
+      "config": {
+        "to_place": {
+          "predicate_type": "minecraft:always_true",
+          "state": {
+            "Name": "thesift:sift_leaves"
+          }
+        }
+      }
+    }
+  }
+}

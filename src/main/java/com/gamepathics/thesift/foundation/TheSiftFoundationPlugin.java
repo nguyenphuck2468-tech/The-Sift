@@ -21,6 +21,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     private EchoGolemManager echoGolemManager;
     private RiftManager riftManager;
     private SiftDimensionManager siftDimensionManager;
+    private AncientCityGateManager ancientCityGateManager;
     private SiftEcologyManager siftEcologyManager;
     private SiftAdvancementManager advancementManager;
     private ProviderReadiness providerReadiness;
@@ -36,7 +37,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
 
             @Override
             public String permission() {
-                return "thesift.foundation.admin";
+                return null;
             }
 
             @Override
@@ -93,6 +94,10 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         }
         if (contentRegistry.isEnabled(ContentId.SIFT_DIMENSION)) {
             siftDimensionManager = new SiftDimensionManager(this, providerReadiness);
+            ancientCityGateManager = new AncientCityGateManager(this, providerReadiness, siftDimensionManager,
+                    resonanceManager);
+            getServer().getPluginManager().registerEvents(ancientCityGateManager, this);
+            ancientCityGateManager.start();
             siftEcologyManager = new SiftEcologyManager(this, resonanceManager, echoGolemManager, riftManager);
             getServer().getPluginManager().registerEvents(siftEcologyManager, this);
             siftEcologyManager.populateLoadedSpawnChunks();
@@ -178,9 +183,14 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         if (siftEcologyManager != null) {
             siftEcologyManager.shutdown();
         }
+        if (ancientCityGateManager != null) ancientCityGateManager.shutdown();
     }
 
     private boolean handleSiftCommand(CommandSender sender, String[] args) {
+        if (requiresAdminPermission(args) && !sender.hasPermission("thesift.foundation.admin")) {
+            sender.sendMessage("You do not have permission to use this The Sift command.");
+            return true;
+        }
         if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
             reloadConfig();
             if (!ConfigMigration.migrate(this)) {
@@ -225,6 +235,12 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                     sender.sendMessage("The Sift dimension could not be loaded; check the datapack and server log.");
                 }
             }
+            return true;
+        }
+        if (args.length == 1 && args[0].equalsIgnoreCase("locate")) {
+            if (!(sender instanceof Player player)) sender.sendMessage("Only players can locate an Ancient City gate.");
+            else if (ancientCityGateManager == null) sender.sendMessage("Ancient City gates are disabled.");
+            else ancientCityGateManager.locate(player);
             return true;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("return")) {
@@ -357,7 +373,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             }
             return true;
         }
-        sender.sendMessage("Usage: /sift <doctor|reload|dimension|return|give <item> <player>|summon <species> [player]>");
+        sender.sendMessage("Usage: /sift <doctor|reload|dimension|locate|return|give <item> <player>|summon <species> [player]>");
         return true;
     }
 
@@ -379,7 +395,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
 
     static java.util.List<String> commandSuggestions(String[] args, java.util.Collection<String> players) {
         java.util.List<String> candidates;
-        if (args.length == 1) candidates = java.util.List.of("doctor", "reload", "dimension", "return", "give", "summon");
+        if (args.length == 1) candidates = java.util.List.of("doctor", "reload", "dimension", "locate", "return", "give", "summon");
         else if (args.length == 2 && args[0].equalsIgnoreCase("give")) candidates = java.util.List.of(
                 "ichor_bottle", "rift_key", "soul_block", "sonorous_deepslate", "siftslate", "charoite",
                 "siftite_ingot", "siftite_nugget", "siftite_upgrade_smithing_template");
@@ -393,6 +409,10 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         else return java.util.List.of();
         String prefix = args[args.length - 1].toLowerCase(java.util.Locale.ROOT);
         return candidates.stream().filter(value -> value.toLowerCase(java.util.Locale.ROOT).startsWith(prefix)).toList();
+    }
+
+    static boolean requiresAdminPermission(String[] args) {
+        return args.length == 0 || !args[0].equalsIgnoreCase("locate");
     }
 
     private java.util.List<String> providerWarnings() {

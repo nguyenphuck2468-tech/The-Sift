@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:range_choice",
+  "input": "minecraft:erosion",
+  "min_inclusive": -1000000,
+  "max_inclusive": 1000000,
+  "when_in_range": "minecraft:erosion",
+  "when_out_of_range": "minecraft:zero"
+}

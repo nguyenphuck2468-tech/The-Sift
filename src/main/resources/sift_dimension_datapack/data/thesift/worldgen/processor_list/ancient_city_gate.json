@@ -1,0 +1,40 @@
+{
+  "type": "minecraft:list",
+  "processors": [
+    {
+      "type": "minecraft:block_ignore",
+      "blocks": [
+        "minecraft:air",
+        "minecraft:cave_air",
+        "minecraft:void_air"
+      ]
+    },
+    {
+      "type": "minecraft:rule",
+      "conditions": {
+        "block": "minecraft:obsidian"
+      },
+      "output": {
+        "Name": "thesift:siftslate"
+      }
+    },
+    {
+      "type": "minecraft:rule",
+      "conditions": {
+        "block": "minecraft:crying_obsidian"
+      },
+      "output": {
+        "Name": "thesift:charoite_ore"
+      }
+    },
+    {
+      "type": "minecraft:rule",
+      "conditions": {
+        "block": "minecraft:soul_sand"
+      },
+      "output": {
+        "Name": "thesift:soul_block"
+      }
+    }
+  ]
+}

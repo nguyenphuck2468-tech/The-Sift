@@ -1,0 +1,20 @@
+{
+  "replace": false,
+  "values": [
+    "thesift:pink_meadows",
+    "thesift:bulb_forest",
+    "thesift:carapace",
+    "thesift:crystal_spires",
+    "thesift:overgrown_clearing",
+    "thesift:overgrown_forest",
+    "thesift:overgrown_forest_slopes",
+    "thesift:overgrown_peaks",
+    "thesift:overgrown_slopes",
+    "thesift:ichor_snowy_peaks",
+    "thesift:shattered_peaks",
+    "thesift:siftslate_peaks",
+    "thesift:siftslate_slopes",
+    "thesift:sift_deep_dark",
+    "thesift:sift_wastes"
+  ]
+}

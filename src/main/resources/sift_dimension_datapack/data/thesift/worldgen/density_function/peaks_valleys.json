@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:range_choice",
+  "input": "minecraft:peaks_valleys",
+  "min_inclusive": -1000000,
+  "max_inclusive": 1000000,
+  "when_in_range": "minecraft:peaks_valleys",
+  "when_out_of_range": "minecraft:zero"
+}

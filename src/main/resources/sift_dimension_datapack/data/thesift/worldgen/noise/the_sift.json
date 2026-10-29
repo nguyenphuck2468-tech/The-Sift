@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:noise_router",
+  "continents": "thesift:the_sift/continents",
+  "erosion": "thesift:the_sift/erosion",
+  "ridges": "thesift:the_sift/ridges",
+  "ridges_folded": "thesift:the_sift/ridges_folded",
+  "temperature": "thesift:the_sift/temperature",
+  "humidity": "thesift:the_sift/humidity",
+  "vegetation": "thesift:the_sift/vegetation",
+  "continentalness": "thesift:the_sift/continentalness",
+  "peaks_valleys": "thesift:the_sift/peaks_valleys",
+  "depth": "thesift:the_sift/depth",
+  "spires": "thesift:the_sift/spires",
+  "river": "thesift:the_sift/river",
+  "river_depth": "minecraft:river_depth"
+}

@@ -1,0 +1,59 @@
+{
+  "display": {
+    "icon": {
+      "item": "thesift:ichor_bottle"
+    },
+    "title": "Ichor Master",
+    "description": "Collect and use Ichor in all its forms",
+    "frame": "goal",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "parent": "thesift:root",
+  "criteria": {
+    "ichor_bottle": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "thesift:ichor_bottle"
+            ]
+          }
+        ]
+      }
+    },
+    "ichor_glass": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "thesift:ichor_glass"
+            ]
+          }
+        ]
+      }
+    },
+    "ichor_glass_pane": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "thesift:ichor_glass_pane"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "ichor_bottle",
+      "ichor_glass",
+      "ichor_glass_pane"
+    ]
+  ]
+}

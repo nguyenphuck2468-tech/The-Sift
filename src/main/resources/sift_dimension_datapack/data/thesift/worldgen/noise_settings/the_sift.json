@@ -1,0 +1,16 @@
+{
+  "bedrock_roof_position": -10,
+  "bedrock_floor_position": -10,
+  "sea_level": 63,
+  "disable_mob_generation": false,
+  "aquifers_enabled": true,
+  "ore_veins_enabled": true,
+  "legacy_random_source": false,
+  "noise_router": "thesift:the_sift",
+  "default_block": {
+    "Name": "thesift:siftstone"
+  },
+  "default_fluid": {
+    "Name": "thesift:ichor_water"
+  }
+}

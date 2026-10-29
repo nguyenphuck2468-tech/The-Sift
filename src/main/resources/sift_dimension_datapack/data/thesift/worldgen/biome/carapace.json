@@ -29,14 +29,38 @@
       "modifier": "append"
     }
   },
-  "carvers": [],
+  "carvers": [
+    "minecraft:cave",
+    "minecraft:cave_extra_underground",
+    "minecraft:canyon"
+  ],
   "downfall": 0.4,
   "effects": {
     "water_color": "#2b8a83",
     "grass_color": "#91c9a9",
     "foliage_color": "#72b5a0"
   },
-  "features": [],
+  "features": [
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [
+      "thesift:sift_grass_patch",
+      "thesift:charoite_ore",
+      "thesift:siftite_ore"
+    ],
+    [],
+    [],
+    [],
+    [],
+    [
+      "thesift:ichor_lake"
+    ],
+    []
+  ],
   "has_precipitation": false,
   "temperature": 0.7
 }
