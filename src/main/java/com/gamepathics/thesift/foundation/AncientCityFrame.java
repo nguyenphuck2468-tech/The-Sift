@@ -27,9 +27,9 @@ record AncientCityFrame(int minX, int minY, int minZ, int maxX, int maxY, int ma
         boolean alongX = maxX - minX + 1 == 22 && maxZ == minZ;
         boolean alongZ = maxZ - minZ + 1 == 22 && maxX == minX;
         if ((!alongX && !alongZ) || maxY - minY + 1 != 8) return Optional.empty();
-        int length = alongX ? 22 : 1;
-        int depth = alongX ? 1 : 22;
-        int expected = 2 * length + 2 * 8 - 4;
+        int longDim = (alongX || alongZ) ? 22 : 1;
+        int shortDim = (alongX || alongZ) ? 1 : 22;
+        int expected = 2 * longDim + 2 * 8 - 4;
         if (reinforced.size() != expected) return Optional.empty();
         Set<BlockPos> blocks = new HashSet<>(reinforced);
         if (blocks.size() != expected) return Optional.empty();
