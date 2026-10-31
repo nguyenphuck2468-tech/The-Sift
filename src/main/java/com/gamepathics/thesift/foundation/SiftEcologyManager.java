@@ -65,7 +65,7 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey creatureKey;
     private final NamespacedKey blubOwnerKey;
     private final NamespacedKey blubStayKey;
-    private final NamespacedKey spearThrowAtKey;
+    private final SpearThrowHandler spearThrowHandler;
     private final NamespacedKey ichorSnowballAtKey;
     private final NamespacedKey ichorContentKey;
     private final NamespacedKey snifferCorruptionStartKey;
@@ -131,7 +131,7 @@ public final class SiftEcologyManager implements Listener {
         this.creatureKey = new NamespacedKey(plugin, "sift_creature");
         this.blubOwnerKey = new NamespacedKey(plugin, "blub_owner");
         this.blubStayKey = new NamespacedKey(plugin, "blub_stay");
-        this.spearThrowAtKey = new NamespacedKey(plugin, "spear_last_throw");
+        this.spearThrowHandler = new SpearThrowHandler(plugin);
         this.ichorSnowballAtKey = new NamespacedKey(plugin, "ichor_snowball_last_throw");
         // Same namespace:name pair IchorContent uses for its content tag, so the snowball
         // handlers can read IchorContent-tagged items without an IchorContent reference.
@@ -1085,51 +1085,27 @@ public final class SiftEcologyManager implements Listener {
     public void onSpearThrow(PlayerInteractEvent event) {
         if (event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_AIR) return;
         var hand = event.getHand();
-        if (hand != org.bukkit.inventory.EquipmentSlot.HAND) return; // avoid double-fire per off-hand swing
+        if (hand != org.bukkit.inventory.EquipmentSlot.HAND) return;
         var item = event.getItem();
-        if (item == null || !content.is(item, "siftite_spear")) return;
-        Player player = event.getPlayer();
-        long now = System.currentTimeMillis();
-        var pdc = player.getPersistentDataContainer();
-        Long last = pdc.get(spearThrowAtKey, PersistentDataType.LONG);
-        if (last != null && now - last < 500L) return; // simple cooldown against double-fire
-        pdc.set(spearThrowAtKey, PersistentDataType.LONG, now);
-
-        Location eye = player.getEyeLocation();
-        // A real projectile (a Snowball rendered as the spear item via setItem) so hit
-        // detection works: ProjectileHitEvent never fires for a dropped Item entity, which
-        // is why the thrown spear used to deal no damage. A thrown spear flies at a sane
-        // projectile speed; the old code multiplied the raw spear-reach config (4.5)
-        // straight into velocity, launching it faster than arrows.
-        org.bukkit.entity.Snowball projectile = eye.getWorld().spawn(eye, org.bukkit.entity.Snowball.class,
-                spawned -> {
-                    spawned.setItem(item.clone());
-                    spawned.setShooter(player);
-                    spawned.setVelocity(eye.getDirection().normalize().multiply(1.8));
-                    spawned.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING,
-                            "thrown_siftite_spear");
-                });
-
-        // Consume one durability point from the held spear via ItemStack#damage so the client's
-        // held-item state stays in sync; when the spear breaks, clear the hand slot.
-        org.bukkit.inventory.ItemStack damaged = item.damage(1, player);
-        player.getInventory().setItem(hand, damaged == null || damaged.getType().isAir() ? null : damaged);
+        if (!spearThrowHandler.isSpear(item)) return;
+        event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
+        spearThrowHandler.throwSpear(plugin, event.getPlayer(), item, hand);
     }
 
-    /** A thrown Siftite Spear damages the entity it strikes, then drops there for retrieval. */
+    /** A thrown spear lands exactly once: damage on entity hits, the copy drops where it lands. */
     @EventHandler
     public void onSpearHit(org.bukkit.event.entity.ProjectileHitEvent event) {
         if (!(event.getEntity() instanceof org.bukkit.entity.Snowball projectile)) return;
         if (!"thrown_siftite_spear".equals(projectile.getPersistentDataContainer()
                 .get(creatureKey, PersistentDataType.STRING))) return;
-        if (!(event.getHitEntity() instanceof LivingEntity target)) return;
-        if (!(projectile.getShooter() instanceof Player shooter)) return;
-        target.damage(plugin.getConfig().getDouble("siftite.spear-damage", 6.0), shooter);
-        // The thrown copy lands where it hit so the thrower (or anyone) can retrieve it;
-        // remove the projectile so the Snowball does not also drop a snowball item.
+        // The copy drops on entity hits AND block hits (previously a block hit silently
+        // deleted the spear), exactly once thanks to the handler's PDC guard.
+        spearThrowHandler.dropThrownCopy(plugin, projectile);
+        if (event.getHitEntity() instanceof LivingEntity target
+                && projectile.getShooter() instanceof Player shooter) {
+            spearThrowHandler.damageTarget(plugin, target, shooter);
+        }
         projectile.remove();
-        projectile.getWorld().dropItem(projectile.getLocation(), projectile.getItem())
-                .setPickupDelay(20);
     }
 
     /** Reference-mod item (ichor_snowball): a throwable that chills whatever it strikes. */
