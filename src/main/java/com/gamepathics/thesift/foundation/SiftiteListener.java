@@ -108,8 +108,11 @@ public final class SiftiteListener implements Listener {
         if (plugin.getConfig().getBoolean("content.siftite", true)
                 && plugin.getConfig().getBoolean("content.siftite_ore", true)
                 && plugin.getConfig().getBoolean("content.siftite_nugget", true)
-                && isMarked(block, siftiteOreMarker) && (block.getType() == siftiteOreMaterial
-                || blockBridge.isBlock("siftite_ore", block))) {
+                && ((isMarked(block, siftiteOreMarker) && block.getType() == siftiteOreMaterial)
+                || blockBridge.isBlock("siftite_ore", block)
+                // Data-driven ores from the dimension datapack carry no chunk marker;
+                // an ore stand-in embedded in the ported deepslate/tuff host rock is an ore.
+                || (block.getType() == siftiteOreMaterial && isEmbeddedInHostRock(block)))) {
             Player player = event.getPlayer();
             String tool = player.getInventory().getItemInMainHand().getType().name();
             if (!(tool.startsWith("DIAMOND_") || tool.startsWith("NETHERITE_")) || !tool.endsWith("_PICKAXE")) return;
@@ -120,6 +123,8 @@ public final class SiftiteListener implements Listener {
             if (drop == null) return;
             drop.setAmount(amount);
             block.getWorld().dropItemNaturally(block.getLocation(), drop);
+            // Reference-mod parity (sifted_nugget): the advancement fires on mining the ore.
+            SiftAdvancementGrant.grant(plugin, player, "sifted_nugget");
             return;
         }
         if (!plugin.getConfig().getBoolean("content.charoite", true)
@@ -128,9 +133,9 @@ public final class SiftiteListener implements Listener {
         String configuredWorld = plugin.getConfig().getString("charoite.world", "thesift:the_sift");
         if (!block.getWorld().getKey().toString().equalsIgnoreCase(configuredWorld)) return;
         Material oreMaterial = Material.matchMaterial(plugin.getConfig().getString("charoite.ore-material", "AMETHYST_BLOCK"));
-        if (!isMarked(block, oreMarker)
-                || (oreMaterial == null || block.getType() != oreMaterial)
-                && !blockBridge.isBlock("charoite_ore", block)) return;
+        boolean markedCharoite = isMarked(block, oreMarker)
+                || (oreMaterial != null && block.getType() == oreMaterial && isEmbeddedInHostRock(block));
+        if (!markedCharoite && !blockBridge.isBlock("charoite_ore", block)) return;
         Player player = event.getPlayer();
         ItemStack tool = player.getInventory().getItemInMainHand();
         if (!tool.getType().name().endsWith("_PICKAXE") || tool.getType().name().startsWith("WOODEN_")
@@ -145,6 +150,18 @@ public final class SiftiteListener implements Listener {
         if (drop == null) return;
         drop.setAmount(amount);
         block.getWorld().dropItemNaturally(block.getLocation(), drop);
+        // Reference-mod parity (kinda_purpleish): the advancement fires on mining the ore.
+        SiftAdvancementGrant.grant(plugin, player, "kinda_purpleish");
+    }
+
+    /** True when the block sits in the ported deepslate/tuff host rock, i.e. datapack-placed ore. */
+    private boolean isEmbeddedInHostRock(Block block) {
+        if (!block.getWorld().getKey().toString().equalsIgnoreCase(
+                plugin.getConfig().getString("charoite.world", "thesift:the_sift"))) return false;
+        Material above = block.getRelative(BlockFace.UP).getType();
+        Material below = block.getRelative(BlockFace.DOWN).getType();
+        return (above == Material.DEEPSLATE || above == Material.TUFF)
+                && (below == Material.DEEPSLATE || below == Material.TUFF);
     }
 
     static void markGeneratedOre(JavaPlugin plugin, Block block) {

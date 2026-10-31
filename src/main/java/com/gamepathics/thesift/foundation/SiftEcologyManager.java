@@ -243,18 +243,29 @@ public final class SiftEcologyManager implements Listener {
     private java.util.List<Entity> indexedMobs(World sift, String... keys) {
         ensureIndexed(sift);
         java.util.List<Entity> result = new java.util.ArrayList<>();
+        java.util.Set<UUID> seen = new java.util.HashSet<>();
         for (String key : keys) {
-            for (UUID uuid : wildlifeIndex.getOrDefault(key, java.util.Set.of())) {
+            for (UUID uuid : java.util.List.copyOf(wildlifeIndex.getOrDefault(key, java.util.Set.of()))) {
                 Entity entity = Bukkit.getEntity(uuid);
                 if (entity == null || entity.isDead() || !entity.isValid()
-                        || entity.getWorld() != sift
-                        || !key.equals(wildlifeKey(entity))) {
-                    if (entity != null && entity.getWorld() == sift) {
-                        wildlifeIndex.getOrDefault(key, java.util.Set.of()).remove(uuid);
+                        || entity.getWorld() != sift) {
+                    wildlifeIndex.getOrDefault(key, java.util.Set.of()).remove(uuid);
+                    continue;
+                }
+                String current = wildlifeKey(entity);
+                if (!key.equals(current)) {
+                    // The creature tag is written right after factory spawn, so the
+                    // add-to-world event indexed the fresh mob under its vanilla type.
+                    // Re-file the UUID under the tag it carries now - the add event does
+                    // not fire twice, so without this the species ticks never see it.
+                    wildlifeIndex.getOrDefault(key, java.util.Set.of()).remove(uuid);
+                    if (current != null && !current.startsWith("type:")) {
+                        wildlifeIndex.computeIfAbsent(current,
+                                k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(uuid);
                     }
                     continue;
                 }
-                result.add(entity);
+                if (seen.add(uuid)) result.add(entity);
             }
         }
         return result;

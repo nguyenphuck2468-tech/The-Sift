@@ -445,11 +445,15 @@ public final class RiftManager implements Listener {
         if (held == null || !held.hasItemMeta()
                 || !"rift_disc".equals(held.getItemMeta().getPersistentDataContainer()
                 .get(new NamespacedKey(plugin, "content"), PersistentDataType.STRING))) return;
+        // Reference-mod parity: the disc goes into an EMPTY jukebox within 16 blocks of an
+        // open rift (the plugin previously accepted 48 and never checked the jukebox).
+        org.bukkit.block.Jukebox jukebox = (org.bukkit.block.Jukebox) event.getClickedBlock().getState();
+        if (jukebox.getRecord() != null && !jukebox.getRecord().getType().isAir()) return;
         Location at = event.getClickedBlock().getLocation();
         for (RiftInstance rift : rifts.values()) {
             if (rift.state == RiftState.ACTIVE && rift.center.getWorld() != null
                     && rift.center.getWorld().equals(at.getWorld())
-                    && rift.center.distanceSquared(at) <= 48.0 * 48.0) {
+                    && rift.center.distanceSquared(at) <= 16.0 * 16.0) {
                 SiftAdvancementGrant.grant(plugin, event.getPlayer(), "rift_resonance");
                 return;
             }

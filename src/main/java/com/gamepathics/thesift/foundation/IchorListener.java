@@ -86,6 +86,8 @@ public final class IchorListener implements Listener {
         state.setLevel(block.getLocation(), state.level(block.getLocation()) - cost);
         consumeOne(player.getInventory());
         giveOrDrop(player, content.ichorBucket());
+        // Reference-mod parity (blood_of_the_gods): filling the Ichor bucket is the trigger.
+        SiftAdvancementGrant.grant(plugin, player, "blood_of_the_gods");
         player.playSound(player.getLocation(), "item.bucket.fill", 0.9f, 1.1f);
         block.getWorld().spawnParticle(org.bukkit.Particle.DRIPPING_OBSIDIAN_TEAR,
                 block.getLocation().add(0.5, 1.0, 0.5), 12, 0.25, 0.2, 0.25, 0.02);

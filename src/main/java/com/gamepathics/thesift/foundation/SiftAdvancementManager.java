@@ -61,6 +61,12 @@ public final class SiftAdvancementManager implements Listener {
         if ("siftite_nugget".equals(id)) grant(player, "sifted_nugget");
         // Reference-mod parity (smells_creepy): obtain Sculkflower seeds.
         if ("sculkflower_seeds".equals(id)) grant(player, "smells_creepy");
+        // The mod's inventory_changed covers every way of receiving the armour, so check the
+        // full set on pickup too, not only craft/smith.
+        if (id != null && (id.equals("siftite_helmet") || id.equals("siftite_chestplate")
+                || id.equals("siftite_leggings") || id.equals("siftite_boots"))) {
+            checkSiftiteSetNextTick(player);
+        }
     }
 
     /**
@@ -89,6 +95,9 @@ public final class SiftAdvancementManager implements Listener {
     public void onCraft(CraftItemEvent event) {
         if (isSiftiteGear(contentId(event.getRecipe().getResult()))
                 && event.getWhoClicked() instanceof Player player) checkSiftiteSetNextTick(player);
+        // Reference-mod parity (smells_creepy): crafting Sculkflower seeds also counts.
+        if ("sculkflower_seeds".equals(contentId(event.getRecipe().getResult()))
+                && event.getWhoClicked() instanceof Player player) grant(player, "smells_creepy");
     }
 
     @EventHandler
