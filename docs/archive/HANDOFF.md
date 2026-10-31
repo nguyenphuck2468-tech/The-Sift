@@ -338,7 +338,7 @@ git status
   See `IMPLEMENTATION_REPORT.md` and `docs/step1-paper-jar-inventory.txt`.
 - Config audit is in `IMPLEMENTATION_REPORT.md`. No keys were deleted; any
   cleanup requires owner approval and a versioned migration plan.
-- `NOTICE.draft.md` records only the current source investigation. No LICENSE
+- `NOTICE.md` records only the current source investigation. No LICENSE
   was created. Step 1 follow-up added config no-effect comments, archive
   reproducibility, current stable CI actions, and a Paper 26.3 run-paper task.
   The owner requested provider-first strict readiness. It is now implemented

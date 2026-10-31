@@ -134,7 +134,7 @@ evidence and uncertainty; it is not a provenance certification.
 | Names / ideas | README, config, biome IDs, mob/item IDs, and worldgen descriptions across `src/main/resources/` and `src/main/java/` | The Mielon project and public Minecraft Live 2026 material informed research. The reference does not establish ownership of names or affiliation. | Medium for reference source; low for claims of official ownership |
 
 At the time of the original Phase 1 inventory, no repo-wide LICENSE or NOTICE
-had been added. A provenance-only `NOTICE.draft.md` is now present; no LICENSE
+had been added. A provenance-only `NOTICE.md` is now present; no LICENSE
 has been created. Add a project license only for original code the owner
 confirms they control, and finalize any NOTICE after asset and code provenance
 is verified. The embedded
@@ -253,7 +253,7 @@ This report and HANDOFF update are a separate documentation-only commit.
 BlockPopulator migration, Rift persistence, note-block behavior, live server
 smoke testing, provider-by-provider server validation, asset provenance proof,
 owner's project-license decision, and final asset provenance clearance remain
-open. `NOTICE.draft.md` is a research note, not a final
+open. `NOTICE.md` is a research note, not a final
 license/attribution statement.
 
 ## Step 1 follow-up (2026-10-24)
@@ -269,7 +269,7 @@ license/attribution statement.
 | Chunk decoration marker | PDC state is now `in progress` while decorating and `complete` only after success. Runtime failure removes marker, removes entities created during the attempt, logs, and allows retry. Singer/Echo Golem/Rift spawns now execute in the synchronous chunk-load path, so a failed attempt cannot leave those spawns queued for a later tick. An abrupt process stop with in-progress state retries on next chunk load. Partial block placements from an exception are not transactionally rolled back; deterministic placement makes retry possible but is not a full rollback guarantee. | Unit test injects failure, checks marker cleared, retries, then checks completion and idempotent skip. Full local build passed. No server crash/restart simulation. |
 | Config audit | Completed; see table below. No config keys were deleted. | Source/config inspection. No dedicated config-audit unit test. |
 | CI / artifact | Runner pinned to `ubuntu-24.04`; actions updated to checkout v7, setup-java v5, setup-gradle v6, upload-artifact v7. Wrapper performs one `clean build`. Paper JAR contains 495 entries: 33 classes, 401 JSON, and 61 other files. All 63 PNGs and `TheSiftGeyser.jar.embedded` are excluded; no `.jar` or `.embedded` entry remains. Full entry list: [`docs/step1-paper-jar-inventory.txt`](docs/step1-paper-jar-inventory.txt). The separate resource-pack task still builds from `src/main/resources/pack`. JAR SHA-256: `489f1d5a11b7139c5f2c389a7be1f12199e98d38d7530dc36a712300ae305a1c`. | Full local `clean build` passed (52/52 tests); current artifact entry listing inspected. GitHub Actions result for the latest packaging change is checked after push and linked in the final response. No server test. |
-| NOTICE / license | Added [`NOTICE.draft.md`](NOTICE.draft.md) as a provenance note only; it makes no project-wide license claim. No `LICENSE` was created. | Manual review against available repo history and source notes. |
+| NOTICE / license | Added [`NOTICE.md`](NOTICE.md) as a provenance note only; it makes no project-wide license claim. No `LICENSE` was created. | Manual review against available repo history and source notes. |
 
 ### Config key audit
 

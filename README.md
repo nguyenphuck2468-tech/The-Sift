@@ -107,7 +107,7 @@ service → ItemsAdder entity → MythicMobs → EliteMobs. ModelEngine chỉ ph
 Plugin tự supply datapack, không cần mod Fabric tham chiếu. Một số tên biome, giai điệu portal,
 thời tiết Ichor, cấu trúc và hành vi sinh vật lấy cảm hứng từ dự án MIT
 [Mielon's The Sift](https://github.com/Arta48/Mielons-The-Sift) — phần data port trực tiếp được
-ghi công trong `NOTICE.draft.md`. So sánh tính năng và mức kiểm chứng nằm ở
+ghi công trong `NOTICE.md`. So sánh tính năng và mức kiểm chứng nằm ở
 [`IMPLEMENTATION_REPORT.md`](docs/archive/IMPLEMENTATION_REPORT.md) và `docs/parity-matrix.md`.
 
 Trên Paper 26.3, dùng `/sift dimension` để tạo/nạp và vào chiều không gian (console cũng chạy

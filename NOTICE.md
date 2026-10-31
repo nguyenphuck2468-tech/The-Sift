@@ -1,4 +1,4 @@
-# NOTICE (provenance working draft — not a license grant)
+# NOTICE — nguồn gốc nội dung (không phải giấy phép chuyển nhượng)
 
 This is a provenance working note. It does not license this repository or
 state that a third-party license applies to files in it.
