@@ -13,10 +13,14 @@ printf 'eula=true\n' > "$run_dir/eula.txt"
 
 # CI boots without content-provider plugins installed, so run the documented
 # development/CI mode (README: "Set it to false only for development/CI").
-# Strict mode would legitimately fail chunk decoration on every provider-mapped
-# block and retry forever; vanilla fallback keeps the boot gate honest instead.
+# STRICT=1 instead boots the production default with no providers: the gate then
+# asserts the plugin still enables cleanly with the dimension locked.
 mkdir -p "$run_dir/plugins/TheSift"
-printf 'providers:\n  strict: false\n' > "$run_dir/plugins/TheSift/config.yml"
+if [[ "${STRICT:-0}" == "1" ]]; then
+  printf 'providers:\n  strict: true\n' > "$run_dir/plugins/TheSift/config.yml"
+else
+  printf 'providers:\n  strict: false\n' > "$run_dir/plugins/TheSift/config.yml"
+fi
 
 fifo="$run_dir/console-input.fifo"
 rm -f "$fifo"
@@ -54,7 +58,16 @@ fi
 printf 'sift doctor\n' >&3
 doctor_seen=false
 for _ in $(seq 1 30); do
-  if grep -Fq 'Provider strict: false' "$console_log" \
+  if [[ "${STRICT:-0}" == "1" ]]; then
+    # Strict boot with zero providers: the plugin must enable cleanly and LOCK the
+    # dimension. Chunk decoration failures under strict are the designed retry path,
+    # so only the enable line and the strict doctor lines are asserted here.
+    if grep -Fq 'Provider strict: true' "$console_log" \
+        && grep -Fq 'dimension allowed: false' "$console_log"; then
+      doctor_seen=true
+      break
+    fi
+  elif grep -Fq 'Provider strict: false' "$console_log" \
       && grep -Fq 'Worldgen provider placement failures: 0' "$console_log"; then
     doctor_seen=true
     break
