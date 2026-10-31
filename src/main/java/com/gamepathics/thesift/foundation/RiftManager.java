@@ -49,6 +49,7 @@ public final class RiftManager implements Listener {
     private final JavaPlugin plugin;
     private AncientCityGateManager gateOwner;
     private final NamespacedKey riftLastRewardKey;
+    private final java.util.Map<java.util.UUID, Long> noteConsoleLookupAt = new java.util.HashMap<>();
     private final NamespacedKey riftKey;
     private final SiftMobFactory mobFactory;
     private final ExternalBlockBridge blockBridge;
@@ -356,6 +357,11 @@ public final class RiftManager implements Listener {
                 (float) Math.pow(2.0, (played - 1) / 12.0));
         block.getWorld().spawnParticle(Particle.NOTE, block.getLocation().add(0.5, 1.2, 0.5), 1,
                 0, 0, 0, (played - 1) / 24.0);
+        // findConsole walks connected note blocks; cap repeat lookups to 4 ticks per player.
+        Long nextAllowed = noteConsoleLookupAt.get(player.getUniqueId());
+        long nowMs = System.currentTimeMillis();
+        if (nextAllowed != null && nowMs < nextAllowed) return;
+        noteConsoleLookupAt.put(player.getUniqueId(), nowMs + 200L);
         java.util.List<Block> console = findConsole(block);
         Block anchor = console.stream()
                 .min(java.util.Comparator.<Block>comparingInt(Block::getY)
@@ -375,11 +381,16 @@ public final class RiftManager implements Listener {
         found.add(origin);
         queue.add(origin);
         World world = origin.getWorld();
-        while (!queue.isEmpty() && found.size() < 64) {
+        // Each dequeued block used to scan a 33x33x33 cube - up to ~2.3M getType() calls on
+        // the main thread for a full console. The neighbours of a connected console are far
+        // closer, so a shared 4096-lookup budget with early stop finds the same group.
+        int lookups = 4096;
+        while (!queue.isEmpty() && found.size() < 64 && lookups > 0) {
             Block current = queue.poll();
-            for (int dx = -16; dx <= 16; dx++) {
-                for (int dy = -16; dy <= 16; dy++) {
-                    for (int dz = -16; dz <= 16; dz++) {
+            for (int dx = -2; dx <= 2 && lookups > 0; dx++) {
+                for (int dy = -2; dy <= 2 && lookups > 0; dy++) {
+                    for (int dz = -2; dz <= 2 && lookups > 0; dz++) {
+                        lookups--;
                         int x = current.getX() + dx;
                         int y = current.getY() + dy;
                         int z = current.getZ() + dz;
