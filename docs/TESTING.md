@@ -65,7 +65,7 @@ failed registry loading; each removed feature is tracked as **chưa làm** in
 `docs/parity-matrix.md`.
 
 Local automated evidence for the provider bridge and strict gate is recorded
-in `IMPLEMENTATION_REPORT.md`; it does not establish that a third-party
+in `docs/archive/IMPLEMENTATION_REPORT.md`; it does not establish that a third-party
 provider has parsed its generated YAML or works on a live server.
 
 On the test server, run `/sift give soul_block <player>`, `/sift summon singer <player>`, `/sift summon echo_golem <player>`, and `/sift give sonorous_deepslate <player>`. Place Sonorous Deepslate and a normal vanilla note block on top. Right-click to tune; left-click the sequence `1, 3, 7, 6, 5, 2, 4, 8` to open a Rift. Provider-owned note blocks are left to their provider. Then run `/sift doctor`, verify provider logs and each mandatory content ID, check `/plugins` for duplicate TheSift installations, and inspect `logs/latest.log` for API errors. No real-provider server test is claimed until recorded in `docs/parity-matrix.md`.
