@@ -4,6 +4,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Color;
 import org.bukkit.Difficulty;
+import java.util.concurrent.ThreadLocalRandom;
 import org.bukkit.GameMode;
 import org.bukkit.HeightMap;
 import org.bukkit.Location;
@@ -100,7 +101,7 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey darkSnifferPettingWardenKey;
     /** Last herd anchor per world so spawned Sifters regroup instead of scattering (mod parity). */
     // Reference-mod parity (Sifter): herds of at most five around per-herd anchors.
-    private final java.util.Map<org.bukkit.World, java.util.List<Location>> sifterHerdAnchors = new ConcurrentHashMap<>();
+    private final java.util.Map<java.util.UUID, java.util.List<Location>> sifterHerdAnchors = new ConcurrentHashMap<>();
     private final SiftMobFactory mobFactory;
     private final ExternalBlockBridge blockBridge;
     private final SiftiteContent content;
@@ -226,6 +227,13 @@ public final class SiftEcologyManager implements Listener {
     }
 
     @EventHandler
+    public void onWorldUnload(org.bukkit.event.world.WorldUnloadEvent event) {
+        // Herd anchors hold Location references to the world; drop them on unload.
+        sifterHerdAnchors.remove(event.getWorld().getUID());
+        indexedWorlds.remove(event.getWorld().getUID());
+    }
+
+    @EventHandler
     public void onEntityRemoveFromWorld(com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent event) {
         String key = wildlifeKey(event.getEntity());
         if (key != null) wildlifeIndex.computeIfAbsent(key, k -> java.util.concurrent.ConcurrentHashMap.newKeySet())
@@ -252,7 +260,11 @@ public final class SiftEcologyManager implements Listener {
                 Entity entity = Bukkit.getEntity(uuid);
                 if (entity == null || entity.isDead() || !entity.isValid()
                         || entity.getWorld() != sift) {
-                    wildlifeIndex.getOrDefault(key, java.util.Set.of()).remove(uuid);
+                    java.util.Set<UUID> bucket = wildlifeIndex.get(key);
+                    if (bucket != null) {
+                        bucket.remove(uuid);
+                        if (bucket.isEmpty()) wildlifeIndex.remove(key);
+                    }
                     continue;
                 }
                 String current = wildlifeKey(entity);
@@ -1275,7 +1287,7 @@ public final class SiftEcologyManager implements Listener {
             // herd members never spawn buried or in mid-air.
             Location anchor = null;
             java.util.List<Location> anchors = sifterHerdAnchors
-                    .computeIfAbsent(location.getWorld(), w -> new java.util.ArrayList<>());
+                    .computeIfAbsent(location.getWorld().getUID(), w -> new java.util.ArrayList<>());
             for (Location candidate : anchors) {
                 if (candidate.distanceSquared(location) <= 1600
                         && countNearby(location.getWorld(), candidate, 16) < 5) {
@@ -1367,7 +1379,7 @@ public final class SiftEcologyManager implements Listener {
     private void tickSifterHerds() {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
         if (sift == null) return;
-        java.util.List<Location> anchors = sifterHerdAnchors.get(sift);
+        java.util.List<Location> anchors = sifterHerdAnchors.get(sift.getUID());
         if (anchors == null || anchors.isEmpty()) return;
         for (Entity entity : indexedMobs(sift, "sifter")) {
             if (!(entity instanceof Mob mob)) continue;
@@ -2109,7 +2121,7 @@ public final class SiftEcologyManager implements Listener {
             // a 1-in-3 roll (mobs.blub.tame-chance), not on every attempt.
             consumeOne(player, hand);
             event.setCancelled(true);
-            if (Math.random() >= plugin.getConfig().getDouble("mobs.blub.tame-chance", 1.0 / 3.0)) {
+            if (ThreadLocalRandom.current().nextDouble() >= plugin.getConfig().getDouble("mobs.blub.tame-chance", 1.0 / 3.0)) {
                 Messages.send(player, "blub.failed", "The Blub sniffs the Soul Block and wanders off. Try again.");
                 return;
             }

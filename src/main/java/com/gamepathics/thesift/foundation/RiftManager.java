@@ -527,7 +527,7 @@ public final class RiftManager implements Listener {
     public class RiftInstance {
         private final UUID id;
         private final Location center;
-        private final Player opener;
+        private final UUID openerId;
         private final boolean portal;
         private Location exitCenter;
         private org.bukkit.util.BoundingBox gate;
@@ -541,9 +541,10 @@ public final class RiftManager implements Listener {
         }
 
         public RiftInstance(UUID id, Location center, Player opener, boolean portal) {
+            this.openerId = opener == null ? null : opener.getUniqueId();
             this.id = id;
             this.center = center;
-            this.opener = opener;
+
             this.portal = portal;
         }
 
@@ -661,7 +662,7 @@ public final class RiftManager implements Listener {
             // Plan default: rifts are not an income source unless the owner opts in.
             // Per-player cooldown further caps repeat farming when rewards are enabled.
             int rewardCount = Math.max(0, plugin.getConfig().getInt("rift.reward-drops", 0));
-            Player player = opener != null && opener.isOnline() ? opener : null;
+            Player player = resolveOpener();
             long now = System.currentTimeMillis();
             long cooldownMinutes = Math.max(0, plugin.getConfig().getInt("rift.reward-cooldown-minutes", 30));
             if (player != null && cooldownMinutes > 0) {
@@ -764,7 +765,12 @@ public final class RiftManager implements Listener {
             }
         }
 
+        private Player resolveOpener() {
+            return openerId == null ? null : org.bukkit.Bukkit.getPlayer(openerId);
+        }
+
         private void notifyOpener(String message) {
+            Player opener = resolveOpener();
             if (opener != null && opener.isOnline()) opener.sendMessage(message);
         }
     }
