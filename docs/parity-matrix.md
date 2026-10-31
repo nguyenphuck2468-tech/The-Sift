@@ -100,7 +100,7 @@ Already present in the repository before this branch: Singer, Echo Golem, Blub, 
 
 Added on the `mielon-parity` branch: Goat Horn wakes a Singer; Ancient City frame + eight Sonorous Deepslate + beams; portal-mode Rift; timed natural Rifts in The Sift; 10 more advancements (the mod's 20, plus 2 fan-made ones bundled = 22 files).
 
-Still different or missing: Overgrown Willow wood set (cherry stand-in), Ichor as a real flowing fluid (**STAND-IN**), the mod's 17 custom Java feature types as true datapack features (ichor lakes, soul canyon, monoliths, sniffer caves, willow trees — generated as Java stand-ins instead), 10 vs 15 biomes, music-disc audio (needs a resource pack), Bedrock level 2.
+Still different or missing: Ichor as a real flowing fluid (**STAND-IN** — bucket/bottle/spring behaviour shipped, fluid physics cannot), the mod's 17 custom Java feature types as true datapack features (ichor lakes, soul canyon, monoliths, sniffer caves, willow trees — generated as Java stand-ins instead), mob models/animations (GeckoLib vs vanilla stand-ins), audio (needs licensed assets), Bedrock level 2. Closed since the last audit: the full Overgrown Willow wood set (21 entries incl. shelf) and the Siftslate stone family (12 entries) ship as tagged stand-ins with the mod's crafting shapes; all 15 biomes generate; the five siftslate ore variants are data-driven (the three vanilla-drop ores drop naturally, Charoite/Siftite ore drops through the host-rock marker fallback); abandoned-portal loot carries the mod's odds (Rift disc 50%, Siftite template 40%, rare nugget); rifts transport vehicles with their riders; advancements 8/8 wired with mod-faithful triggers.
 
 
 ## Terrain port from the mod (mielon-parity)

@@ -262,16 +262,39 @@ public final class RiftManager implements Listener {
     }
 
     private void travelTo(Entity entity, Location destination) {
+        // Reference-mod parity: the rift carries boats/minecarts together with whoever is
+        // riding them - teleport the vehicle, not a rider torn out of it.
+        if (entity.isInsideVehicle() && entity.getVehicle() != null
+                && !travelling.contains(entity.getVehicle().getUniqueId())) {
+            travelTo(entity.getVehicle(), destination);
+            return;
+        }
         travelling.add(entity.getUniqueId());
         plugin.getServer().getScheduler().runTask(plugin, () -> {
             if (!entity.isValid() || entity.isDead()) { travelling.remove(entity.getUniqueId()); return; }
+            // Passengers dismount on teleport; move them across and remount afterwards.
+            java.util.List<Entity> riders = new java.util.ArrayList<>(entity.getPassengers());
+            java.util.List<UUID> moved = new java.util.ArrayList<>();
+            moved.add(entity.getUniqueId());
             entity.teleport(destination);
+            for (Entity rider : riders) {
+                if (!rider.isValid() || rider.isDead()) continue;
+                moved.add(rider.getUniqueId());
+                travelling.add(rider.getUniqueId());
+                rider.teleport(destination);
+                entity.addPassenger(rider);
+                if (rider instanceof Player player) {
+                    player.sendMessage("§5The Rift carries you between worlds.");
+                    SiftAdvancementGrant.grant(plugin, player, "rifter");
+                }
+            }
             if (entity instanceof Player player) {
                 player.sendMessage("§5The Rift carries you between worlds.");
                 SiftAdvancementGrant.grant(plugin, player, "rifter");
             }
-            plugin.getServer().getScheduler().runTaskLater(plugin,
-                    () -> travelling.remove(entity.getUniqueId()), 20L);
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                travelling.removeAll(moved);
+            }, 20L);
         });
     }
 
