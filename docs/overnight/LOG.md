@@ -9,3 +9,4 @@
 | P1-T1.4 | Strict gate tests + STRICT boot CI step | 622e905 | build + bash -n + fixture test | BUILD SUCCESSFUL; fixtures pass |
 | P1-T1.5 | Legal cleanup | fef2f0f | build | BUILD SUCCESSFUL |
 | P2 | 7 minor fixes (2 no-ops verified) | 0c28b77 | ./gradlew build | BUILD SUCCESSFUL |
+| P3 | Fan-made gates default off | aa2a46e | ./gradlew build | BUILD SUCCESSFUL |
