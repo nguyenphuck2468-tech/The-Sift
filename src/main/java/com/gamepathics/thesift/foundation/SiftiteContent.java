@@ -138,6 +138,97 @@ public final class SiftiteContent implements Listener {
                 }
             }
         }
+        // ---- Overgrown Willow wood set (reference-mod recipes, cherry stand-ins) ----
+        ItemStack willowLog = item(Material.CHERRY_LOG, "overgrown_willow_log", "Overgrown Willow Log");
+        ItemStack willowPlanks = item(Material.CHERRY_PLANKS, "overgrown_willow_planks", "Overgrown Willow Planks");
+        if (willowLog != null && willowPlanks != null && plugin.getConfig().getBoolean("recipes.enabled", true)) {
+            ItemStack planksOut = willowPlanks.clone();
+            planksOut.setAmount(4);
+            NamespacedKey planksKey = new NamespacedKey(plugin, "overgrown_willow_planks");
+            plugin.getServer().removeRecipe(planksKey);
+            ShapelessRecipe planks = new ShapelessRecipe(planksKey, planksOut);
+            planks.addIngredient(exact(willowLog));
+            plugin.getServer().addRecipe(planks);
+            ownedRecipeKeys.add(planksKey);
+
+            ItemStack strippedLog = item(Material.STRIPPED_CHERRY_LOG, "stripped_overgrown_willow_log", "Stripped Overgrown Willow Log");
+            if (strippedLog != null) {
+                addShaped("overgrown_willow_wood", item(Material.CHERRY_WOOD, "overgrown_willow_wood", "Overgrown Willow Wood"),
+                        "LL", "LL", "  ", 'L', exact(willowLog));
+                addShaped("stripped_overgrown_willow_wood", item(Material.STRIPPED_CHERRY_WOOD, "stripped_overgrown_willow_wood", "Stripped Overgrown Willow Wood"),
+                        "LL", "LL", "  ", 'L', exact(strippedLog));
+            }
+            addShaped("overgrown_willow_stairs", item(Material.CHERRY_STAIRS, "overgrown_willow_stairs", "Overgrown Willow Stairs"),
+                    "P  ", "PP ", "PPP", 'P', exact(willowPlanks));
+            addShaped("overgrown_willow_slab", item(Material.CHERRY_SLAB, "overgrown_willow_slab", "Overgrown Willow Slab"),
+                    "PPP", "   ", "   ", 'P', exact(willowPlanks));
+            addShaped("overgrown_willow_fence", item(Material.CHERRY_FENCE, "overgrown_willow_fence", "Overgrown Willow Fence"),
+                    "P P", "P P", "   ", 'P', exact(willowPlanks));
+            addShaped("overgrown_willow_fence_gate", item(Material.CHERRY_FENCE_GATE, "overgrown_willow_fence_gate", "Overgrown Willow Fence Gate"),
+                    "SPS", "SPS", "   ", 'P', exact(willowPlanks), 'S', Material.STICK);
+            addShaped("overgrown_willow_door", item(Material.CHERRY_DOOR, "overgrown_willow_door", "Overgrown Willow Door"),
+                    "PP ", "PP ", "PP ", 'P', exact(willowPlanks));
+            addShaped("overgrown_willow_trapdoor", item(Material.CHERRY_TRAPDOOR, "overgrown_willow_trapdoor", "Overgrown Willow Trapdoor"),
+                    "PPP", "PPP", "   ", 'P', exact(willowPlanks));
+            addShaped("overgrown_willow_pressure_plate", item(Material.CHERRY_PRESSURE_PLATE, "overgrown_willow_pressure_plate", "Overgrown Willow Pressure Plate"),
+                    "PP ", "   ", "   ", 'P', exact(willowPlanks));
+            addShaped("overgrown_willow_button", item(Material.CHERRY_BUTTON, "overgrown_willow_button", "Overgrown Willow Button"),
+                    "P  ", "   ", "   ", 'P', exact(willowPlanks));
+            ItemStack sign = item(Material.CHERRY_SIGN, "overgrown_willow_sign", "Overgrown Willow Sign");
+            if (sign != null) {
+                sign.setAmount(3);
+                addShaped("overgrown_willow_sign", sign, "PPP", "PPP", " S ", 'P', exact(willowPlanks), 'S', Material.STICK);
+            }
+            addShaped("overgrown_willow_hanging_sign", item(Material.CHERRY_HANGING_SIGN, "overgrown_willow_hanging_sign", "Overgrown Willow Hanging Sign"),
+                    "C C", "LLL", "LLL", 'C', Material.IRON_CHAIN, 'L', exact(
+                            item(Material.STRIPPED_CHERRY_LOG, "stripped_overgrown_willow_log", "Stripped Overgrown Willow Log")));
+            addShaped("overgrown_willow_boat", item(Material.CHERRY_BOAT, "overgrown_willow_boat", "Overgrown Willow Boat"),
+                    "P P", "PPP", "   ", 'P', exact(willowPlanks));
+            ItemStack chestBoat = item(Material.CHERRY_CHEST_BOAT, "overgrown_willow_chest_boat", "Overgrown Willow Chest Boat");
+            ItemStack boat = item(Material.CHERRY_BOAT, "overgrown_willow_boat", "Overgrown Willow Boat");
+            if (chestBoat != null && boat != null) {
+                NamespacedKey chestBoatKey = new NamespacedKey(plugin, "overgrown_willow_chest_boat");
+                plugin.getServer().removeRecipe(chestBoatKey);
+                ShapelessRecipe chestBoatRecipe = new ShapelessRecipe(chestBoatKey, chestBoat);
+                chestBoatRecipe.addIngredient(exact(boat));
+                chestBoatRecipe.addIngredient(Material.CHEST);
+                plugin.getServer().addRecipe(chestBoatRecipe);
+                ownedRecipeKeys.add(chestBoatKey);
+            }
+        }
+
+        // ---- Siftslate stone family (vanilla deepslate shapes, tagged stand-ins) ----
+        ItemStack slate = item(Material.DEEPSLATE, "siftslate", "Siftslate");
+        if (slate != null && plugin.getConfig().getBoolean("recipes.enabled", true)) {
+            addShaped("polished_siftslate", item(Material.POLISHED_DEEPSLATE, "polished_siftslate", "Polished Siftslate"),
+                    "LL", "LL", "  ", 'L', exact(slate));
+            ItemStack polished = item(Material.POLISHED_DEEPSLATE, "polished_siftslate", "Polished Siftslate");
+            if (polished != null) {
+                addShaped("siftslate_bricks", item(Material.DEEPSLATE_BRICKS, "siftslate_bricks", "Siftslate Bricks"),
+                        "LL", "LL", "  ", 'L', exact(polished));
+                ItemStack bricks = item(Material.DEEPSLATE_BRICKS, "siftslate_bricks", "Siftslate Bricks");
+                if (bricks != null) {
+                    addShaped("siftslate_tiles", item(Material.DEEPSLATE_TILES, "siftslate_tiles", "Siftslate Tiles"),
+                            "LL", "LL", "  ", 'L', exact(bricks));
+                    addShaped("siftslate_brick_stairs", item(Material.DEEPSLATE_BRICK_STAIRS, "siftslate_brick_stairs", "Siftslate Brick Stairs"),
+                            "L  ", "LL ", "LLL", 'L', exact(bricks));
+                    addShaped("siftslate_brick_slab", item(Material.DEEPSLATE_BRICK_SLAB, "siftslate_brick_slab", "Siftslate Brick Slab"),
+                            "LLL", "   ", "   ", 'L', exact(bricks));
+                    addShaped("siftslate_brick_wall", item(Material.DEEPSLATE_BRICK_WALL, "siftslate_brick_wall", "Siftslate Brick Wall"),
+                            "LLL", "LLL", "   ", 'L', exact(bricks));
+                    addShaped("chiseled_siftslate", item(Material.CHISELED_DEEPSLATE, "chiseled_siftslate", "Chiseled Siftslate"),
+                            "L ", "L ", "  ", 'L', exact(
+                                    item(Material.DEEPSLATE_BRICK_SLAB, "siftslate_brick_slab", "Siftslate Brick Slab")));
+                }
+            }
+            addShaped("siftslate_stairs", item(Material.POLISHED_DEEPSLATE_STAIRS, "siftslate_stairs", "Siftslate Stairs"),
+                    "L  ", "LL ", "LLL", 'L', exact(slate));
+            addShaped("siftslate_slab", item(Material.POLISHED_DEEPSLATE_SLAB, "siftslate_slab", "Siftslate Slab"),
+                    "LLL", "   ", "   ", 'L', exact(slate));
+            addShaped("siftslate_wall", item(Material.POLISHED_DEEPSLATE_WALL, "siftslate_wall", "Siftslate Wall"),
+                    "LLL", "LLL", "   ", 'L', exact(slate));
+        }
+
         registerSmithingIfEnabled(server, "sword", Material.NETHERITE_SWORD, "siftite_sword", "Siftite Sword");
         registerSmithingIfEnabled(server, "axe", Material.NETHERITE_AXE, "siftite_axe", "Siftite Axe");
         registerSmithingIfEnabled(server, "pickaxe", Material.NETHERITE_PICKAXE, "siftite_pickaxe", "Siftite Pickaxe");
@@ -253,6 +344,39 @@ public final class SiftiteContent implements Listener {
             case "siftite_chestplate" -> item(Material.NETHERITE_CHESTPLATE, id, "Siftite Chestplate");
             case "siftite_leggings" -> item(Material.NETHERITE_LEGGINGS, id, "Siftite Leggings");
             case "siftite_boots" -> item(Material.NETHERITE_BOOTS, id, "Siftite Boots");
+            case "overgrown_willow_log" -> item(Material.CHERRY_LOG, id, "Overgrown Willow Log");
+            case "overgrown_willow_wood" -> item(Material.CHERRY_WOOD, id, "Overgrown Willow Wood");
+            case "stripped_overgrown_willow_log" -> item(Material.STRIPPED_CHERRY_LOG, id, "Stripped Overgrown Willow Log");
+            case "stripped_overgrown_willow_wood" -> item(Material.STRIPPED_CHERRY_WOOD, id, "Stripped Overgrown Willow Wood");
+            case "overgrown_willow_planks" -> item(Material.CHERRY_PLANKS, id, "Overgrown Willow Planks");
+            case "overgrown_willow_stairs" -> item(Material.CHERRY_STAIRS, id, "Overgrown Willow Stairs");
+            case "overgrown_willow_slab" -> item(Material.CHERRY_SLAB, id, "Overgrown Willow Slab");
+            case "overgrown_willow_fence" -> item(Material.CHERRY_FENCE, id, "Overgrown Willow Fence");
+            case "overgrown_willow_fence_gate" -> item(Material.CHERRY_FENCE_GATE, id, "Overgrown Willow Fence Gate");
+            case "overgrown_willow_door" -> item(Material.CHERRY_DOOR, id, "Overgrown Willow Door");
+            case "overgrown_willow_trapdoor" -> item(Material.CHERRY_TRAPDOOR, id, "Overgrown Willow Trapdoor");
+            case "overgrown_willow_pressure_plate" -> item(Material.CHERRY_PRESSURE_PLATE, id, "Overgrown Willow Pressure Plate");
+            case "overgrown_willow_button" -> item(Material.CHERRY_BUTTON, id, "Overgrown Willow Button");
+            case "overgrown_willow_sign" -> item(Material.CHERRY_SIGN, id, "Overgrown Willow Sign");
+            case "overgrown_willow_hanging_sign" -> item(Material.CHERRY_HANGING_SIGN, id, "Overgrown Willow Hanging Sign");
+            case "overgrown_willow_boat" -> item(Material.CHERRY_BOAT, id, "Overgrown Willow Boat");
+            case "overgrown_willow_chest_boat" -> item(Material.CHERRY_CHEST_BOAT, id, "Overgrown Willow Chest Boat");
+            case "overgrown_willow_foliage" -> item(Material.CHERRY_LEAVES, id, "Overgrown Willow Foliage");
+            case "overgrown_willow_sapling" -> item(Material.CHERRY_SAPLING, id, "Overgrown Willow Sapling");
+            case "overgrown_willow_vines" -> item(Material.VINE, id, "Overgrown Willow Vines");
+            case "overgrown_willow_shelf" -> item(Material.CHERRY_SHELF, id, "Overgrown Willow Shelf");
+            case "cobbled_siftslate" -> item(Material.COBBLED_DEEPSLATE, id, "Cobbled Siftslate");
+            case "polished_siftslate" -> item(Material.POLISHED_DEEPSLATE, id, "Polished Siftslate");
+            case "siftslate_bricks" -> item(Material.DEEPSLATE_BRICKS, id, "Siftslate Bricks");
+            case "siftslate_brick_stairs" -> item(Material.DEEPSLATE_BRICK_STAIRS, id, "Siftslate Brick Stairs");
+            case "siftslate_brick_slab" -> item(Material.DEEPSLATE_BRICK_SLAB, id, "Siftslate Brick Slab");
+            case "siftslate_brick_wall" -> item(Material.DEEPSLATE_BRICK_WALL, id, "Siftslate Brick Wall");
+            case "siftslate_stairs" -> item(Material.POLISHED_DEEPSLATE_STAIRS, id, "Siftslate Stairs");
+            case "siftslate_slab" -> item(Material.POLISHED_DEEPSLATE_SLAB, id, "Siftslate Slab");
+            case "siftslate_wall" -> item(Material.POLISHED_DEEPSLATE_WALL, id, "Siftslate Wall");
+            case "siftslate_tiles" -> item(Material.DEEPSLATE_TILES, id, "Siftslate Tiles");
+            case "chiseled_siftslate" -> item(Material.CHISELED_DEEPSLATE, id, "Chiseled Siftslate");
+            case "reinforced_siftslate" -> item(Material.REINFORCED_DEEPSLATE, id, "Reinforced Siftslate");
             default -> null;
         };
         if (foundationItem != null) return foundationItem;
@@ -263,6 +387,37 @@ public final class SiftiteContent implements Listener {
             case "sift_soil" -> Material.ROOTED_DIRT;
             case "sift_grass", "healthy_sculk" -> id.equals("healthy_sculk") ? Material.SCULK : Material.MOSS_BLOCK;
             case "sift_log", "overgrown_willow" -> Material.CHERRY_LOG;
+            case "overgrown_willow_log" -> Material.CHERRY_LOG;
+            case "overgrown_willow_wood" -> Material.CHERRY_WOOD;
+            case "stripped_overgrown_willow_log" -> Material.STRIPPED_CHERRY_LOG;
+            case "stripped_overgrown_willow_wood" -> Material.STRIPPED_CHERRY_WOOD;
+            case "overgrown_willow_planks" -> Material.CHERRY_PLANKS;
+            case "overgrown_willow_stairs" -> Material.CHERRY_STAIRS;
+            case "overgrown_willow_slab" -> Material.CHERRY_SLAB;
+            case "overgrown_willow_fence" -> Material.CHERRY_FENCE;
+            case "overgrown_willow_fence_gate" -> Material.CHERRY_FENCE_GATE;
+            case "overgrown_willow_door" -> Material.CHERRY_DOOR;
+            case "overgrown_willow_trapdoor" -> Material.CHERRY_TRAPDOOR;
+            case "overgrown_willow_pressure_plate" -> Material.CHERRY_PRESSURE_PLATE;
+            case "overgrown_willow_button" -> Material.CHERRY_BUTTON;
+            case "overgrown_willow_sign" -> Material.CHERRY_SIGN;
+            case "overgrown_willow_hanging_sign" -> Material.CHERRY_HANGING_SIGN;
+            case "overgrown_willow_foliage" -> Material.CHERRY_LEAVES;
+            case "overgrown_willow_sapling" -> Material.CHERRY_SAPLING;
+            case "overgrown_willow_vines" -> Material.VINE;
+            case "overgrown_willow_shelf" -> Material.CHERRY_SHELF;
+            case "cobbled_siftslate" -> Material.COBBLED_DEEPSLATE;
+            case "polished_siftslate" -> Material.POLISHED_DEEPSLATE;
+            case "siftslate_bricks" -> Material.DEEPSLATE_BRICKS;
+            case "siftslate_brick_stairs" -> Material.DEEPSLATE_BRICK_STAIRS;
+            case "siftslate_brick_slab" -> Material.DEEPSLATE_BRICK_SLAB;
+            case "siftslate_brick_wall" -> Material.DEEPSLATE_BRICK_WALL;
+            case "siftslate_stairs" -> Material.POLISHED_DEEPSLATE_STAIRS;
+            case "siftslate_slab" -> Material.POLISHED_DEEPSLATE_SLAB;
+            case "siftslate_wall" -> Material.POLISHED_DEEPSLATE_WALL;
+            case "siftslate_tiles" -> Material.DEEPSLATE_TILES;
+            case "chiseled_siftslate" -> Material.CHISELED_DEEPSLATE;
+            case "reinforced_siftslate" -> Material.REINFORCED_DEEPSLATE;
             case "sift_leaves" -> Material.CHERRY_LEAVES;
             case "sift_planks" -> Material.CHERRY_PLANKS;
             case "siftstone" -> Material.TUFF;

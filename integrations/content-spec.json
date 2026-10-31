@@ -474,6 +474,204 @@
       "material": "SNOWBALL",
       "name": "Ichor Snowball",
       "model": null
+    },
+    {
+      "id": "overgrown_willow_log",
+      "material": "CHERRY_LOG",
+      "name": "Overgrown Willow Log",
+      "model": null
+    },
+    {
+      "id": "overgrown_willow_wood",
+      "material": "CHERRY_WOOD",
+      "name": "Overgrown Willow Wood",
+      "model": null
+    },
+    {
+      "id": "stripped_overgrown_willow_log",
+      "material": "STRIPPED_CHERRY_LOG",
+      "name": "Stripped Overgrown Willow Log",
+      "model": null
+    },
+    {
+      "id": "stripped_overgrown_willow_wood",
+      "material": "STRIPPED_CHERRY_WOOD",
+      "name": "Stripped Overgrown Willow Wood",
+      "model": null
+    },
+    {
+      "id": "overgrown_willow_planks",
+      "material": "CHERRY_PLANKS",
+      "name": "Overgrown Willow Planks",
+      "model": null
+    },
+    {
+      "id": "overgrown_willow_stairs",
+      "material": "CHERRY_STAIRS",
+      "name": "Overgrown Willow Stairs",
+      "model": null
+    },
+    {
+      "id": "overgrown_willow_slab",
+      "material": "CHERRY_SLAB",
+      "name": "Overgrown Willow Slab",
+      "model": null
+    },
+    {
+      "id": "overgrown_willow_fence",
+      "material": "CHERRY_FENCE",
+      "name": "Overgrown Willow Fence",
+      "model": null
+    },
+    {
+      "id": "overgrown_willow_fence_gate",
+      "material": "CHERRY_FENCE_GATE",
+      "name": "Overgrown Willow Fence Gate",
+      "model": null
+    },
+    {
+      "id": "overgrown_willow_door",
+      "material": "CHERRY_DOOR",
+      "name": "Overgrown Willow Door",
+      "model": null
+    },
+    {
+      "id": "overgrown_willow_trapdoor",
+      "material": "CHERRY_TRAPDOOR",
+      "name": "Overgrown Willow Trapdoor",
+      "model": null
+    },
+    {
+      "id": "overgrown_willow_pressure_plate",
+      "material": "CHERRY_PRESSURE_PLATE",
+      "name": "Overgrown Willow Pressure Plate",
+      "model": null
+    },
+    {
+      "id": "overgrown_willow_button",
+      "material": "CHERRY_BUTTON",
+      "name": "Overgrown Willow Button",
+      "model": null
+    },
+    {
+      "id": "overgrown_willow_sign",
+      "material": "CHERRY_SIGN",
+      "name": "Overgrown Willow Sign",
+      "model": null
+    },
+    {
+      "id": "overgrown_willow_hanging_sign",
+      "material": "CHERRY_HANGING_SIGN",
+      "name": "Overgrown Willow Hanging Sign",
+      "model": null
+    },
+    {
+      "id": "overgrown_willow_boat",
+      "material": "CHERRY_BOAT",
+      "name": "Overgrown Willow Boat",
+      "model": null
+    },
+    {
+      "id": "overgrown_willow_chest_boat",
+      "material": "CHERRY_CHEST_BOAT",
+      "name": "Overgrown Willow Chest Boat",
+      "model": null
+    },
+    {
+      "id": "overgrown_willow_foliage",
+      "material": "CHERRY_LEAVES",
+      "name": "Overgrown Willow Foliage",
+      "model": null
+    },
+    {
+      "id": "overgrown_willow_sapling",
+      "material": "CHERRY_SAPLING",
+      "name": "Overgrown Willow Sapling",
+      "model": null
+    },
+    {
+      "id": "overgrown_willow_vines",
+      "material": "VINE",
+      "name": "Overgrown Willow Vines",
+      "model": null
+    },
+    {
+      "id": "cobbled_siftslate",
+      "material": "COBBLED_DEEPSLATE",
+      "name": "Cobbled Siftslate",
+      "model": null
+    },
+    {
+      "id": "polished_siftslate",
+      "material": "POLISHED_DEEPSLATE",
+      "name": "Polished Siftslate",
+      "model": null
+    },
+    {
+      "id": "siftslate_bricks",
+      "material": "DEEPSLATE_BRICKS",
+      "name": "Siftslate Bricks",
+      "model": null
+    },
+    {
+      "id": "siftslate_brick_stairs",
+      "material": "DEEPSLATE_BRICK_STAIRS",
+      "name": "Siftslate Brick Stairs",
+      "model": null
+    },
+    {
+      "id": "siftslate_brick_slab",
+      "material": "DEEPSLATE_BRICK_SLAB",
+      "name": "Siftslate Brick Slab",
+      "model": null
+    },
+    {
+      "id": "siftslate_brick_wall",
+      "material": "DEEPSLATE_BRICK_WALL",
+      "name": "Siftslate Brick Wall",
+      "model": null
+    },
+    {
+      "id": "siftslate_stairs",
+      "material": "DEEPSLATE_STAIRS",
+      "name": "Siftslate Stairs",
+      "model": null
+    },
+    {
+      "id": "siftslate_slab",
+      "material": "DEEPSLATE_SLAB",
+      "name": "Siftslate Slab",
+      "model": null
+    },
+    {
+      "id": "siftslate_wall",
+      "material": "DEEPSLATE_WALL",
+      "name": "Siftslate Wall",
+      "model": null
+    },
+    {
+      "id": "siftslate_tiles",
+      "material": "DEEPSLATE_TILES",
+      "name": "Siftslate Tiles",
+      "model": null
+    },
+    {
+      "id": "chiseled_siftslate",
+      "material": "CHISELED_DEEPSLATE",
+      "name": "Chiseled Siftslate",
+      "model": null
+    },
+    {
+      "id": "reinforced_siftslate",
+      "material": "REINFORCED_DEEPSLATE",
+      "name": "Reinforced Siftslate",
+      "model": null
+    },
+    {
+      "id": "overgrown_willow_shelf",
+      "material": "CHERRY_SHELF",
+      "name": "Overgrown Willow Shelf",
+      "model": null
     }
   ],
   "mobs": [
