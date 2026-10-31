@@ -121,10 +121,16 @@ public final class EchoGolemManager implements Listener {
             maxHealth.setBaseValue(plugin.getConfig().getDouble("echo-golem.max-health", 34.0));
             golem.setHealth(maxHealth.getValue());
         }
+        // Reference-mod statline (EchoGolemEntity.createMobAttributes): speed 0.23 and
+        // knockback resistance 0.25; the plugin previously ran at 0.28 / 1.0.
         var movementSpeed = golem.getAttribute(Attribute.MOVEMENT_SPEED);
-        if (movementSpeed != null) movementSpeed.setBaseValue(0.28);
+        if (movementSpeed != null) {
+            movementSpeed.setBaseValue(plugin.getConfig().getDouble("echo-golem.movement-speed", 0.23));
+        }
         var knockback = golem.getAttribute(Attribute.KNOCKBACK_RESISTANCE);
-        if (knockback != null) knockback.setBaseValue(1.0);
+        if (knockback != null) {
+            knockback.setBaseValue(plugin.getConfig().getDouble("echo-golem.knockback-resist", 0.25));
+        }
 
         ensureBar(golem);
         

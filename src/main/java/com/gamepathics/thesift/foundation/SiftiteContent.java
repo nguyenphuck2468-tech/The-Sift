@@ -107,6 +107,37 @@ public final class SiftiteContent implements Listener {
                 && enabled("siftite_ingot", "siftite.enabled")) addTemplateRecipe();
         if (!enabled("siftite_upgrade_smithing_template", "siftite.enabled")
                 || !enabled("siftite_ingot", "siftite.enabled")) return;
+        // Reference-mod recipes: an ingot breaks back down into nine nuggets, and the
+        // spear is a nugget tip over an ingot shaft on a stick.
+        if (plugin.getConfig().getBoolean("recipes.enabled", true)) {
+            ItemStack ingot = item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot");
+            ItemStack nugget = item(Material.IRON_NUGGET, "siftite_nugget", "Siftite Nugget");
+            if (ingot != null && nugget != null) {
+                NamespacedKey nuggetsKey = new NamespacedKey(plugin, "siftite_nugget_from_ingot");
+                plugin.getServer().removeRecipe(nuggetsKey);
+                ItemStack nuggetsOut = nugget.clone();
+                nuggetsOut.setAmount(9);
+                ShapelessRecipe nuggets = new ShapelessRecipe(nuggetsKey, nuggetsOut);
+                nuggets.addIngredient(exact(ingot));
+                plugin.getServer().addRecipe(nuggets);
+                ownedRecipeKeys.add(nuggetsKey);
+
+                if (plugin.getConfig().getBoolean("content.siftite_spear", true)) {
+                    ItemStack spear = item(Material.NETHERITE_SWORD, "siftite_spear", "Siftite Spear");
+                    if (spear != null) {
+                        NamespacedKey spearKey = new NamespacedKey(plugin, "siftite_spear_craft");
+                        plugin.getServer().removeRecipe(spearKey);
+                        ShapedRecipe spearRecipe = new ShapedRecipe(spearKey, spear);
+                        spearRecipe.shape("N", "I", "S");
+                        spearRecipe.setIngredient('N', exact(nugget));
+                        spearRecipe.setIngredient('I', exact(ingot));
+                        spearRecipe.setIngredient('S', Material.STICK);
+                        plugin.getServer().addRecipe(spearRecipe);
+                        ownedRecipeKeys.add(spearKey);
+                    }
+                }
+            }
+        }
         registerSmithingIfEnabled(server, "sword", Material.NETHERITE_SWORD, "siftite_sword", "Siftite Sword");
         registerSmithingIfEnabled(server, "axe", Material.NETHERITE_AXE, "siftite_axe", "Siftite Axe");
         registerSmithingIfEnabled(server, "pickaxe", Material.NETHERITE_PICKAXE, "siftite_pickaxe", "Siftite Pickaxe");
@@ -600,7 +631,7 @@ public final class SiftiteContent implements Listener {
                 || id.endsWith("_leggings") || id.endsWith("_boots")) {
             meta.addAttributeModifier(Attribute.KNOCKBACK_RESISTANCE, new AttributeModifier(
                     new NamespacedKey(plugin, id + "_knockback_resistance"),
-                    plugin.getConfig().getDouble("siftite.knockback-resistance", 0.1),
+                    plugin.getConfig().getDouble("siftite.knockback-resistance", 0.15),
                     AttributeModifier.Operation.ADD_NUMBER, EquipmentSlotGroup.ARMOR));
         } else if (id.endsWith("_sword") || id.endsWith("_axe") || id.endsWith("_spear")) {
             double targetDamage = id.endsWith("_spear")

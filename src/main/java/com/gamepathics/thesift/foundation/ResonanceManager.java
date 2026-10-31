@@ -142,8 +142,13 @@ public final class ResonanceManager implements Listener {
         if (singer instanceof Mob mob) mob.setCanPickupItems(false);
         var maxHealth = singer.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH);
         if (maxHealth != null) {
-            maxHealth.setBaseValue(plugin.getConfig().getDouble("resonance.singer.max-health", 40.0));
+            // Reference-mod statline: 20 HP (the plugin previously spawned at 40).
+            maxHealth.setBaseValue(plugin.getConfig().getDouble("resonance.singer.max-health", 20.0));
             singer.setHealth(maxHealth.getValue());
+        }
+        var singerSpeed = singer.getAttribute(org.bukkit.attribute.Attribute.MOVEMENT_SPEED);
+        if (singerSpeed != null) {
+            singerSpeed.setBaseValue(plugin.getConfig().getDouble("resonance.singer.movement-speed", 0.27));
         }
         BossBar bar = Bukkit.createBossBar("§5Singer Resonance", BarColor.PURPLE, BarStyle.SEGMENTED_10);
         bars.put(singer.getUniqueId(), bar);

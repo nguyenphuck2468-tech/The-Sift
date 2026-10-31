@@ -1346,6 +1346,10 @@ public final class SiftEcologyManager implements Listener {
                 stats.put("MAX_HEALTH", plugin.getConfig().getDouble("mobs.dark_sniffer.max-health", 40.0));
                 stats.put("MOVEMENT_SPEED", plugin.getConfig().getDouble("mobs.dark_sniffer.movement-speed", 0.1));
                 stats.put("ATTACK_DAMAGE", plugin.getConfig().getDouble("mobs.dark_sniffer.attack-damage", 7.0));
+                // Reference-mod parity: the Dark Snifter raises the ATTACK_KNOCKBACK attribute
+                // (generic.knockback), not knockback resistance; apply both honouring config.
+                Double attackKnockback = plugin.getConfig().getDouble("mobs.dark_sniffer.attack-knockback", 2.0);
+                if (attackKnockback != null && attackKnockback > 0) stats.put("ATTACK_KNOCKBACK", attackKnockback);
                 stats.put("KNOCKBACK_RESISTANCE",
                         plugin.getConfig().getDouble("mobs.dark_sniffer.knockback-resist", 0.75));
             }
