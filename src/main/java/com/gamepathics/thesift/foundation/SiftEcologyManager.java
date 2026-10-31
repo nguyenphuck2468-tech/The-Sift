@@ -98,7 +98,8 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey wardenPettingHeartAtKey;
     private final NamespacedKey darkSnifferPettingWardenKey;
     /** Last herd anchor per world so spawned Sifters regroup instead of scattering (mod parity). */
-    private final java.util.Map<org.bukkit.World, Location> sifterHerdAnchors = new ConcurrentHashMap<>();
+    // Reference-mod parity (Sifter): herds of at most five around per-herd anchors.
+    private final java.util.Map<org.bukkit.World, java.util.List<Location>> sifterHerdAnchors = new ConcurrentHashMap<>();
     private final SiftMobFactory mobFactory;
     private final ExternalBlockBridge blockBridge;
     private final SiftiteContent content;
@@ -917,6 +918,14 @@ public final class SiftEcologyManager implements Listener {
         World world = chunk.getWorld();
         int count = 1 + random.nextInt(3);
         for (int i = 0; i < count; i++) {
+            // Reference-mod parity (Sifter): the mod spawns wild Sifter herds (especially in
+            // the Overgrown Forest); keep it rare and gated behind content.sifter.
+            if (biome.contains("overgrown_forest")
+                    && plugin.getConfig().getBoolean("content.sifter", true)
+                    && random.nextInt(40) == 0) {
+                spawnSifterHerd(chunk, random);
+                return;
+            }
             // Honor the content.blub / content.sifter toggles from config.yml: species that are
             // disabled must not spawn in the wild. Previously these keys were display-only.
             if (!plugin.getConfig().getBoolean("content.blub", true)
@@ -930,7 +939,7 @@ public final class SiftEcologyManager implements Listener {
             EntityType type;
             String name;
             if (biome.endsWith("carapace")) {
-                String[][] carapace = {{"TURTLE", "Thornback"}, {"AXOLOTL", "Blub"},
+                String[][] carapace = {{"TURTLE", "Thornback"}, {"RABBIT", "Blub"},
                         {"SILVERFISH", "Prismite"}, {"ALLAY", "Wisp"}};
                 String[] mob = carapace[random.nextInt(carapace.length)];
                 type = EntityType.valueOf(mob[0]); name = mob[1];
@@ -1256,20 +1265,29 @@ public final class SiftEcologyManager implements Listener {
         boolean boss = id.equals("the_sifter") || id.equals("prism_warden") || id.equals("spire_tyrant");
         // Mod parity (Sifter): herds cluster around a shared anchor instead of scattering.
         if ("sifter".equals(id)) {
-            Location anchor = sifterHerdAnchors.get(location.getWorld());
-            if (anchor == null || anchor.distanceSquared(location) > 1600) {
-                location = location.clone();
-                if (anchor != null) {
-                    Vector toward = anchor.toVector().subtract(location.toVector()).normalize()
-                            .multiply(24);
-                    location = location.add(toward);
+            // Join the nearest herd anchor within 40 blocks while it has fewer than five
+            // members; otherwise found a new herd. Anchor offsets snap to the surface so
+            // herd members never spawn buried or in mid-air.
+            Location anchor = null;
+            java.util.List<Location> anchors = sifterHerdAnchors
+                    .computeIfAbsent(location.getWorld(), w -> new java.util.ArrayList<>());
+            for (Location candidate : anchors) {
+                if (candidate.distanceSquared(location) <= 1600
+                        && countNearby(location.getWorld(), candidate, 16) < 5) {
+                    anchor = candidate;
+                    break;
                 }
-            } else {
+            }
+            if (anchor != null) {
                 Vector offset = new Vector(java.util.concurrent.ThreadLocalRandom.current().nextDouble() * 12 - 6,
                         0, java.util.concurrent.ThreadLocalRandom.current().nextDouble() * 12 - 6);
                 location = anchor.clone().add(offset);
+            } else {
+                anchor = location.clone();
+                anchors.add(anchor);
             }
-            sifterHerdAnchors.put(location.getWorld(), location.clone());
+            location = location.clone();
+            location.setY(location.getWorld().getHighestBlockYAt(location) + 1);
         }
         Entity entity = mobFactory.spawn(id, location, type);
         if (entity == null) return false;
@@ -1340,14 +1358,43 @@ public final class SiftEcologyManager implements Listener {
     private void tickSifterHerds() {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
         if (sift == null) return;
-        Location anchor = sifterHerdAnchors.get(sift);
-        if (anchor == null) return;
+        java.util.List<Location> anchors = sifterHerdAnchors.get(sift);
+        if (anchors == null || anchors.isEmpty()) return;
         for (Entity entity : indexedMobs(sift, "sifter")) {
             if (!(entity instanceof Mob mob)) continue;
-            if (!"sifter".equals(entity.getPersistentDataContainer()
-                    .get(creatureKey, PersistentDataType.STRING))) continue;
-            if (mob.getLocation().distanceSquared(anchor) <= 900) continue;
-            mob.getPathfinder().moveTo(anchor);
+            Location nearest = null;
+            double best = Double.MAX_VALUE;
+            for (Location anchor : anchors) {
+                double distance = mob.getLocation().distanceSquared(anchor);
+                if (distance < best) {
+                    best = distance;
+                    nearest = anchor;
+                }
+            }
+            if (nearest == null || best <= 900) continue;
+            mob.getPathfinder().moveTo(nearest);
+        }
+        // Prune anchors whose herd has wandered off or died out, so the list stays bounded.
+        anchors.removeIf(anchor -> countNearby(sift, anchor, 32) == 0);
+    }
+
+    private int countNearby(World world, Location center, double radius) {
+        int count = 0;
+        for (Entity entity : indexedMobs(world, "sifter")) {
+            if (entity.getLocation().distanceSquared(center) <= radius * radius) count++;
+        }
+        return count;
+    }
+
+    /** Reference-mod parity (Sifter): rare wild herds (three to five) in Overgrown Forest. */
+    private void spawnSifterHerd(Chunk chunk, Random random) {
+        int x = chunk.getX() * 16 + 4 + random.nextInt(8);
+        int z = chunk.getZ() * 16 + 4 + random.nextInt(8);
+        int y = chunk.getWorld().getHighestBlockYAt(x, z) + 1;
+        Location at = new Location(chunk.getWorld(), x + 0.5, y, z + 0.5);
+        int herd = 3 + random.nextInt(3);
+        for (int i = 0; i < herd; i++) {
+            summonCreature("sifter", at);
         }
     }
 
@@ -2060,7 +2107,22 @@ public final class SiftEcologyManager implements Listener {
             var pdc = blub.getPersistentDataContainer();
             if (!"blub".equals(pdc.get(creatureKey, PersistentDataType.STRING))) continue;
             String ownerId = pdc.get(blubOwnerKey, PersistentDataType.STRING);
-            if (ownerId == null) continue;
+            if (ownerId == null) {
+                // Reference-mod parity (Blub): wild Blubs are drawn to a nearby player holding
+                // a Soul Block - the same item that tames them.
+                if (blub.getTarget() == null) {
+                    for (Entity holder : blub.getNearbyEntities(10, 6, 10)) {
+                        if (!(holder instanceof Player nearby)
+                                || nearby.getGameMode() == GameMode.SPECTATOR) continue;
+                        if (content.is(nearby.getInventory().getItemInMainHand(), "soul_block")
+                                || content.is(nearby.getInventory().getItemInOffHand(), "soul_block")) {
+                            blub.getPathfinder().moveTo(nearby.getLocation());
+                            break;
+                        }
+                    }
+                }
+                continue;
+            }
             Player owner;
             try {
                 owner = Bukkit.getPlayer(UUID.fromString(ownerId));
