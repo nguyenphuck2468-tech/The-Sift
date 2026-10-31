@@ -1,0 +1,7 @@
+# Overnight log
+
+| Time | Task | Commit | Command | Result |
+|---|---|---|---|---|
+| P0-T0.1 | Baseline build | (docs) | ./gradlew clean build --no-daemon | BUILD SUCCESSFUL in 2m36s; 134 PASSED, 0 failed |
+| P0-T0.2 | File review | (docs) | reads | FINDINGS.md updated; no new P0 |
+| P0-T0.3 | Claim verification | (docs) | greps/reads | Spear dup VALID (durability), rift defaults VALID (3/0.3), findConsole VALID (33^3*64), prototype-biome claim REJECTED (15 biomes generate) |
