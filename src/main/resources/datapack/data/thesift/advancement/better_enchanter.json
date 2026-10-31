@@ -7,8 +7,12 @@
         "minecraft:item_model": "thesift:charoite"
       }
     },
-    "title": "Better Enchanter",
-    "description": "Enchant an item using Charoite",
+    "title": {
+      "translate": "advancement.thesift.better_enchanter.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.better_enchanter.description"
+    },
     "frame": "goal",
     "show_toast": true,
     "announce_to_chat": true

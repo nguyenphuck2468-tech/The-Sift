@@ -7,8 +7,12 @@
         "minecraft:item_model": "thesift:siftite_chestplate"
       }
     },
-    "title": "Cover Me in Siftite",
-    "description": "Get a full suit of Siftite armor",
+    "title": {
+      "translate": "advancement.thesift.cover_me_in_siftite.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.cover_me_in_siftite.description"
+    },
     "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true

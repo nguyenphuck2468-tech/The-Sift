@@ -7,8 +7,12 @@
         "minecraft:item_model": "thesift:sculkflower_seeds"
       }
     },
-    "title": "Smells Creepy",
-    "description": "Obtain the Sculkflower Seeds",
+    "title": {
+      "translate": "advancement.thesift.smells_creepy.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.smells_creepy.description"
+    },
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true

@@ -7,8 +7,12 @@
         "minecraft:item_model": "thesift:overgrown_willow_log"
       }
     },
-    "title": "Spicewood",
-    "description": "Set wood on fire in the Sift",
+    "title": {
+      "translate": "advancement.thesift.spicewood.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.spicewood.description"
+    },
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true

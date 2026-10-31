@@ -4,6 +4,8 @@
 blub:
   tamed: "Con Blub chấp nhận Soul Block của bạn và đi theo bạn."
   failed: "Con Blub ngửi Soul Block rồi bỏ đi. Thử lại nhé."
+  stay: "Blub nằm lại một chỗ."
+  follow: "Blub lại rượt theo bạn."
   heart: "Blub đã là của bạn: một chút đáp lại tình cảm."
 sifter:
   herd: "Đàn Sifter"

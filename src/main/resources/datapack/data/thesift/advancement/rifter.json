@@ -7,8 +7,12 @@
         "minecraft:item_model": "thesift:sift_rift"
       }
     },
-    "title": "Rifter",
-    "description": "Travel through a Sift Rift",
+    "title": {
+      "translate": "advancement.thesift.rifter.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.rifter.description"
+    },
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true

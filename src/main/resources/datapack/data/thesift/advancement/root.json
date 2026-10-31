@@ -11,8 +11,12 @@
         "minecraft:item_model": "thesift:sift_grass"
       }
     },
-    "title": "The Sift",
-    "description": "Step through an amethyst portal into the Sift",
+    "title": {
+      "translate": "advancement.thesift.root.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.root.description"
+    },
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": false,

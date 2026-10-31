@@ -7,8 +7,12 @@
         "minecraft:item_model": "thesift:siftite_boots"
       }
     },
-    "title": "Certified Sifter",
-    "description": "Explore all Sift biomes",
+    "title": {
+      "translate": "advancement.thesift.certified_sifter.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.certified_sifter.description"
+    },
     "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true

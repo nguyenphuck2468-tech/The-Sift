@@ -7,8 +7,12 @@
         "minecraft:item_model": "thesift:siftslate_charoite_ore"
       }
     },
-    "title": "Kinda Purpleish",
-    "description": "Mine the Charoite Ore",
+    "title": {
+      "translate": "advancement.thesift.kinda_purpleish.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.kinda_purpleish.description"
+    },
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true

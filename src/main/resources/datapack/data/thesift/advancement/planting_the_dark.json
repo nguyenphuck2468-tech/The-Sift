@@ -7,8 +7,12 @@
         "minecraft:item_model": "thesift:sculkflower"
       }
     },
-    "title": "Planting the Dark",
-    "description": "Plant the Sculkflower on Sculk",
+    "title": {
+      "translate": "advancement.thesift.planting_the_dark.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.planting_the_dark.description"
+    },
     "frame": "goal",
     "show_toast": true,
     "announce_to_chat": true

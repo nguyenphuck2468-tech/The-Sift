@@ -4,8 +4,12 @@
     "icon": {
       "id": "minecraft:reinforced_deepslate"
     },
-    "title": "Fallen Civilization",
-    "description": "Visit an Ancient City",
+    "title": {
+      "translate": "advancement.thesift.story.fallen_civilization.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.story.fallen_civilization.description"
+    },
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true

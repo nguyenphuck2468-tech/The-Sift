@@ -7,8 +7,12 @@
         "minecraft:item_model": "thesift:singer_spawn_egg"
       }
     },
-    "title": "Pitch Perfect",
-    "description": "Barter with a Singer using a Soul Block",
+    "title": {
+      "translate": "advancement.thesift.pitch_perfect.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.pitch_perfect.description"
+    },
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true

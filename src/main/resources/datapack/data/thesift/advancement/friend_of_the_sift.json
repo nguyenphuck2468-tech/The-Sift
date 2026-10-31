@@ -4,8 +4,12 @@
     "icon": {
       "id": "minecraft:echo_shard"
     },
-    "title": "Friend of the Sift",
-    "description": "Make the Echo Golem love you, then collect the Soul Block",
+    "title": {
+      "translate": "advancement.thesift.friend_of_the_sift.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.friend_of_the_sift.description"
+    },
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true

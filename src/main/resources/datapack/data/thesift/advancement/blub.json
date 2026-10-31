@@ -7,8 +7,12 @@
         "minecraft:item_model": "thesift:soul_block"
       }
     },
-    "title": "Blub",
-    "description": "Tame the Blub",
+    "title": {
+      "translate": "advancement.thesift.blub.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.blub.description"
+    },
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true

@@ -102,6 +102,16 @@ ID thiếu và gợi ý cài đặt.
 Với `auto`, thứ tự ưu tiên item/block: Sift service → Nexo → ItemsAdder → Oraxen; mob: Sift
 service → ItemsAdder entity → MythicMobs → EliteMobs. ModelEngine chỉ phụ trách render.
 
+## Phân loại nội dung: Gốc / Fan-made / Stand-in
+
+Đánh giá parity đúng cách cần tách ba loại nội dung:
+
+| Loại | Nội dung |
+|---|---|
+| **Chuyển thể từ mod** | 10 biome gốc, họ Overgrown Willow (21 mục), họ Siftslate (12 mục), 5 biến thể ore, Charoite + enchanting, Siftite trọn bộ, Ichor (bottle/bucket/cauldron/snow/snowball/shard), Soul Canyon, Sniffer Cave, Monolith, Cliff Arch, Abandoned Portal + loot odds (disc 50%, template 40%), cổng Sonorous 8 nốt, Rift (natural/mini recovery/chở phương tiện), 5 mob với hành vi cốt lõi (Singer, Echo Golem giao Soul Block tự động, Blub thuần 1/3 + stay, Sifter đàn ≤5, Dark Sniffer nhiễm → Sonic Sniff), 22 advancement đúng trigger |
+| **Fan-made (mod không có)** | 5 biome tự viết, Prism Warden, Prism equipment, Prismite, Rift Key, Shard equipment, Sift Catalyst/Crown, Frost/Sky/Spire Fragment, Sift Tide, Spire Tyrant (mặc định TẮT), Spear (thuần fan) |
+| **Stand-in cần asset riêng** | Model/texture/animation mob và block (họ cherry/deepslate thay hình dạng gốc), nhạc Rift Disc + 8 âm Sonorous + âm thanh mob (chờ asset), bầu trời động (client-side), Ichor là chất lỏng thật (giới hạn Paper) |
+
 ## Chiều không gian The Sift
 
 Plugin tự supply datapack, không cần mod Fabric tham chiếu. Một số tên biome, giai điệu portal,

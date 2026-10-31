@@ -7,8 +7,12 @@
         "minecraft:item_model": "thesift:siftite_ingot"
       }
     },
-    "title": "Keep Inventory",
-    "description": "Have any Siftite item in the inventory and... die. Then just watch...",
+    "title": {
+      "translate": "advancement.thesift.keep_inventory.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.keep_inventory.description"
+    },
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true

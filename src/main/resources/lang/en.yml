@@ -4,6 +4,8 @@
 blub:
   tamed: "The Blub accepts your Soul Block and follows you."
   failed: "The Blub sniffs the Soul Block and wanders off. Try again."
+  stay: "The Blub settles down and stays."
+  follow: "The Blub trots after you again."
   heart: "Already yours: a small heart response."
 sifter:
   herd: "Sifter herd"

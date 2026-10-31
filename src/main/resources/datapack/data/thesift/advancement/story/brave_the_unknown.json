@@ -7,8 +7,12 @@
         "minecraft:item_model": "thesift:siftslate_growth"
       }
     },
-    "title": "Brave the Unknown",
-    "description": "Enter the Sift",
+    "title": {
+      "translate": "advancement.thesift.story.brave_the_unknown.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.story.brave_the_unknown.description"
+    },
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true

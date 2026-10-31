@@ -7,8 +7,12 @@
         "minecraft:item_model": "thesift:ichor_bucket"
       }
     },
-    "title": "Blood of the Gods",
-    "description": "Fill a bucket with Ichor",
+    "title": {
+      "translate": "advancement.thesift.blood_of_the_gods.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.blood_of_the_gods.description"
+    },
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true

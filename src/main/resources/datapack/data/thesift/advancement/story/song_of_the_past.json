@@ -4,8 +4,12 @@
     "icon": {
       "id": "minecraft:goat_horn"
     },
-    "title": "Song of the Past",
-    "description": "Blow the Goat Horn in the center of the Ancient City",
+    "title": {
+      "translate": "advancement.thesift.story.song_of_the_past.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.story.song_of_the_past.description"
+    },
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true

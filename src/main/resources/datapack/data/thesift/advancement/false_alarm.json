@@ -7,8 +7,12 @@
         "minecraft:item_model": "thesift:ichor_snowball"
       }
     },
-    "title": "False Alarm",
-    "description": "Trick the Warden with vibrations by throwing an Ichor Snowball",
+    "title": {
+      "translate": "advancement.thesift.false_alarm.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.false_alarm.description"
+    },
     "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true

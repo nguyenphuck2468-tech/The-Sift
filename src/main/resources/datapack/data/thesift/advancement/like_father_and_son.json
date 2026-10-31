@@ -7,8 +7,12 @@
         "minecraft:item_model": "thesift:echo_golem_spawn_egg"
       }
     },
-    "title": "Like Father and Son",
-    "description": "Be near the Echo Golem when it gives the Soul Block to the Singer",
+    "title": {
+      "translate": "advancement.thesift.like_father_and_son.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.like_father_and_son.description"
+    },
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true

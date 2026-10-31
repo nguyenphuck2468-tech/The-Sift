@@ -7,8 +7,12 @@
         "minecraft:item_model": "thesift:music_disc_rift"
       }
     },
-    "title": "Rift Resonance",
-    "description": "Listen to the Rift Music Disc near a Sift Rift",
+    "title": {
+      "translate": "advancement.thesift.rift_resonance.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.rift_resonance.description"
+    },
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true

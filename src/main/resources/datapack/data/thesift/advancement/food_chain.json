@@ -7,8 +7,12 @@
         "minecraft:item_model": "thesift:dark_sniffer_spawn_egg"
       }
     },
-    "title": "Food Chain",
-    "description": "Let your pet Blub defeat the Dark Sniffer",
+    "title": {
+      "translate": "advancement.thesift.food_chain.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.food_chain.description"
+    },
     "frame": "challenge",
     "show_toast": true,
     "announce_to_chat": true

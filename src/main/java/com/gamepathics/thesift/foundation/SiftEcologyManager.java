@@ -64,6 +64,7 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey decorationRetryAtKey;
     private final NamespacedKey creatureKey;
     private final NamespacedKey blubOwnerKey;
+    private final NamespacedKey blubStayKey;
     private final NamespacedKey spearThrowAtKey;
     private final NamespacedKey ichorSnowballAtKey;
     private final NamespacedKey ichorContentKey;
@@ -129,6 +130,7 @@ public final class SiftEcologyManager implements Listener {
         this.decorationRetryAtKey = new NamespacedKey(plugin, "sift_ecology_retry_at");
         this.creatureKey = new NamespacedKey(plugin, "sift_creature");
         this.blubOwnerKey = new NamespacedKey(plugin, "blub_owner");
+        this.blubStayKey = new NamespacedKey(plugin, "blub_stay");
         this.spearThrowAtKey = new NamespacedKey(plugin, "spear_last_throw");
         this.ichorSnowballAtKey = new NamespacedKey(plugin, "ichor_snowball_last_throw");
         // Same namespace:name pair IchorContent uses for its content tag, so the snowball
@@ -175,6 +177,7 @@ public final class SiftEcologyManager implements Listener {
             tickDarkSniffers();
             tickBlubs();
             tickSifterHerds();
+            tickIchorCauldrons();
         }, 100L, 100L);
         this.darkSnifferCombatTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             tickDarkSnifferCombat();
@@ -1461,6 +1464,30 @@ public final class SiftEcologyManager implements Listener {
         }
     }
 
+    /**
+     * Reference-mod parity: a pointed dripstone dripping above an Ichor cauldron slowly
+     * refills it with Ichor. Runs on the 5s world tick; one level per drip.
+     */
+    private void tickIchorCauldrons() {
+        if (!plugin.getConfig().getBoolean("ichor.cauldron.dripstone-fill", true)) return;
+        IchorState state = ichorState();
+        if (state == null) return;
+        int maxLevel = Math.max(1, plugin.getConfig().getInt("ichor.cauldron.max-level", 3));
+        for (Location at : state.cauldronLocations()) {
+            if (!at.getChunk().isLoaded()) continue;
+            if (state.level(at) >= maxLevel) continue;
+            Block above = at.clone().add(0, 1, 0).getBlock();
+            if (above.getType() != org.bukkit.Material.POINTED_DRIPSTONE) continue;
+            state.setLevel(at, state.level(at) + 1);
+            at.getWorld().spawnParticle(Particle.DRIPPING_DRIPSTONE_WATER,
+                    at.clone().add(0.5, 1.1, 0.5), 6, 0.2, 0.15, 0.2, 0.01);
+        }
+    }
+
+    private IchorState ichorState() {
+        return plugin instanceof TheSiftFoundationPlugin foundation ? foundation.ichorState() : null;
+    }
+
     /** Ichor rain/snow visual and contact-effect approximation for the reference mod weather. */
     private void tickIchorWeather() {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
@@ -2080,9 +2107,28 @@ public final class SiftEcologyManager implements Listener {
             Messages.send(player, "blub.tamed", "The Blub accepts your Soul Block and follows you.");
             SiftAdvancementGrant.grant(plugin, player, "blub");
         } else if (ownerId != null && ownerId.equals(player.getUniqueId().toString())) {
+            event.setCancelled(true);
+            // Reference-mod parity (Blub): right-clicking your Blub with an empty hand
+            // toggles stay/follow (a Rabbit cannot play the mod's sit animation, so staying
+            // freezes the mob in place with its AI paused).
+            if (hand.getType().isAir()) {
+                boolean staying = pdc.has(blubStayKey, PersistentDataType.BYTE);
+                if (staying) {
+                    pdc.remove(blubStayKey);
+                    if (target instanceof Mob mob) mob.setAI(true);
+                    Messages.send(player, "blub.follow", "The Blub trots after you again.");
+                } else {
+                    pdc.set(blubStayKey, PersistentDataType.BYTE, (byte) 1);
+                    if (target instanceof Mob mob) {
+                        mob.setAI(false);
+                        mob.getPathfinder().stopPathfinding();
+                    }
+                    Messages.send(player, "blub.stay", "The Blub settles down and stays.");
+                }
+                return;
+            }
             // Already yours: a small heart response, mirroring the mod's bond feedback.
             target.getWorld().spawnParticle(Particle.HEART, target.getLocation().add(0, 0.6, 0), 3);
-            event.setCancelled(true);
         }
     }
 
@@ -2140,6 +2186,7 @@ public final class SiftEcologyManager implements Listener {
             var pdc = blub.getPersistentDataContainer();
             if (!"blub".equals(pdc.get(creatureKey, PersistentDataType.STRING))) continue;
             String ownerId = pdc.get(blubOwnerKey, PersistentDataType.STRING);
+            if (pdc.has(blubStayKey, PersistentDataType.BYTE)) continue; // staying put
             if (ownerId == null) {
                 // Reference-mod parity (Blub): wild Blubs are drawn to a nearby player holding
                 // a Soul Block - the same item that tames them.

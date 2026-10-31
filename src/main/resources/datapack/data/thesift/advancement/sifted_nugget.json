@@ -7,8 +7,12 @@
         "minecraft:item_model": "thesift:siftslate_siftite_ore"
       }
     },
-    "title": "Sifted Nugget",
-    "description": "Mine the Siftite Ore",
+    "title": {
+      "translate": "advancement.thesift.sifted_nugget.title"
+    },
+    "description": {
+      "translate": "advancement.thesift.sifted_nugget.description"
+    },
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true

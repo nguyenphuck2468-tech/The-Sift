@@ -16,6 +16,11 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     private final ContentRegistry contentRegistry = new ContentRegistry();
     private IchorContent ichorContent;
     private IchorState ichorState;
+
+    /** Shared Ichor state store for managers that need cauldron positions (package-visible). */
+    IchorState ichorState() {
+        return ichorState;
+    }
     private SiftiteContent siftiteContent;
     private SiftMobFactory sharedMobFactory;
     private ResonanceManager resonanceManager;

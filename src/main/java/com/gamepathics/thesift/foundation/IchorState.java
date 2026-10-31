@@ -151,6 +151,24 @@ public final class IchorState {
         markDirty();
     }
 
+    /** Registered cauldron positions resolved against loaded worlds (for ambient ticks). */
+    public synchronized java.util.List<Location> cauldronLocations() {
+        java.util.List<Location> result = new java.util.ArrayList<>();
+        for (String entry : cauldrons.keySet()) {
+            String[] parts = entry.split(":");
+            if (parts.length != 4) continue;
+            org.bukkit.World world = org.bukkit.Bukkit.getWorld(java.util.UUID.fromString(parts[0]));
+            if (world == null) continue;
+            try {
+                result.add(new Location(world, Integer.parseInt(parts[1]),
+                        Integer.parseInt(parts[2]), Integer.parseInt(parts[3])));
+            } catch (NumberFormatException ignored) {
+                // Corrupt key from an older save: skip it.
+            }
+        }
+        return result;
+    }
+
     public synchronized void setBlock(Location location, String id) {
         blocks.put(key(location), id);
         markDirty();
