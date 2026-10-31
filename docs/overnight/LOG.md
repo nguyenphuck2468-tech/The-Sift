@@ -8,3 +8,4 @@
 | P1-T1.1 | Spear dedup via SpearThrowHandler | bf38081 | ./gradlew build | BUILD SUCCESSFUL; tests green |
 | P1-T1.4 | Strict gate tests + STRICT boot CI step | 622e905 | build + bash -n + fixture test | BUILD SUCCESSFUL; fixtures pass |
 | P1-T1.5 | Legal cleanup | fef2f0f | build | BUILD SUCCESSFUL |
+| P2 | 7 minor fixes (2 no-ops verified) | 0c28b77 | ./gradlew build | BUILD SUCCESSFUL |
