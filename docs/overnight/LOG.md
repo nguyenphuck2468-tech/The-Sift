@@ -7,3 +7,4 @@
 | P0-T0.3 | Claim verification | (docs) | greps/reads | Spear dup VALID (durability), rift defaults VALID (3/0.3), findConsole VALID (33^3*64), prototype-biome claim REJECTED (15 biomes generate) |
 | P1-T1.1 | Spear dedup via SpearThrowHandler | bf38081 | ./gradlew build | BUILD SUCCESSFUL; tests green |
 | P1-T1.4 | Strict gate tests + STRICT boot CI step | 622e905 | build + bash -n + fixture test | BUILD SUCCESSFUL; fixtures pass |
+| P1-T1.5 | Legal cleanup | fef2f0f | build | BUILD SUCCESSFUL |
