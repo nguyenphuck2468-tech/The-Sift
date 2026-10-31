@@ -1425,6 +1425,17 @@ public final class SiftEcologyManager implements Listener {
         int z = chunk.getZ() * 16 + 4 + random.nextInt(8);
         int y = chunk.getWorld().getHighestBlockYAt(x, z) + 1;
         Location at = new Location(chunk.getWorld(), x + 0.5, y, z + 0.5);
+        // Mod 1.1.0 rule: Sifters only spawn on natural terrain, never inside player builds.
+        for (Block marker : java.util.List.of(
+                chunk.getWorld().getBlockAt(x, y, z),
+                chunk.getWorld().getBlockAt(x + 1, y, z),
+                chunk.getWorld().getBlockAt(x, y, z + 1))) {
+            Material type = marker.getType();
+            if (type == Material.CHEST || type == Material.CRAFTING_TABLE || type == Material.FURNACE
+                    || type == Material.TORCH || type == Material.WALL_TORCH || type.isAir()) {
+                return;
+            }
+        }
         int herd = 3 + random.nextInt(3);
         for (int i = 0; i < herd; i++) {
             summonCreature("sifter", at);

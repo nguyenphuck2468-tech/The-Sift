@@ -276,7 +276,14 @@ public final class RiftManager implements Listener {
             java.util.List<Entity> riders = new java.util.ArrayList<>(entity.getPassengers());
             java.util.List<UUID> moved = new java.util.ArrayList<>();
             moved.add(entity.getUniqueId());
+            org.bukkit.util.Vector momentum = entity instanceof org.bukkit.entity.Projectile projectile
+                    ? projectile.getVelocity() : null;
             entity.teleport(destination);
+            if (momentum != null) {
+                // Teleport zeroes velocity; a flying projectile must keep its momentum.
+                plugin.getServer().getScheduler().runTaskLater(plugin,
+                        () -> { if (entity.isValid()) entity.setVelocity(momentum); }, 1L);
+            }
             for (Entity rider : riders) {
                 if (!rider.isValid() || rider.isDead()) continue;
                 moved.add(rider.getUniqueId());
