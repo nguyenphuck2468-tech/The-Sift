@@ -1416,7 +1416,11 @@ public final class SiftEcologyManager implements Listener {
             player.getWorld().spawnParticle(flow ? Particle.END_ROD : Particle.REVERSE_PORTAL,
                     player.getLocation().add(0, 1, 0), 5, 1.3, 0.7, 1.3, 0.01);
             if (tideTick % 60 == 0) {
-                player.sendActionBar(flow ? "§bThe Sift tide is flowing around you" : "§5The Sift tide is ebbing");
+                player.sendActionBar(net.kyori.adventure.text.Component.text(
+                        Messages.get(flow ? "tide.flowing" : "tide.ebbing",
+                                flow ? "The Sift tide is flowing around you" : "The Sift tide is ebbing"),
+                        flow ? net.kyori.adventure.text.format.NamedTextColor.AQUA
+                                : net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE));
                 player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.35f,
                         flow ? 1.5f : 0.7f);
             }
@@ -2040,12 +2044,12 @@ public final class SiftEcologyManager implements Listener {
             consumeOne(player, hand);
             event.setCancelled(true);
             if (Math.random() >= plugin.getConfig().getDouble("mobs.blub.tame-chance", 1.0 / 3.0)) {
-                player.sendMessage("\u00a77The Blub sniffs the Soul Block and wanders off. Try again.");
+                Messages.send(player, "blub.failed", "The Blub sniffs the Soul Block and wanders off. Try again.");
                 return;
             }
             pdc.set(blubOwnerKey, PersistentDataType.STRING, player.getUniqueId().toString());
             if (target instanceof LivingEntity living) living.setRemoveWhenFarAway(false);
-            player.sendMessage("\u00a7dThe Blub accepts your Soul Block and follows you.");
+            Messages.send(player, "blub.tamed", "The Blub accepts your Soul Block and follows you.");
             SiftAdvancementGrant.grant(plugin, player, "blub");
         } else if (ownerId != null && ownerId.equals(player.getUniqueId().toString())) {
             // Already yours: a small heart response, mirroring the mod's bond feedback.
@@ -2074,12 +2078,12 @@ public final class SiftEcologyManager implements Listener {
         // Sift limits - the permission check must not be the only gate.
         event.setCancelled(true);
         if (!plugin.getConfig().getBoolean("spawn-eggs.enabled", true)) {
-            player.sendMessage("\u00a7cSift spawn eggs are disabled by configuration.");
+            Messages.send(player, "spawn-eggs.disabled", "Sift spawn eggs are disabled by configuration.");
             return;
         }
         if (!"all".equals(plugin.getConfig().getString("spawn-eggs.permission-mode", "op"))
                 && !player.isOp()) {
-            player.sendMessage("\u00a7cSift spawn eggs require op in the current permission mode.");
+            Messages.send(player, "spawn-eggs.denied", "Sift spawn eggs require op in the current permission mode.");
             return;
         }
         Block clicked = event.getClickedBlock();
@@ -2094,7 +2098,8 @@ public final class SiftEcologyManager implements Listener {
         if (spawned) {
             consumeOne(player, hand);
         } else {
-            player.sendMessage("\u00a7cUnknown Sift creature: " + species);
+            player.sendMessage("§c" + Messages.get("spawn-eggs.unknown",
+                    "Unknown Sift creature: %species%").replace("%species%", species));
         }
     }
 

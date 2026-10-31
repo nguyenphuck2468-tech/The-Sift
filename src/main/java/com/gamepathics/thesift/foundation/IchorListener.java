@@ -60,8 +60,10 @@ public final class IchorListener implements Listener {
             block.getWorld().spawnParticle(org.bukkit.Particle.DRIPPING_OBSIDIAN_TEAR,
                     block.getLocation().add(0.5, 1.0, 0.5), 8, 0.25, 0.2, 0.25, 0.02);
         }
-        player.sendMessage("§dThe cauldron fills the bottle with resonant Ichor. §7("
-                + nextLevel + "/" + plugin.getConfig().getInt("ichor.cauldron.max-level", 3) + ")");
+        player.sendMessage("§d" + Messages.get("ichor.bottle-filled",
+                        "The cauldron fills the bottle with resonant Ichor. (%level/%max)")
+                .replace("%level%", String.valueOf(nextLevel))
+                .replace("%max%", String.valueOf(plugin.getConfig().getInt("ichor.cauldron.max-level", 3))));
     }
 
     /** Reference-mod item (ichor_bucket): an empty bucket draws a full cauldron charge. */
@@ -87,7 +89,8 @@ public final class IchorListener implements Listener {
         player.playSound(player.getLocation(), "item.bucket.fill", 0.9f, 1.1f);
         block.getWorld().spawnParticle(org.bukkit.Particle.DRIPPING_OBSIDIAN_TEAR,
                 block.getLocation().add(0.5, 1.0, 0.5), 12, 0.25, 0.2, 0.25, 0.02);
-        player.sendMessage("§dThe bucket draws resonant Ichor from the cauldron.");
+        player.sendMessage("§d" + Messages.get("ichor.bucket-filled",
+                "The bucket draws resonant Ichor from the cauldron."));
     }
 
     @EventHandler(ignoreCancelled = true, priority = org.bukkit.event.EventPriority.HIGHEST)
@@ -111,7 +114,8 @@ public final class IchorListener implements Listener {
                 maxLevel,
                 state.level(block.getLocation()) + 1));
         consumeOne(event.getPlayer().getInventory());
-        event.getPlayer().sendMessage("§dThe cauldron resonates with Ichor.");
+        event.getPlayer().sendMessage("§d" + Messages.get("ichor.refill",
+                "The cauldron resonates with Ichor."));
     }
 
     @EventHandler(ignoreCancelled = true, priority = org.bukkit.event.EventPriority.HIGHEST)

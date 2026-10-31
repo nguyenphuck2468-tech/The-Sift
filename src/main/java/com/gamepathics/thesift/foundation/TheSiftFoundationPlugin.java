@@ -63,6 +63,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             return;
         }
         enforceDependencyMode();
+        Messages.init(this);
         loadContentFlags();
         providerReadiness = new ProviderReadiness(this);
         providerApiProbe = new ProviderApiProbe(this);
@@ -283,13 +284,16 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
 
     private boolean handleSiftCommand(CommandSender sender, String[] args) {
         if (requiresAdminPermission(args) && !sender.hasPermission("thesift.foundation.admin")) {
-            sender.sendMessage("You do not have permission to use this The Sift command.");
+            Messages.send(sender, "doctor.perm",
+                    "You do not have permission to use this The Sift command.");
             return true;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("reload")) {
             reloadConfig();
+            Messages.init(this);
             if (!ConfigMigration.migrate(this)) {
-                sender.sendMessage("The Sift config is newer than this build; reload was rejected.");
+                Messages.send(sender, "doctor.new-config",
+                        "The Sift config is newer than this build; reload was rejected.");
                 return true;
             }
             enforceDependencyMode();

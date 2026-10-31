@@ -1,5 +1,9 @@
 config-version: 4
 
+# Ngôn ngữ thông điệp trong game: vi (mặc định) hoặc en. Ghi đè từng câu
+# bằng tệp plugins/TheSift/messages.yml.
+locale: vi
+
 content:
   ichor: true
   ichor_bottle: true

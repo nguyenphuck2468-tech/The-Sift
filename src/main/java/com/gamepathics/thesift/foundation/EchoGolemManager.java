@@ -285,7 +285,7 @@ public final class EchoGolemManager implements Listener {
             if (hand.getAmount() == 1) player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
             else hand.setAmount(hand.getAmount() - 1);
             pdc.set(ownerKey, PersistentDataType.STRING, player.getUniqueId().toString());
-            player.sendMessage("§bThe Echo Golem recognizes you as its companion.");
+            Messages.send(player, "echo-golem.bonded", "The Echo Golem recognizes you as its companion.");
             event.setCancelled(true);
             return;
         }
@@ -295,19 +295,20 @@ public final class EchoGolemManager implements Listener {
         if (holdingSoulBlock && !carrying) {
             consumeOne(player);
             pdc.set(cargoKey, PersistentDataType.BYTE, (byte) 1);
-            player.sendMessage("§bThe Echo Golem takes the Soul Block.");
+            Messages.send(player, "echo-golem.takes-soul", "The Echo Golem takes the Soul Block.");
             event.setCancelled(true);
         } else if (carrying && hand.getType().isAir()) {
             ItemStack soul = sharedContent().forId("soul_block");
             if (soul == null) {
-                player.sendMessage("Soul Block item is unavailable from the configured provider. Run /sift doctor.");
+                Messages.send(player, "echo-golem.no-provider",
+                        "Soul Block item is unavailable from the configured provider. Run /sift doctor.");
                 event.setCancelled(true);
                 return;
             }
             pdc.remove(cargoKey);
             player.getInventory().addItem(soul).values()
                     .forEach(leftover -> player.getWorld().dropItemNaturally(player.getLocation(), leftover));
-            player.sendMessage("§bThe Echo Golem returns its Soul Block to you.");
+            Messages.send(player, "echo-golem.returns-soul", "The Echo Golem returns its Soul Block to you.");
             // Reference-mod parity (friend_of_the_sift): the bonded golem handing the Soul
             // Block back to its player.
             SiftAdvancementGrant.grant(plugin, player, "friend_of_the_sift");

@@ -1,0 +1,30 @@
+# The Sift English message catalog (fallback locale).
+# Override any line with plugins/TheSift/messages.yml without touching the jar.
+# Key layout: <area>.<message>
+blub:
+  tamed: "The Blub accepts your Soul Block and follows you."
+  failed: "The Blub sniffs the Soul Block and wanders off. Try again."
+  heart: "Already yours: a small heart response."
+sifter:
+  herd: "Sifter herd"
+spawn-eggs:
+  disabled: "Sift spawn eggs are disabled by configuration."
+  denied: "Sift spawn eggs require op in the current permission mode."
+  unknown: "Unknown Sift creature: %species%"
+echo-golem:
+  bonded: "The Echo Golem recognizes you as its companion."
+  takes-soul: "The Echo Golem takes the Soul Block."
+  returns-soul: "The Echo Golem returns its Soul Block to you."
+  no-provider: "Soul Block item is unavailable from the configured provider. Run /sift doctor."
+ichor:
+  bottle-filled: "The cauldron fills the bottle with resonant Ichor. (%level/%max)"
+  refill: "The cauldron resonates with Ichor."
+  bucket-filled: "The bucket draws resonant Ichor from the cauldron."
+doctor:
+  perm: "You do not have permission to use this The Sift command."
+  new-config: "The Sift config is newer than this build; reload was rejected."
+spear:
+  hint: "Siftite Spear"
+tide:
+  flowing: "The Sift tide is flowing around you"
+  ebbing: "The Sift tide is ebbing"

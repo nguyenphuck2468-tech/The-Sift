@@ -1,0 +1,30 @@
+# Ngôn ngữ tiếng Việt mặc định của The Sift.
+# Ghi đè từng dòng bằng tệp plugins/TheSift/messages.yml (không cần sửa jar).
+# Cấu trúc key: <lĩnh vực>.<nội dung>
+blub:
+  tamed: "Con Blub chấp nhận Soul Block của bạn và đi theo bạn."
+  failed: "Con Blub ngửi Soul Block rồi bỏ đi. Thử lại nhé."
+  heart: "Blub đã là của bạn: một chút đáp lại tình cảm."
+sifter:
+  herd: "Đàn Sifter"
+spawn-eggs:
+  disabled: "Trứng sinh sản The Sift đang bị tắt trong cấu hình."
+  denied: "Chế độ quyền hiện tại chỉ cho op dùng trứng sinh sản The Sift."
+  unknown: "Không rõ loài The Sift: %species%"
+echo-golem:
+  bonded: "Echo Golem công nhận bạn là bạn đồng hành."
+  takes-soul: "Echo Golem nhận lấy Soul Block."
+  returns-soul: "Echo Golem trả Soul Block lại cho bạn."
+  no-provider: "Soul Block không có từ provider đã cấu hình. Hãy chạy /sift doctor."
+ichor:
+  bottle-filled: "Nồi cauldron rót Ichor cộng hưởng vào lọ. (%level/%max)"
+  refill: "Cauldron cộng hưởng cùng Ichor."
+  bucket-filled: "Chiếc xô rút Ichor cộng hưởng từ cauldron."
+doctor:
+  perm: "Bạn không có quyền dùng lệnh The Sift này."
+  new-config: "Cấu hình mới hơn bản build này; đã từ chối reload."
+spear:
+  hint: "Giáo Siftite"
+tide:
+  flowing: "Thủy triều Sift đang chảy quanh bạn"
+  ebbing: "Thủy triều Sift đang rút"
