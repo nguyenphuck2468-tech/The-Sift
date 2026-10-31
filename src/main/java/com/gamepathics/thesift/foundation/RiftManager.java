@@ -606,6 +606,8 @@ public final class RiftManager implements Listener {
         }
 
         private void pulseResonance() {
+            // Plan default: the fan-made rift resonance pulse is OFF (content.rift_walker_waves).
+            if (!plugin.getConfig().getBoolean("content.rift_walker_waves", false)) return;
             center.getWorld().playSound(center, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 0.6f);
             center.getWorld().spawnParticle(Particle.SONIC_BOOM, center.clone().add(0, 1, 0), 1);
             for (Player p : center.getWorld().getPlayers()) {
@@ -618,6 +620,7 @@ public final class RiftManager implements Listener {
         }
 
         private void spawnRiftMobs(int count) {
+            if (!plugin.getConfig().getBoolean("content.rift_walker_waves", false)) return;
             for (int i = 0; i < count; i++) {
                 Location spawnLoc = center.clone().add(
                     ThreadLocalRandom.current().nextDouble(-5, 5),

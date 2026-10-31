@@ -101,6 +101,10 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey darkSnifferPettingWardenKey;
     /** Last herd anchor per world so spawned Sifters regroup instead of scattering (mod parity). */
     // Reference-mod parity (Sifter): herds of at most five around per-herd anchors.
+    /** The five reference-mod mobs; never gated by the fan-made flag. */
+    private static final java.util.Set<String> FAN_CORE_MOBS = java.util.Set.of(
+            "singer", "echo_golem", "blub", "sifter", "dark_sniffer");
+
     private final java.util.Map<java.util.UUID, java.util.List<Location>> sifterHerdAnchors = new ConcurrentHashMap<>();
     private final SiftMobFactory mobFactory;
     private final ExternalBlockBridge blockBridge;
@@ -173,7 +177,7 @@ public final class SiftEcologyManager implements Listener {
         this.blockBridge = new ExternalBlockBridge(plugin);
         this.content = sharedContent != null ? sharedContent : new SiftiteContent(plugin);
         this.tideTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            tickTide();
+            if (plugin.getConfig().getBoolean("content.sift_tide", false)) tickTide();
             tickIchorWeather();
             tickDarkSniffers();
             tickBlubs();
@@ -452,7 +456,8 @@ public final class SiftEcologyManager implements Listener {
         else if ((biome.endsWith("crystal_spires") || biome.endsWith("siftslate_slopes")) && random.nextInt(55) == 0) summonEchoGolem(chunk, random);
         if ((biome.endsWith("shattered_peaks") || biome.endsWith("siftslate_peaks")) && plugin.getConfig().getBoolean("content.rift-events", true)
                 && random.nextInt(120) == 0) openNaturalRift(chunk);
-        if ((biome.endsWith("bulb_forest") || biome.endsWith("overgrown_forest")) && random.nextInt(160) == 0)
+        if (plugin.getConfig().getBoolean("content.prism_warden", false)
+                && (biome.endsWith("bulb_forest") || biome.endsWith("overgrown_forest")) && random.nextInt(160) == 0)
             spawnBoss(chunk, EntityType.WARDEN, "Prism Warden", "prism_warden", 180.0, 28.0);
         else if ((biome.endsWith("shattered_peaks") || biome.endsWith("siftslate_peaks")) && random.nextInt(120) == 0) {
             boolean tyrant = plugin.getConfig().getBoolean("content.spire_tyrant", false)
@@ -775,6 +780,15 @@ public final class SiftEcologyManager implements Listener {
         }
     }
 
+    /**
+     * Fan-made stand-in wildlife gate (plan: content.sift_standin_mobs, default FALSE). The
+     * five core mod mobs (Singer, Echo Golem, Blub, Sifter, Dark Sniffer) are NOT affected;
+     * the wildlife tables above mix them, so each table entry checks its own id here.
+     */
+    private boolean fanMobEnabled(String mobId) {
+        return plugin.getConfig().getBoolean("content.sift_standin_mobs", false);
+    }
+
     /** Ore veins required for ordinary survival progression in a biome set with no data-driven features. */
     private void generateSiftResources(Chunk chunk, Random random) {
         boolean dataDriven = dimensionOreFeaturesActive();
@@ -1022,6 +1036,7 @@ public final class SiftEcologyManager implements Listener {
                 type = EntityType.valueOf(mob[0]); name = mob[1];
             }
             String mobId = name.toLowerCase(Locale.ROOT).replace(' ', '_');
+            if (!FAN_CORE_MOBS.contains(mobId) && !fanMobEnabled(mobId)) continue;
             Location spawnAt = new Location(world, x + .5, y, z + .5);
             Entity entity = mobFactory.spawn(mobId, spawnAt, type);
             if (entity == null) continue;
