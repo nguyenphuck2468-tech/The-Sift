@@ -348,9 +348,8 @@ public final class SiftEcologyManager implements Listener {
         Biome biome = chunk.getBlock(8, surfaceY, 8).getBiome();
         String key = biome.getKey().toString().toLowerCase(Locale.ROOT);
 
-        // In strict mode only provider-owned blocks and mobs are content. The
-        // vanilla-backed decorative structures, plants, ores, portal frames,
-        // chest loot and flowing-water stand-in below remain dev/CI behavior.
+        // Strict mode prefers provider-owned content; the vanilla-safe landmarks below it
+        // run in both modes, and provider-mapped placements fail-and-retry until resolved.
         if (plugin.getConfig().getBoolean("providers.strict", true)) {
             decorateStrictProviderContent(chunk, key, random);
             return 1;
@@ -417,6 +416,20 @@ public final class SiftEcologyManager implements Listener {
         growStrictProviderLandmark(chunk, biome, random);
         generateCharoiteOre(chunk, random);
         generateSiftiteOre(chunk, random);
+        // Landmarks the fallback branch generates were missing entirely under strict mode.
+        // These are vanilla-safe (deepslate/tuff/soul sand structures) except the Ichor
+        // spring and portal-ruin chest, whose provider-aware placements fail-and-retry by
+        // design until a provider resolves - the same behaviour as any strict decoration.
+        if ((biome.contains("overgrown") || biome.endsWith("carapace") || biome.endsWith("sift_wastes"))
+                && random.nextInt(24) == 0) generateIchorSpring(chunk, random);
+        if (biome.contains("overgrown") && random.nextInt(18) == 0) generateAbandonedPortal(chunk, random);
+        if (random.nextInt(32) == 0) {
+            if (biome.contains("deep_dark")) generateSnifferCave(chunk, random);
+            else if (biome.contains("siftslate") || biome.contains("wastes")) generateSoulCanyon(chunk, random);
+            else if (biome.contains("overgrown_peaks") || biome.contains("ichor_snowy_peaks")) {
+                generateCliffArch(chunk, random);
+            } else if (biome.contains("overgrown")) generateMonolith(chunk, random);
+        }
         spawnSiftWildlife(chunk, biome, random);
         if ((biome.endsWith("pink_meadows") || biome.endsWith("overgrown_clearing")) && random.nextInt(22) == 0) summonSinger(chunk, random);
         else if ((biome.endsWith("crystal_spires") || biome.endsWith("siftslate_slopes")) && random.nextInt(55) == 0) summonEchoGolem(chunk, random);

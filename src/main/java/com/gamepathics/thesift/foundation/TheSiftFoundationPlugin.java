@@ -115,6 +115,8 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                     resonanceManager);
             getServer().getPluginManager().registerEvents(ancientCityGateManager, this);
             ancientCityGateManager.start();
+            // Gate-owned Sonorous note blocks win over the rift portal song handler.
+            if (riftManager != null) riftManager.setGateOwner(ancientCityGateManager);
             siftEcologyManager = new SiftEcologyManager(this, resonanceManager, echoGolemManager,
                     riftManager, sharedContent(), sharedMobFactory());
             getServer().getPluginManager().registerEvents(siftEcologyManager, this);

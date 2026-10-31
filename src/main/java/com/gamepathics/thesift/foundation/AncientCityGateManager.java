@@ -259,18 +259,39 @@ final class AncientCityGateManager implements Listener {
         return true;
     }
 
+    /** True when the block is one of a known gate's Sonorous positions, i.e. gate-owned. */
+    boolean ownsSonorous(Block block) {
+        for (Gate gate : knownGates.values()) {
+            if (gate.world() != block.getWorld()) continue;
+            for (AncientCityFrame.BlockPos pos : gate.frame().sonorousPositions(gate.side())) {
+                if (pos.x() == block.getX() && pos.y() == block.getY() && pos.z() == block.getZ()) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private Optional<Gate> readGate(World world, Location locate) {
-        int x = locate.getBlockX(), z = locate.getBlockZ();
-        if (!world.isChunkLoaded(x >> 4, z >> 4)) return Optional.empty();
-        int[] data = world.getChunkAt(x >> 4, z >> 4).getPersistentDataContainer()
-                .get(gateDataKey, PersistentDataType.INTEGER_ARRAY);
-        if (data == null || data.length != 12 || data[0] != GATE_VERSION) return Optional.empty();
-        AncientCityFrame.Axis axis = data[7] == 0 ? AncientCityFrame.Axis.X : AncientCityFrame.Axis.Z;
-        AncientCityFrame frame = new AncientCityFrame(data[1], data[2], data[3], data[4], data[5], data[6], axis);
-        AncientCityFrame.Side side = data[8] == 0 ? AncientCityFrame.Side.NEGATIVE : AncientCityFrame.Side.POSITIVE;
-        Integer returnMinY = data[11] == Integer.MIN_VALUE ? null : data[11];
-        Gate gate = new Gate(gateKey(world, frame), world, frame, side, data[9] == 1, data[10] == 1, returnMinY);
-        return Optional.of(gate);
+        // The record lives in the chunk holding the frame centre, while the lookup starts
+        // from the structure-locate position; scan a 3x3 chunk neighbourhood so a restart
+        // still finds gates whose centre chunk differs from the locate chunk.
+        int cx = locate.getBlockX() >> 4, cz = locate.getBlockZ() >> 4;
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                if (!world.isChunkLoaded(cx + dx, cz + dz)) continue;
+                int[] data = world.getChunkAt(cx + dx, cz + dz).getPersistentDataContainer()
+                        .get(gateDataKey, PersistentDataType.INTEGER_ARRAY);
+                if (data == null || data.length != 12 || data[0] != GATE_VERSION) continue;
+                AncientCityFrame.Axis axis = data[7] == 0 ? AncientCityFrame.Axis.X : AncientCityFrame.Axis.Z;
+                AncientCityFrame frame = new AncientCityFrame(data[1], data[2], data[3], data[4], data[5], data[6], axis);
+                AncientCityFrame.Side side = data[8] == 0 ? AncientCityFrame.Side.NEGATIVE : AncientCityFrame.Side.POSITIVE;
+                Integer returnMinY = data[11] == Integer.MIN_VALUE ? null : data[11];
+                return Optional.of(new Gate(gateKey(world, frame), world, frame, side,
+                        data[9] == 1, data[10] == 1, returnMinY));
+            }
+        }
+        return Optional.empty();
     }
 
     private void persist(Gate gate) {

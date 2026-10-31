@@ -47,6 +47,7 @@ public final class RiftManager implements Listener {
     private static final String RIFT_KEY_ID = "rift_key";
 
     private final JavaPlugin plugin;
+    private AncientCityGateManager gateOwner;
     private final NamespacedKey riftKey;
     private final SiftMobFactory mobFactory;
     private final ExternalBlockBridge blockBridge;
@@ -78,6 +79,11 @@ public final class RiftManager implements Listener {
         this.ancientCity = new AncientCityPortal(plugin);
         // Reuse the plugin-wide content registry when available so item caches stay consistent.
         this.sharedContent = sharedContent;
+    }
+
+    /** Wire the gate manager so gate-owned Sonorous blocks are left to it (package-private). */
+    void setGateOwner(AncientCityGateManager gateOwner) {
+        this.gateOwner = gateOwner;
     }
 
     public RiftManager(JavaPlugin plugin) {
@@ -297,6 +303,9 @@ public final class RiftManager implements Listener {
         if (event.getHand() != EquipmentSlot.HAND) return;
         if (event.getClickedBlock() == null || event.getClickedBlock().getType() != Material.NOTE_BLOCK) return;
         Block block = event.getClickedBlock();
+        // Gate-owned Sonorous note blocks belong to the Ancient City gate system; the rift
+        // portal song must not cancel them away (its handler ran first by registration).
+        if (gateOwner != null && gateOwner.ownsSonorous(block)) return;
         if (!canHandlePortalSong(block)) return;
         if (!(block.getBlockData() instanceof NoteBlock noteBlock)) return;
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK) {
