@@ -7,6 +7,7 @@ import org.bukkit.Server;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.ShapedRecipe;
+import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -23,12 +24,18 @@ public final class IchorContent {
     public static final String ICHOR_GLASS_PANE_ID = "ichor_glass_pane";
     public static final String ICHOR_SNOW_ID = "ichor_snow";
     public static final String ICHOR_SNOW_BLOCK_ID = "ichor_snow_block";
+    public static final String ICHOR_BUCKET_ID = "ichor_bucket";
+    public static final String ICHOR_SHARD_ID = "ichor_shard";
+    public static final String ICHOR_SNOWBALL_ID = "ichor_snowball";
 
     private final JavaPlugin plugin;
     private final ExternalItemBridge externalItems;
     private final NamespacedKey contentKey;
     private final NamespacedKey bottleRecipeKey;
     private final NamespacedKey paneRecipeKey;
+    private final NamespacedKey bucketRecipeKey;
+    private final NamespacedKey shardRecipeKey;
+    private final NamespacedKey snowballRecipeKey;
 
     public IchorContent(JavaPlugin plugin) {
         this.plugin = Objects.requireNonNull(plugin);
@@ -36,18 +43,27 @@ public final class IchorContent {
         this.contentKey = new NamespacedKey(plugin, "content");
         this.bottleRecipeKey = new NamespacedKey(plugin, "ichor_glass");
         this.paneRecipeKey = new NamespacedKey(plugin, "ichor_glass_pane");
+        this.bucketRecipeKey = new NamespacedKey(plugin, "ichor_bucket");
+        this.shardRecipeKey = new NamespacedKey(plugin, "ichor_shard");
+        this.snowballRecipeKey = new NamespacedKey(plugin, "ichor_snowball");
     }
 
-    /** Unregisters the two Ichor recipes owned by this plugin (used from onDisable). */
+    /** Unregisters the Ichor recipes owned by this plugin (used from onDisable). */
     public void removeRecipes() {
         plugin.getServer().removeRecipe(bottleRecipeKey);
         plugin.getServer().removeRecipe(paneRecipeKey);
+        plugin.getServer().removeRecipe(bucketRecipeKey);
+        plugin.getServer().removeRecipe(shardRecipeKey);
+        plugin.getServer().removeRecipe(snowballRecipeKey);
     }
 
     public void registerRecipes() {
         Server server = plugin.getServer();
         server.removeRecipe(bottleRecipeKey);
         server.removeRecipe(paneRecipeKey);
+        server.removeRecipe(bucketRecipeKey);
+        server.removeRecipe(shardRecipeKey);
+        server.removeRecipe(snowballRecipeKey);
         if (!isIchorEnabled()) return;
         if (!plugin.getConfig().getBoolean("recipes.enabled", true)) return;
         if (plugin.getConfig().getBoolean("providers.strict", true)
@@ -71,6 +87,31 @@ public final class IchorContent {
             paneRecipe.setIngredient('G', RecipeChoice.exactChoice(ichorGlass()));
             server.addRecipe(paneRecipe);
         }
+
+        if (isContentEnabled("ichor_bucket")) {
+            ShapelessRecipe bucketRecipe = new ShapelessRecipe(bucketRecipeKey,
+                    ichorBucket());
+            bucketRecipe.addIngredient(Material.BUCKET);
+            bucketRecipe.addIngredient(RecipeChoice.exactChoice(ichorBottle()));
+            bucketRecipe.addIngredient(RecipeChoice.exactChoice(ichorBottle()));
+            server.addRecipe(bucketRecipe);
+        }
+
+        if (isContentEnabled("ichor_shard") && isContentEnabled("ichor_snowball")) {
+            ShapelessRecipe shardRecipe = new ShapelessRecipe(shardRecipeKey, ichorShard());
+            shardRecipe.addIngredient(RecipeChoice.exactChoice(ichorSnowball()));
+            shardRecipe.addIngredient(RecipeChoice.exactChoice(ichorSnowball()));
+            shardRecipe.addIngredient(RecipeChoice.exactChoice(ichorSnowball()));
+            shardRecipe.addIngredient(RecipeChoice.exactChoice(ichorSnowball()));
+            server.addRecipe(shardRecipe);
+        }
+
+        if (isContentEnabled("ichor_snowball") && isContentEnabled("ichor_bottle")) {
+            ShapelessRecipe snowballRecipe = new ShapelessRecipe(snowballRecipeKey, ichorSnowball(2));
+            snowballRecipe.addIngredient(Material.SNOWBALL);
+            snowballRecipe.addIngredient(RecipeChoice.exactChoice(ichorBottle()));
+            server.addRecipe(snowballRecipe);
+        }
     }
 
     public ItemStack ichorBottle() {
@@ -91,6 +132,28 @@ public final class IchorContent {
     public ItemStack ichorSnowBlock() {
         return create(configuredMaterial("ichor.snow-block-material", Material.SNOW_BLOCK),
                 ICHOR_SNOW_BLOCK_ID, "Ichor Snow Block");
+    }
+
+    /** An iron bucket filled with resonant Ichor; right-clicking water places the Ichor spring. */
+    public ItemStack ichorBucket() {
+        return create(configuredMaterial("ichor.bucket-material", Material.WATER_BUCKET),
+                ICHOR_BUCKET_ID, "Ichor Bucket");
+    }
+
+    /** Solidified Ichor: four Ichor Snowballs pressed into one shard. */
+    public ItemStack ichorShard() {
+        return create(configuredMaterial("ichor.shard-material", Material.PRISMARINE_SHARD),
+                ICHOR_SHARD_ID, "Ichor Shard");
+    }
+
+    public ItemStack ichorSnowball() {
+        return ichorSnowball(1);
+    }
+
+    public ItemStack ichorSnowball(int amount) {
+        ItemStack snowball = create(Material.SNOWBALL, ICHOR_SNOWBALL_ID, "Ichor Snowball");
+        if (snowball != null && amount > 1) snowball.setAmount(amount);
+        return snowball;
     }
 
     public ItemStack create(Material material, String id, String name) {

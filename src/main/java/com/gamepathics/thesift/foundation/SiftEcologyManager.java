@@ -65,6 +65,8 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey creatureKey;
     private final NamespacedKey blubOwnerKey;
     private final NamespacedKey spearThrowAtKey;
+    private final NamespacedKey ichorSnowballAtKey;
+    private final NamespacedKey ichorContentKey;
     private final NamespacedKey snifferCorruptionStartKey;
     private final NamespacedKey snifferFleePathAtKey;
     private final NamespacedKey darkSnifferSonicAtKey;
@@ -127,6 +129,10 @@ public final class SiftEcologyManager implements Listener {
         this.creatureKey = new NamespacedKey(plugin, "sift_creature");
         this.blubOwnerKey = new NamespacedKey(plugin, "blub_owner");
         this.spearThrowAtKey = new NamespacedKey(plugin, "spear_last_throw");
+        this.ichorSnowballAtKey = new NamespacedKey(plugin, "ichor_snowball_last_throw");
+        // Same namespace:name pair IchorContent uses for its content tag, so the snowball
+        // handlers can read IchorContent-tagged items without an IchorContent reference.
+        this.ichorContentKey = new NamespacedKey(plugin, "content");
         this.snifferCorruptionStartKey = new NamespacedKey(plugin, "sniffer_corruption_start");
         this.snifferFleePathAtKey = new NamespacedKey(plugin, "sniffer_flee_path_at");
         this.darkSnifferSonicAtKey = new NamespacedKey(plugin, "dark_sniffer_sonic_at");
@@ -1086,6 +1092,65 @@ public final class SiftEcologyManager implements Listener {
         projectile.remove();
         projectile.getWorld().dropItem(projectile.getLocation(), projectile.getItem())
                 .setPickupDelay(20);
+    }
+
+    /** Reference-mod item (ichor_snowball): a throwable that chills whatever it strikes. */
+    @EventHandler
+    public void onIchorSnowballThrow(PlayerInteractEvent event) {
+        if (event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_AIR
+                && event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK) return;
+        var hand = event.getHand();
+        if (hand != org.bukkit.inventory.EquipmentSlot.HAND) return;
+        var item = event.getItem();
+        if (item == null || item.getType() != Material.SNOWBALL
+                || !"ichor_snowball".equals(item.getItemMeta().getPersistentDataContainer()
+                        .get(ichorContentKey, PersistentDataType.STRING))) {
+            return;
+        }
+        Player player = event.getPlayer();
+        long now = System.currentTimeMillis();
+        var pdc = player.getPersistentDataContainer();
+        Long last = pdc.get(ichorSnowballAtKey, PersistentDataType.LONG);
+        if (last != null && now - last < 500L) return;
+        pdc.set(ichorSnowballAtKey, PersistentDataType.LONG, now);
+
+        Location eye = player.getEyeLocation();
+        eye.getWorld().spawn(eye, org.bukkit.entity.Snowball.class, spawned -> {
+            spawned.setItem(item.clone());
+            spawned.setShooter(player);
+            spawned.setVelocity(eye.getDirection().normalize().multiply(1.5));
+            spawned.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING,
+                    "thrown_ichor_snowball");
+        });
+        // Vanilla consumes the snowball itself for a real snowball throw; this handler runs
+        // before that for RIGHT_CLICK_AIR and alongside block placement for blocks, so the
+        // throw is cancelled and exactly one snowball is consumed here.
+        event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
+        if (player.getGameMode() != GameMode.CREATIVE) {
+            if (item.getAmount() <= 1) player.getInventory().setItem(hand, null);
+            else item.setAmount(item.getAmount() - 1);
+        }
+    }
+
+    @EventHandler
+    public void onIchorSnowballHit(org.bukkit.event.entity.ProjectileHitEvent event) {
+        if (!(event.getEntity() instanceof org.bukkit.entity.Snowball projectile)) return;
+        if (!"thrown_ichor_snowball".equals(projectile.getPersistentDataContainer()
+                .get(creatureKey, PersistentDataType.STRING))) return;
+        // Chill whatever the snowball strikes; if a Warden is anywhere near the impact the
+        // distraction worked, which is the reference mod's false_alarm advancement.
+        if (event.getHitEntity() instanceof LivingEntity target) {
+            target.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 100, 2, true, true, true));
+            target.getWorld().spawnParticle(Particle.SNOWFLAKE,
+                    target.getLocation().add(0, 1, 0), 14, 0.3, 0.4, 0.3, 0.02);
+        }
+        boolean wardenNearby = !projectile.getWorld().getNearbyEntities(
+                projectile.getLocation(), 16, 16, 16).stream()
+                .filter(org.bukkit.entity.Warden.class::isInstance)
+                .filter(w -> w.isValid() && !w.isDead()).toList().isEmpty();
+        if (wardenNearby && projectile.getShooter() instanceof Player shooter) {
+            SiftAdvancementGrant.grant(plugin, shooter, "false_alarm");
+        }
     }
 
     @EventHandler

@@ -38,6 +38,9 @@ content:
   echo_golem: true
   # Triển khai một phần: Blub thuần hóa bằng Soul Block + follow/protect đã hoạt động; chưa có GeckoLib animation.
   blub: true
+  ichor_bucket: true
+  ichor_shard: true
+  ichor_snowball: true
   # Triển khai một phần: Sifter spawn theo đàn + drop đã hoạt động; chưa có cơ chế sàng lọc item như mod.
   sifter: true
   # Fan-made, KHÔNG có trong mod gốc (Arta48/Mielons-The-Sift không có "Spire Tyrant" hay

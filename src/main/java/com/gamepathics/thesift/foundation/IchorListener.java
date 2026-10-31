@@ -64,6 +64,32 @@ public final class IchorListener implements Listener {
                 + nextLevel + "/" + plugin.getConfig().getInt("ichor.cauldron.max-level", 3) + ")");
     }
 
+    /** Reference-mod item (ichor_bucket): an empty bucket draws a full cauldron charge. */
+    @EventHandler(ignoreCancelled = true, priority = org.bukkit.event.EventPriority.HIGHEST)
+    public void onIchorBucketFill(PlayerInteractEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND || event.getAction() != Action.RIGHT_CLICK_BLOCK
+                || !content.isContentEnabled(IchorContent.ICHOR_BUCKET_ID)) {
+            return;
+        }
+        Block block = event.getClickedBlock();
+        ItemStack held = event.getItem();
+        int cost = Math.max(1, plugin.getConfig().getInt("ichor.cauldron.bucket-cost", 3));
+        if (block == null || held == null || held.getType() != Material.BUCKET
+                || block.getType() != configuredCauldron()
+                || state.level(block.getLocation()) < cost) {
+            return;
+        }
+        event.setCancelled(true);
+        Player player = event.getPlayer();
+        state.setLevel(block.getLocation(), state.level(block.getLocation()) - cost);
+        consumeOne(player.getInventory());
+        giveOrDrop(player, content.ichorBucket());
+        player.playSound(player.getLocation(), "item.bucket.fill", 0.9f, 1.1f);
+        block.getWorld().spawnParticle(org.bukkit.Particle.DRIPPING_OBSIDIAN_TEAR,
+                block.getLocation().add(0.5, 1.0, 0.5), 12, 0.25, 0.2, 0.25, 0.02);
+        player.sendMessage("§dThe bucket draws resonant Ichor from the cauldron.");
+    }
+
     @EventHandler(ignoreCancelled = true, priority = org.bukkit.event.EventPriority.HIGHEST)
     public void onIchorBottleRefill(PlayerInteractEvent event) {
         if (event.getHand() != EquipmentSlot.HAND || event.getAction() != Action.RIGHT_CLICK_BLOCK

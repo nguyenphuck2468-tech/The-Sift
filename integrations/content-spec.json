@@ -456,6 +456,24 @@
       "material": "POPPY",
       "name": "Sculkflower",
       "model": "thesift:item/sculkflower"
+    },
+    {
+      "id": "ichor_bucket",
+      "material": "WATER_BUCKET",
+      "name": "Ichor Bucket",
+      "model": null
+    },
+    {
+      "id": "ichor_shard",
+      "material": "PRISMARINE_SHARD",
+      "name": "Ichor Shard",
+      "model": null
+    },
+    {
+      "id": "ichor_snowball",
+      "material": "SNOWBALL",
+      "name": "Ichor Snowball",
+      "model": null
     }
   ],
   "mobs": [
