@@ -12,3 +12,4 @@
 | P3 | Fan-made gates default off | aa2a46e | ./gradlew build | BUILD SUCCESSFUL |
 | P7 | Docs set | 71dc39f | (docs only) | n/a |
 | P8 | jacoco report-only + FanMadeGateTest | 7d19862 | ./gradlew build jacocoTestReport | BUILD SUCCESSFUL; report generated |
+| P1.1 | 4 verified review bugs + doc sync | 8663630 | ./gradlew build | BUILD SUCCESSFUL |
