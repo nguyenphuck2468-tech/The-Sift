@@ -254,6 +254,19 @@ public final class SiftEcologyManager implements Listener {
         }
     }
 
+    /**
+     * Files a freshly tagged creature into the wildlife index under its species key. The
+     * add-to-world event fired while the PDC was still empty, so without this the index kept
+     * the vanilla-type bucket and species ticks never saw the mob (Blub/Sifter were affected;
+     * Dark Sniffer worked only because its ticks also query the vanilla bucket).
+     */
+    private void wildlifeIndexRefile(Entity entity) {
+        String key = wildlifeKey(entity);
+        if (key == null) return;
+        wildlifeIndex.computeIfAbsent(key, k -> java.util.concurrent.ConcurrentHashMap.newKeySet())
+                .add(entity.getUniqueId());
+    }
+
     /** Live tagged creatures of one species in the world, without a full entity scan. */
     private java.util.List<Entity> indexedMobs(World sift, String... keys) {
         ensureIndexed(sift);
@@ -1044,6 +1057,8 @@ public final class SiftEcologyManager implements Listener {
             entity.setCustomName("§d" + name);
             entity.setCustomNameVisible(random.nextInt(4) == 0);
             entity.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING, mobId);
+            wildlifeIndexRefile(entity);
+            wildlifeIndexRefile(entity);
             if (entity instanceof LivingEntity living && (type == EntityType.ZOMBIE || type == EntityType.VEX
                     || type == EntityType.SILVERFISH || type == EntityType.ENDERMITE)) {
                 living.setRemoveWhenFarAway(false);
@@ -1090,6 +1105,9 @@ public final class SiftEcologyManager implements Listener {
         entity.setCustomName("§5§l" + name);
         entity.setCustomNameVisible(true);
         entity.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING, id);
+        wildlifeIndexRefile(entity);
+        wildlifeIndexRefile(entity);
+        wildlifeIndexRefile(entity);
         if (entity instanceof LivingEntity living) {
             living.setRemoveWhenFarAway(false);
             if (living.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH) != null) {
@@ -1117,6 +1135,15 @@ public final class SiftEcologyManager implements Listener {
         if (!spearThrowHandler.isSpear(item)) return;
         event.setUseItemInHand(org.bukkit.event.Event.Result.DENY);
         spearThrowHandler.throwSpear(plugin, event.getPlayer(), item, hand);
+    }
+
+    /** A thrown spear that despawns without ever hitting still drops its copy exactly once. */
+    @EventHandler
+    public void onSpearDespawn(org.bukkit.event.entity.EntityRemoveEvent event) {
+        if (!(event.getEntity() instanceof org.bukkit.entity.Snowball projectile)) return;
+        if (!"thrown_siftite_spear".equals(projectile.getPersistentDataContainer()
+                .get(creatureKey, PersistentDataType.STRING))) return;
+        spearThrowHandler.dropThrownCopy(plugin, projectile);
     }
 
     /** A thrown spear lands exactly once: damage on entity hits, the copy drops where it lands. */
@@ -1429,15 +1456,14 @@ public final class SiftEcologyManager implements Listener {
         int y = chunk.getWorld().getHighestBlockYAt(x, z) + 1;
         Location at = new Location(chunk.getWorld(), x + 0.5, y, z + 0.5);
         // Mod 1.1.0 rule: Sifters only spawn on natural terrain, never inside player builds.
-        for (Block marker : java.util.List.of(
-                chunk.getWorld().getBlockAt(x, y, z),
-                chunk.getWorld().getBlockAt(x + 1, y, z),
-                chunk.getWorld().getBlockAt(x, y, z + 1))) {
-            Material type = marker.getType();
-            if (type == Material.CHEST || type == Material.CRAFTING_TABLE || type == Material.FURNACE
-                    || type == Material.TORCH || type == Material.WALL_TORCH || type.isAir()) {
-                return;
-            }
+        // The GROUND (y-1) carries the build markers; the foot position must be open air,
+        // which is the spawn requirement - rejecting air there made natural spawns impossible.
+        Block ground = chunk.getWorld().getBlockAt(x, y - 1, z);
+        Material groundType = ground.getType();
+        if (groundType == Material.CHEST || groundType == Material.CRAFTING_TABLE
+                || groundType == Material.FURNACE || groundType == Material.TORCH
+                || groundType == Material.WALL_TORCH) {
+            return;
         }
         int herd = 3 + random.nextInt(3);
         for (int i = 0; i < herd; i++) {

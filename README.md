@@ -31,7 +31,7 @@ sửa jar; key thiếu sẽ lần lượt fallback sang tiếng Anh rồi đến
 
 ## Phạm vi nền móng hiện tại
 
-- Build Gradle/Java 25; cấu hình plugin có phiên bản (`config-version: 4`), từ chối ghi đè config
+- Build Gradle/Java 25; cấu hình plugin có phiên bản (`config-version: 5`), từ chối ghi đè config
   mới hơn build.
 - Registry nội dung: Siftslate, Ichor, Charoite, Siftite, Resonance, Rift và các mob stand-in.
 - Ichor v2: cauldron có mức tồn, chi phí rót/lọ, Ichor Glass/Pane/Snow, Ichor Bucket, Ichor
@@ -109,7 +109,7 @@ service → ItemsAdder entity → MythicMobs → EliteMobs. ModelEngine chỉ ph
 | Loại | Nội dung |
 |---|---|
 | **Chuyển thể từ mod** | 10 biome gốc, họ Overgrown Willow (21 mục), họ Siftslate (12 mục), 5 biến thể ore, Charoite + enchanting, Siftite trọn bộ (có cả Spear với recipe smithing riêng), Ichor (bottle/bucket/cauldron/snow/snowball/shard), Soul Canyon, Sniffer Cave, Monolith, Cliff Arch, Abandoned Portal + loot odds (disc 50%, template 40%), cổng Sonorous 8 nốt, Rift (natural/mini recovery/chở phương tiện), 5 mob với hành vi cốt lõi (Singer, Echo Golem giao Soul Block tự động, Blub thuần 1/3 + stay, Sifter đàn ≤5, Dark Sniffer nhiễm → Sonic Sniff), 22 advancement đúng trigger |
-Từ bản hardening, toàn bộ nhóm fan-made **mặc định TẮT** bằng cờ cấu hình
+Từ bản hardening, các nhóm fan-made (mob, boss, tide, wave) **mặc định TẮT** bằng cờ cấu hình — riêng 5 biome fan-made vẫn sinh trong dimension
 (`content.prism_warden`, `content.sift_standin_mobs`, `content.sift_tide`, `content.rift_walker_waves`,
 `content.spire_tyrant`) — bật từng cờ nếu muốn chơi bản mở rộng. 5 mob lõi của mod không bị gate.
 

@@ -119,8 +119,6 @@ rift:
   periodic-mobs: 1
   resonance-pulse-interval-seconds: 60
   resonance-range: 20.0
-  reward-drops: 3
-  rift-key-chance: 0.3
   # A server-wide recovery period limits free Rift creation through the melody.
   # Ignored: the reference mod has no cooldown between songs.
   portal-song-cooldown-seconds: 0

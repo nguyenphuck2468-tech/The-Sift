@@ -515,6 +515,7 @@ public final class RiftManager implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         portalSongTracker.remove(event.getPlayer().getUniqueId());
+        noteConsoleLookupAt.remove(event.getPlayer().getUniqueId());
     }
 
     boolean canHandlePortalSong(Block noteBlock) {

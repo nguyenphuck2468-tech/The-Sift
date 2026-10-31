@@ -61,23 +61,31 @@ final class SpearThrowHandler {
     Snowball throwSpear(JavaPlugin plugin, Player player, ItemStack held, EquipmentSlot hand) {
         if (!offCooldown(player)) return null;
         Location eye = player.getEyeLocation();
-        // The projectile carries the durability-damaged copy of the held spear.
-        ItemStack copy = held.clone();
-        ItemStack damaged = copy.damage(1, player);
-        boolean broke = damaged == null || damaged.getType().isAir();
+        boolean creative = player.getGameMode() == GameMode.CREATIVE;
+        // The projectile must carry the durability-damaged result of damage() - the API may
+        // return a different instance, so the return value is authoritative for both the
+        // projectile and the hand slot.
+        ItemStack projectileItem = held.clone();
+        ItemStack damaged = held.clone();
+        boolean broke = false;
+        if (!creative) {
+            damaged = held.damage(1, player);
+            broke = damaged == null || damaged.getType().isAir();
+            if (!broke) projectileItem = damaged.clone();
+            player.getInventory().setItem(hand, broke ? null : damaged);
+        }
+        final boolean brokeOnThrow = broke;
+        final ItemStack finalProjectileItem = projectileItem;
+        double reach = Math.max(1.0, plugin.getConfig().getDouble("siftite.spear-reach", 4.5));
+        double speed = Math.max(0.8, Math.min(2.0, reach / 2.5));
         Snowball projectile = eye.getWorld().spawn(eye, Snowball.class, spawned -> {
-            spawned.setItem(copy);
+            spawned.setItem(finalProjectileItem);
             spawned.setShooter(player);
-            spawned.setVelocity(eye.getDirection().normalize().multiply(1.8));
+            spawned.setVelocity(eye.getDirection().normalize().multiply(speed));
             spawned.getPersistentDataContainer().set(thrownTagKey, PersistentDataType.STRING,
                     "thrown_siftite_spear");
-            if (broke) spawned.getPersistentDataContainer().set(droppedKey, PersistentDataType.BYTE, (byte) 1);
+            if (brokeOnThrow) spawned.getPersistentDataContainer().set(droppedKey, PersistentDataType.BYTE, (byte) 1);
         });
-        if (broke) {
-            player.getInventory().setItem(hand, null);
-        } else {
-            player.getInventory().setItem(hand, damaged);
-        }
         return projectile;
     }
 
