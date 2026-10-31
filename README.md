@@ -109,6 +109,10 @@ service → ItemsAdder entity → MythicMobs → EliteMobs. ModelEngine chỉ ph
 | Loại | Nội dung |
 |---|---|
 | **Chuyển thể từ mod** | 10 biome gốc, họ Overgrown Willow (21 mục), họ Siftslate (12 mục), 5 biến thể ore, Charoite + enchanting, Siftite trọn bộ (có cả Spear với recipe smithing riêng), Ichor (bottle/bucket/cauldron/snow/snowball/shard), Soul Canyon, Sniffer Cave, Monolith, Cliff Arch, Abandoned Portal + loot odds (disc 50%, template 40%), cổng Sonorous 8 nốt, Rift (natural/mini recovery/chở phương tiện), 5 mob với hành vi cốt lõi (Singer, Echo Golem giao Soul Block tự động, Blub thuần 1/3 + stay, Sifter đàn ≤5, Dark Sniffer nhiễm → Sonic Sniff), 22 advancement đúng trigger |
+Từ bản hardening, toàn bộ nhóm fan-made **mặc định TẮT** bằng cờ cấu hình
+(`content.prism_warden`, `content.sift_standin_mobs`, `content.sift_tide`, `content.rift_walker_waves`,
+`content.spire_tyrant`) — bật từng cờ nếu muốn chơi bản mở rộng. 5 mob lõi của mod không bị gate.
+
 | **Fan-made (mod không có)** | 5 biome tự viết, Prism Warden, Prism equipment, Prismite, Rift Key, Shard equipment, Sift Catalyst/Crown, Frost/Sky/Spire Fragment, Sift Tide, Spire Tyrant (mặc định TẮT) |
 | **Stand-in cần asset riêng** | Model/texture/animation mob và block (họ cherry/deepslate thay hình dạng gốc), nhạc Rift Disc + 8 âm Sonorous + âm thanh mob (chờ asset), bầu trời động (client-side), Ichor là chất lỏng thật (giới hạn Paper) |
 
