@@ -45,7 +45,7 @@ Nhánh: `overnight/hardening` (từ `main` @ `adc1fc0`). Baseline: BUILD SUCCESS
 
 ## Vòng review sau hardening (2026-11-01)
 
-4 bug P1 xác thực được từ review độc lập đã sửa trong  / :
+4 bug P1 xác thực được từ review độc lập đã sửa trong commit 8663630 và b1ec874:
 1. config.yml duplicate rift keys (SnakeYAML last-wins → 3/0.3 đè 0/0.0)
 2. wildlife index không re-file Blub/Sifter (AI hai mob lõi bị đói tick)
 3. sifter herd guard chặn spawn khi chỗ đứng là AIR
