@@ -35,7 +35,6 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 processResources {
-    exclude("bedrock/TheSiftGeyser.jar.embedded")
     exclude("**/*.png")
     filesMatching(["plugin.yml", "paper-plugin.yml"]) {
         expand(version: project.version)
