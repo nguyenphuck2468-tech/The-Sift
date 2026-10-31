@@ -10,3 +10,4 @@
 | P1-T1.5 | Legal cleanup | fef2f0f | build | BUILD SUCCESSFUL |
 | P2 | 7 minor fixes (2 no-ops verified) | 0c28b77 | ./gradlew build | BUILD SUCCESSFUL |
 | P3 | Fan-made gates default off | aa2a46e | ./gradlew build | BUILD SUCCESSFUL |
+| P7 | Docs set | 71dc39f | (docs only) | n/a |
