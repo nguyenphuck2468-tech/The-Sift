@@ -48,6 +48,8 @@ public final class RiftManager implements Listener {
 
     private final JavaPlugin plugin;
     private AncientCityGateManager gateOwner;
+    private final NamespacedKey riftLastRewardKey;
+    private final java.util.Map<java.util.UUID, Long> noteConsoleLookupAt = new java.util.HashMap<>();
     private final NamespacedKey riftKey;
     private final SiftMobFactory mobFactory;
     private final ExternalBlockBridge blockBridge;
@@ -68,6 +70,7 @@ public final class RiftManager implements Listener {
     /** Shared wiring: reuse the plugin-wide content registry and mob factory when provided. */
     public RiftManager(JavaPlugin plugin, ProviderReadiness providerReadiness, SiftiteContent sharedContent,
                        SiftMobFactory sharedMobFactory) {
+        this.riftLastRewardKey = new NamespacedKey(plugin, "rift_last_reward");
         this.plugin = plugin;
         this.providerReadiness = providerReadiness;
         this.dimensionManager = new SiftDimensionManager(plugin, providerReadiness);
@@ -354,6 +357,11 @@ public final class RiftManager implements Listener {
                 (float) Math.pow(2.0, (played - 1) / 12.0));
         block.getWorld().spawnParticle(Particle.NOTE, block.getLocation().add(0.5, 1.2, 0.5), 1,
                 0, 0, 0, (played - 1) / 24.0);
+        // findConsole walks connected note blocks; cap repeat lookups to 4 ticks per player.
+        Long nextAllowed = noteConsoleLookupAt.get(player.getUniqueId());
+        long nowMs = System.currentTimeMillis();
+        if (nextAllowed != null && nowMs < nextAllowed) return;
+        noteConsoleLookupAt.put(player.getUniqueId(), nowMs + 200L);
         java.util.List<Block> console = findConsole(block);
         Block anchor = console.stream()
                 .min(java.util.Comparator.<Block>comparingInt(Block::getY)
@@ -373,11 +381,16 @@ public final class RiftManager implements Listener {
         found.add(origin);
         queue.add(origin);
         World world = origin.getWorld();
-        while (!queue.isEmpty() && found.size() < 64) {
+        // Each dequeued block used to scan a 33x33x33 cube - up to ~2.3M getType() calls on
+        // the main thread for a full console. The neighbours of a connected console are far
+        // closer, so a shared 4096-lookup budget with early stop finds the same group.
+        int lookups = 4096;
+        while (!queue.isEmpty() && found.size() < 64 && lookups > 0) {
             Block current = queue.poll();
-            for (int dx = -16; dx <= 16; dx++) {
-                for (int dy = -16; dy <= 16; dy++) {
-                    for (int dz = -16; dz <= 16; dz++) {
+            for (int dx = -2; dx <= 2 && lookups > 0; dx++) {
+                for (int dy = -2; dy <= 2 && lookups > 0; dy++) {
+                    for (int dz = -2; dz <= 2 && lookups > 0; dz++) {
+                        lookups--;
                         int x = current.getX() + dx;
                         int y = current.getY() + dy;
                         int z = current.getZ() + dz;
@@ -514,7 +527,7 @@ public final class RiftManager implements Listener {
     public class RiftInstance {
         private final UUID id;
         private final Location center;
-        private final Player opener;
+        private final UUID openerId;
         private final boolean portal;
         private Location exitCenter;
         private org.bukkit.util.BoundingBox gate;
@@ -528,9 +541,10 @@ public final class RiftManager implements Listener {
         }
 
         public RiftInstance(UUID id, Location center, Player opener, boolean portal) {
+            this.openerId = opener == null ? null : opener.getUniqueId();
             this.id = id;
             this.center = center;
-            this.opener = opener;
+
             this.portal = portal;
         }
 
@@ -592,6 +606,8 @@ public final class RiftManager implements Listener {
         }
 
         private void pulseResonance() {
+            // Plan default: the fan-made rift resonance pulse is OFF (content.rift_walker_waves).
+            if (!plugin.getConfig().getBoolean("content.rift_walker_waves", false)) return;
             center.getWorld().playSound(center, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 0.6f);
             center.getWorld().spawnParticle(Particle.SONIC_BOOM, center.clone().add(0, 1, 0), 1);
             for (Player p : center.getWorld().getPlayers()) {
@@ -604,6 +620,7 @@ public final class RiftManager implements Listener {
         }
 
         private void spawnRiftMobs(int count) {
+            if (!plugin.getConfig().getBoolean("content.rift_walker_waves", false)) return;
             for (int i = 0; i < count; i++) {
                 Location spawnLoc = center.clone().add(
                     ThreadLocalRandom.current().nextDouble(-5, 5),
@@ -645,8 +662,20 @@ public final class RiftManager implements Listener {
         }
 
         private void dropRewards() {
-            // Drop Siftite, Charoite, etc.
-            int rewardCount = Math.max(0, plugin.getConfig().getInt("rift.reward-drops", 3));
+            // Plan default: rifts are not an income source unless the owner opts in.
+            // Per-player cooldown further caps repeat farming when rewards are enabled.
+            int rewardCount = Math.max(0, plugin.getConfig().getInt("rift.reward-drops", 0));
+            Player player = resolveOpener();
+            long now = System.currentTimeMillis();
+            long cooldownMinutes = Math.max(0, plugin.getConfig().getInt("rift.reward-cooldown-minutes", 30));
+            if (player != null && cooldownMinutes > 0) {
+                Long lastReward = player.getPersistentDataContainer().get(riftLastRewardKey,
+                        PersistentDataType.LONG);
+                if (lastReward != null && now - lastReward < cooldownMinutes * 60_000L) {
+                    return;
+                }
+                player.getPersistentDataContainer().set(riftLastRewardKey, PersistentDataType.LONG, now);
+            }
             SiftiteContent content = riftContent();
             ItemStack reward = rewardCount == 0 ? null
                     : content.item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot");
@@ -659,7 +688,7 @@ public final class RiftManager implements Listener {
             }
             // Rift Key fragment chance
             if (ThreadLocalRandom.current().nextDouble()
-                    < plugin.getConfig().getDouble("rift.rift-key-chance", 0.3)) {
+                    < plugin.getConfig().getDouble("rift.rift-key-chance", 0.0)) {
                 ItemStack key = createRiftKey();
                 if (key != null) center.getWorld().dropItemNaturally(center.clone().add(0, 1, 0), key);
             }
@@ -739,7 +768,12 @@ public final class RiftManager implements Listener {
             }
         }
 
+        private Player resolveOpener() {
+            return openerId == null ? null : org.bukkit.Bukkit.getPlayer(openerId);
+        }
+
         private void notifyOpener(String message) {
+            Player opener = resolveOpener();
             if (opener != null && opener.isOnline()) opener.sendMessage(message);
         }
     }

@@ -74,7 +74,7 @@ When upgrading from a release that used vanilla fallback for Sonorous Deepslate,
 
 Disabling The Sift while players are in its world attempts to teleport them to the first loaded non-Sift world spawn. The plugin does not unload the dimension. This has unit/build coverage only; an actual Paper plugin disable/re-enable was not tested (the live smoke test was a full server start/stop).
 
-Do not publish a resource-pack ZIP yet: the repository contains PNG assets of unresolved provenance. The embedded `TheSiftGeyser.jar.embedded` also has unknown provenance; it remains excluded from plugin artifacts and must not be released pending owner confirmation.
+Do not publish a resource-pack ZIP yet: the repository contains PNG assets of unresolved provenance. The previously embedded `TheSiftGeyser.jar.embedded` was removed from the repository for unresolved provenance.
 
 The note melody currently opens the temporary Rift feature, not the mod-style
 Ancient City dimension portal. Successful melodies share the configured

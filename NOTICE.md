@@ -111,9 +111,8 @@ listed files was copied or licensed.
 - NeoForge Port: <https://github.com/MikiKox1/mielons-the-sift-neoforge-port>.
   Used as a data reference for worldgen parity.
 
-## Unresolved binary
+## Removed unresolved binary
 
-- `src/main/resources/bedrock/TheSiftGeyser.jar.embedded` has no embedded
-  license or verifiable upstream source. It is excluded from the Paper plugin
-  artifact. No NOTICE attribution is possible until source and terms are
-  established.
+- `src/main/resources/bedrock/TheSiftGeyser.jar.embedded` had no embedded
+  license or verifiable upstream source. It was REMOVED from the repository
+  during the overnight hardening pass (build exclusion removed with it).

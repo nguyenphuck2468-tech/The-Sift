@@ -352,7 +352,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             return true;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("doctor")) {
-            sender.sendMessage("The Sift foundation: " + getDescription().getVersion());
+            sender.sendMessage("The Sift foundation: " + getPluginMeta().getVersion());
             sender.sendMessage("Runtime target: Paper 26.3 / Paper API 26.3.build.218-stable");
             sender.sendMessage(contentPackStatus());
             for (Map.Entry<ContentId, Boolean> entry : contentRegistry.snapshot().entrySet()) {
