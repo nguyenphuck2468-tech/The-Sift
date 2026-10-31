@@ -193,6 +193,66 @@ public final class SiftEcologyManager implements Listener {
         populate(event.getChunk());
     }
 
+    // Wildlife index -----------------------------------------------------------
+    // The periodic tick loops used to call World#getEntities() (a full copy of every loaded
+    // entity) on every run - the combat and petting loops even run each tick. This index maps
+    // creature tag (or entity type for untagged stand-ins) to UUIDs, maintained by Paper's
+    // add/remove-to-world events, so ticks resolve a handful of Bukkit.getEntity lookups.
+
+    private final java.util.Map<String, java.util.Set<UUID>> wildlifeIndex = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Set<UUID> indexedWorlds = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+    private String wildlifeKey(Entity entity) {
+        if (entity instanceof Player) return null;
+        String id = entity.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING);
+        return id != null ? id : "type:" + entity.getType().name();
+    }
+
+    @EventHandler
+    public void onEntityAddToWorld(com.destroystokyo.paper.event.entity.EntityAddToWorldEvent event) {
+        String key = wildlifeKey(event.getEntity());
+        if (key != null) wildlifeIndex.computeIfAbsent(key, k -> java.util.concurrent.ConcurrentHashMap.newKeySet())
+                .add(event.getEntity().getUniqueId());
+    }
+
+    @EventHandler
+    public void onEntityRemoveFromWorld(com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent event) {
+        String key = wildlifeKey(event.getEntity());
+        if (key != null) wildlifeIndex.computeIfAbsent(key, k -> java.util.concurrent.ConcurrentHashMap.newKeySet())
+                .remove(event.getEntity().getUniqueId());
+    }
+
+    /** One-time seed per world: entities loaded before this listener registered are not indexed. */
+    private void ensureIndexed(World sift) {
+        if (!indexedWorlds.add(sift.getUID())) return;
+        for (Entity entity : sift.getEntities()) {
+            String key = wildlifeKey(entity);
+            if (key != null) wildlifeIndex.computeIfAbsent(key, k -> java.util.concurrent.ConcurrentHashMap.newKeySet())
+                    .add(entity.getUniqueId());
+        }
+    }
+
+    /** Live tagged creatures of one species in the world, without a full entity scan. */
+    private java.util.List<Entity> indexedMobs(World sift, String... keys) {
+        ensureIndexed(sift);
+        java.util.List<Entity> result = new java.util.ArrayList<>();
+        for (String key : keys) {
+            for (UUID uuid : wildlifeIndex.getOrDefault(key, java.util.Set.of())) {
+                Entity entity = Bukkit.getEntity(uuid);
+                if (entity == null || entity.isDead() || !entity.isValid()
+                        || entity.getWorld() != sift
+                        || !key.equals(wildlifeKey(entity))) {
+                    if (entity != null && entity.getWorld() == sift) {
+                        wildlifeIndex.getOrDefault(key, java.util.Set.of()).remove(uuid);
+                    }
+                    continue;
+                }
+                result.add(entity);
+            }
+        }
+        return result;
+    }
+
     private void populate(Chunk chunk) {
         if (!isSift(chunk.getWorld())) return;
         if (ChunkRetryBackoff.isDeferred(chunk, decorationRetryAtKey, System.currentTimeMillis())) {
@@ -574,10 +634,12 @@ public final class SiftEcologyManager implements Listener {
         for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
             if (dx * dx + dz * dz > 5) continue;
             world.getBlockAt(x + dx, y, z + dz).setType(rim[random.nextInt(rim.length)], false);
-            if (dx * dx + dz * dz <= 2) {
-                placeBlock(world.getBlockAt(x + dx, y + 1, z + dz), "ichor_water", Material.WATER);
-            }
         }
+        // A single source block, not a 3x3 source pool: pools of sources spread infinitely
+        // once broken, which turned every spring into an infinite ordinary-water farm (and,
+        // before the weather fix, an infinite regeneration source). The mod's Ichor never
+        // creates infinite sources.
+        placeBlock(world.getBlockAt(x, y + 1, z), "ichor_water", Material.WATER);
         placeBlock(world.getBlockAt(x, y + 1, z), "ichor_water", Material.WATER);
         world.spawnParticle(Particle.DRIPPING_OBSIDIAN_TEAR, new Location(world, x + .5, y + 1, z + .5),
                 12, 1, .2, 1, .02);
@@ -989,19 +1051,41 @@ public final class SiftEcologyManager implements Listener {
         if (last != null && now - last < 500L) return; // simple cooldown against double-fire
         pdc.set(spearThrowAtKey, PersistentDataType.LONG, now);
 
-        double reach = Math.max(1.0, plugin.getConfig().getDouble("siftite.spear-reach", 4.5));
         Location eye = player.getEyeLocation();
-        org.bukkit.entity.Item projectile = eye.getWorld().dropItem(eye, item.clone());
-        projectile.setVelocity(eye.getDirection().normalize().multiply(reach));
-        projectile.setCanPlayerPickup(false);
-        projectile.setCanMobPickup(false);
-        projectile.setPickupDelay(60); // ~3s until the thrown spear can be looted again
-        projectile.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING, "thrown_siftite_spear");
+        // A real projectile (a Snowball rendered as the spear item via setItem) so hit
+        // detection works: ProjectileHitEvent never fires for a dropped Item entity, which
+        // is why the thrown spear used to deal no damage. A thrown spear flies at a sane
+        // projectile speed; the old code multiplied the raw spear-reach config (4.5)
+        // straight into velocity, launching it faster than arrows.
+        org.bukkit.entity.Snowball projectile = eye.getWorld().spawn(eye, org.bukkit.entity.Snowball.class,
+                spawned -> {
+                    spawned.setItem(item.clone());
+                    spawned.setShooter(player);
+                    spawned.setVelocity(eye.getDirection().normalize().multiply(1.8));
+                    spawned.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING,
+                            "thrown_siftite_spear");
+                });
 
         // Consume one durability point from the held spear via ItemStack#damage so the client's
         // held-item state stays in sync; when the spear breaks, clear the hand slot.
         org.bukkit.inventory.ItemStack damaged = item.damage(1, player);
         player.getInventory().setItem(hand, damaged == null || damaged.getType().isAir() ? null : damaged);
+    }
+
+    /** A thrown Siftite Spear damages the entity it strikes, then drops there for retrieval. */
+    @EventHandler
+    public void onSpearHit(org.bukkit.event.entity.ProjectileHitEvent event) {
+        if (!(event.getEntity() instanceof org.bukkit.entity.Snowball projectile)) return;
+        if (!"thrown_siftite_spear".equals(projectile.getPersistentDataContainer()
+                .get(creatureKey, PersistentDataType.STRING))) return;
+        if (!(event.getHitEntity() instanceof LivingEntity target)) return;
+        if (!(projectile.getShooter() instanceof Player shooter)) return;
+        target.damage(plugin.getConfig().getDouble("siftite.spear-damage", 6.0), shooter);
+        // The thrown copy lands where it hit so the thrower (or anyone) can retrieve it;
+        // remove the projectile so the Snowball does not also drop a snowball item.
+        projectile.remove();
+        projectile.getWorld().dropItem(projectile.getLocation(), projectile.getItem())
+                .setPickupDelay(20);
     }
 
     @EventHandler
@@ -1193,7 +1277,7 @@ public final class SiftEcologyManager implements Listener {
         if (sift == null) return;
         Location anchor = sifterHerdAnchors.get(sift);
         if (anchor == null) return;
-        for (Entity entity : sift.getEntities()) {
+        for (Entity entity : indexedMobs(sift, "sifter")) {
             if (!(entity instanceof Mob mob)) continue;
             if (!"sifter".equals(entity.getPersistentDataContainer()
                     .get(creatureKey, PersistentDataType.STRING))) continue;
@@ -1283,7 +1367,7 @@ public final class SiftEcologyManager implements Listener {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
         if (sift == null) return;
         long now = System.currentTimeMillis();
-        for (Entity entity : sift.getEntities()) {
+        for (Entity entity : indexedMobs(sift, "dark_sniffer", "type:SNIFFER")) {
             if (entity.getType() != EntityType.SNIFFER || !(entity instanceof Mob sniffer)) continue;
             var pdc = entity.getPersistentDataContainer();
             if (!"dark_sniffer".equals(pdc.get(creatureKey, PersistentDataType.STRING))) {
@@ -1573,7 +1657,7 @@ public final class SiftEcologyManager implements Listener {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
         if (sift == null) return;
         long now = System.currentTimeMillis();
-        for (Entity entity : sift.getEntities()) {
+        for (Entity entity : indexedMobs(sift, "type:WARDEN")) {
             if (!(entity instanceof org.bukkit.entity.Warden warden) || !warden.isValid() || warden.isDead()) continue;
             var pdc = warden.getPersistentDataContainer();
             String targetId = pdc.get(wardenPettingTargetKey, PersistentDataType.STRING);
@@ -1725,9 +1809,9 @@ public final class SiftEcologyManager implements Listener {
         // the block beneath the point 2.25 blocks ahead of its head is sculk.
         // Paper cannot inject into Sniffer.transitionTo(), so sample the state here;
         // once infection starts, the saved tick count persists even after digging ends.
-        long infectionTicks = Math.max(1, plugin.getConfig().getInt("mobs.dark-sniffer.corruption-ticks", 600));
+        long infectionTicks = Math.max(1, plugin.getConfig().getInt("mobs.dark_sniffer.corruption-ticks", 600));
         java.util.List<Entity> conversions = new java.util.ArrayList<>();
-        for (Entity entity : sift.getEntities()) {
+        for (Entity entity : indexedMobs(sift, "dark_sniffer", "type:SNIFFER")) {
             if (!(entity instanceof org.bukkit.entity.Sniffer sniffer)) continue;
             var pdc = entity.getPersistentDataContainer();
             if (pdc.has(creatureKey, PersistentDataType.STRING)) continue; // already a Dark Sniffer
@@ -1906,7 +1990,7 @@ public final class SiftEcologyManager implements Listener {
     private void tickBlubs() {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
         if (sift == null) return;
-        for (Entity entity : sift.getEntities()) {
+        for (Entity entity : indexedMobs(sift, "blub")) {
             if (!(entity instanceof Mob blub)) continue;
             var pdc = blub.getPersistentDataContainer();
             if (!"blub".equals(pdc.get(creatureKey, PersistentDataType.STRING))) continue;
