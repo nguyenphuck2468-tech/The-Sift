@@ -5,7 +5,6 @@ Minecraft Live 2026. Nhắm tới **Paper 26.3**, Java 25 và Paper API `26.3.bu
 không liên kết với Mojang hay Microsoft. Các provider nội dung cung cấp item, block và mob ở
 những chỗ Paper API không có sẵn khái niệm tương ứng. Trạng thái triển khai và các phần thay thế
 (stand-in) được theo dõi trong [`docs/parity-matrix.md`](docs/parity-matrix.md).
-(Bản tiếng Anh: [`README.en.md`](README.en.md).)
 
 ## Biên dịch
 
@@ -62,6 +61,34 @@ sửa jar; key thiếu sẽ lần lượt fallback sang tiếng Anh rồi đến
 - Optional MythicMobs, EliteMobs, ModelEngine, Nexo, ItemsAdder, Oraxen và SPI
   (`SiftItemProvider`/`SiftMobProvider`/`SiftBlockProvider`) — tra cứu class/method được cache
   (`Reflect`) nên gọi lại trong event nóng không còn tốn reflection lặp.
+
+## Plugin nên cài thêm
+
+The Sift chạy được độc lập: thiếu provider chỉ giảm tính năng và ghi cảnh báo (plugin không tự
+tắt, trừ khi bật `requirements.hard-stop: true`). Cài càng nhiều mục dưới đây, nội dung càng sát
+mod gốc:
+
+| Plugin | Vai trò | Bắt buộc? |
+|---|---|---|
+| **Nexo / ItemsAdder / Oraxen** (chọn 1) | Cung cấp item + block custom thật | Không — nhưng `providers.strict: true` mặc định sẽ chặn vào dimension nếu chưa có một backend item, block và mob |
+| **MythicMobs** | Định nghĩa mob chỉnh được chỉ số/stats cho sinh vật The Sift | Không |
+| **EliteMobs** | Thay boss spawn bằng custom boss | Không |
+| **ModelEngine** | Gắn model render cho mob (chỉ render, không điều khiển hành vi) | Không — nhưng `requirements.all-of` mặc định liệt kê nó, thiếu chỉ cảnh báo |
+| **ResourcePackManager** | Phát resource pack cho người chơi | Không (hiện chỉ được dò tìm trong `/sift doctor`) |
+
+Cấu hình mặc định trong `config.yml` (`requirements`) chỉ **cảnh báo** khi thiếu plugin; cài ít
+nhất một backend item/block/mob (hoặc plugin nào đó đăng ký SPI `SiftItemProvider` /
+`SiftBlockProvider` / `SiftMobProvider`) để mở khóa vào dimension khi `providers.strict: true`.
+Chạy `/sift doctor` để xem còn thiếu gì.
+
+## Geyser và người chơi Bedrock (không bắt buộc)
+
+- Muốn người chơi **Bedrock** vào được server thì mới cần cài **Geyser** (kèm **Floodgate** để
+  đăng nhập không cần tài khoản Java). Không cài cũng không ảnh hưởng người chơi Java.
+- Nếu server phục vụ nhiều phiên bản Minecraft, cài thêm **ViaVersion**/**ViaBackwards**.
+- Mức hỗ trợ Bedrock hiện tại của plugin là mức 1 (dò nhận diện Geyser/Floodgate/ViaVersion trong
+  `/sift doctor`); mức 2 (sinh pack riêng cho Bedrock + custom mapping) **chưa làm** — người chơi
+  Bedrock sẽ thấy các block/item stand-in dạng vanilla.
 
 ## Provider nội dung custom
 
