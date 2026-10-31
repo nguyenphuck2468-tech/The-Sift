@@ -48,6 +48,7 @@ public final class RiftManager implements Listener {
 
     private final JavaPlugin plugin;
     private AncientCityGateManager gateOwner;
+    private final NamespacedKey riftLastRewardKey;
     private final NamespacedKey riftKey;
     private final SiftMobFactory mobFactory;
     private final ExternalBlockBridge blockBridge;
@@ -68,6 +69,7 @@ public final class RiftManager implements Listener {
     /** Shared wiring: reuse the plugin-wide content registry and mob factory when provided. */
     public RiftManager(JavaPlugin plugin, ProviderReadiness providerReadiness, SiftiteContent sharedContent,
                        SiftMobFactory sharedMobFactory) {
+        this.riftLastRewardKey = new NamespacedKey(plugin, "rift_last_reward");
         this.plugin = plugin;
         this.providerReadiness = providerReadiness;
         this.dimensionManager = new SiftDimensionManager(plugin, providerReadiness);
@@ -645,8 +647,20 @@ public final class RiftManager implements Listener {
         }
 
         private void dropRewards() {
-            // Drop Siftite, Charoite, etc.
-            int rewardCount = Math.max(0, plugin.getConfig().getInt("rift.reward-drops", 3));
+            // Plan default: rifts are not an income source unless the owner opts in.
+            // Per-player cooldown further caps repeat farming when rewards are enabled.
+            int rewardCount = Math.max(0, plugin.getConfig().getInt("rift.reward-drops", 0));
+            Player player = opener != null && opener.isOnline() ? opener : null;
+            long now = System.currentTimeMillis();
+            long cooldownMinutes = Math.max(0, plugin.getConfig().getInt("rift.reward-cooldown-minutes", 30));
+            if (player != null && cooldownMinutes > 0) {
+                Long lastReward = player.getPersistentDataContainer().get(riftLastRewardKey,
+                        PersistentDataType.LONG);
+                if (lastReward != null && now - lastReward < cooldownMinutes * 60_000L) {
+                    return;
+                }
+                player.getPersistentDataContainer().set(riftLastRewardKey, PersistentDataType.LONG, now);
+            }
             SiftiteContent content = riftContent();
             ItemStack reward = rewardCount == 0 ? null
                     : content.item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot");
@@ -659,7 +673,7 @@ public final class RiftManager implements Listener {
             }
             // Rift Key fragment chance
             if (ThreadLocalRandom.current().nextDouble()
-                    < plugin.getConfig().getDouble("rift.rift-key-chance", 0.3)) {
+                    < plugin.getConfig().getDouble("rift.rift-key-chance", 0.0)) {
                 ItemStack key = createRiftKey();
                 if (key != null) center.getWorld().dropItemNaturally(center.clone().add(0, 1, 0), key);
             }

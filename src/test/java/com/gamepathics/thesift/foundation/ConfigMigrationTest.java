@@ -165,7 +165,7 @@ class ConfigMigrationTest {
     }
 
     @Test
-    void currentVersionIs3() {
-        assertEquals(4, ConfigMigration.CURRENT_VERSION);
+    void currentVersionIs5() {
+        assertEquals(5, ConfigMigration.CURRENT_VERSION);
     }
 }
