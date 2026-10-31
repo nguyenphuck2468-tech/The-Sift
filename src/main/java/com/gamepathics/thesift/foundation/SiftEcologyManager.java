@@ -102,7 +102,7 @@ public final class SiftEcologyManager implements Listener {
     /** Last herd anchor per world so spawned Sifters regroup instead of scattering (mod parity). */
     // Reference-mod parity (Sifter): herds of at most five around per-herd anchors.
     /** The five reference-mod mobs; never gated by the fan-made flag. */
-    private static final java.util.Set<String> FAN_CORE_MOBS = java.util.Set.of(
+    static final java.util.Set<String> FAN_CORE_MOBS = java.util.Set.of(
             "singer", "echo_golem", "blub", "sifter", "dark_sniffer");
 
     private final java.util.Map<java.util.UUID, java.util.List<Location>> sifterHerdAnchors = new ConcurrentHashMap<>();

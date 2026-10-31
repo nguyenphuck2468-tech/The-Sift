@@ -1,6 +1,7 @@
 plugins {
     id "java"
     id "xyz.jpenilla.run-paper" version "3.1.0"
+    id "jacoco"
 }
 
 group = "com.gamepathics"
@@ -167,4 +168,9 @@ test {
     testLogging {
         events "passed", "skipped", "failed"
     }
+}
+
+// Phase 8: coverage reporting only (no gate thresholds).
+tasks.jacocoTestReport {
+    dependsOn tasks.test
 }
