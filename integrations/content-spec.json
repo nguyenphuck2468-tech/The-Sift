@@ -672,6 +672,24 @@
       "material": "CHERRY_SHELF",
       "name": "Overgrown Willow Shelf",
       "model": null
+    },
+    {
+      "id": "rift_disc",
+      "material": "MUSIC_DISC_OTHERSIDE",
+      "name": "Rift Music Disc",
+      "model": null
+    },
+    {
+      "id": "wellspring_disc",
+      "material": "MUSIC_DISC_MELLOHI",
+      "name": "Wellspring Music Disc",
+      "model": null
+    },
+    {
+      "id": "sift_rubble",
+      "material": "GRAVEL",
+      "name": "Sift Rubble",
+      "model": null
     }
   ],
   "mobs": [

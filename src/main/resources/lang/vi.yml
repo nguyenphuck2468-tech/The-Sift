@@ -27,6 +27,8 @@ doctor:
   new-config: "Cấu hình mới hơn bản build này; đã từ chối reload."
 spear:
   hint: "Giáo Siftite"
+world:
+  first-entry: "The Sift ngân vang quanh bạn lần đầu tiên."
 tide:
   flowing: "Thủy triều Sift đang chảy quanh bạn"
   ebbing: "Thủy triều Sift đang rút"

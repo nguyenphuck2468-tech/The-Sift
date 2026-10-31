@@ -3,6 +3,7 @@ package com.gamepathics.thesift.foundation;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Sound;
 import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.advancement.Advancement;
@@ -30,27 +31,38 @@ import java.util.List;
  * vanilla triggers (Ancient City visit, biome visits) are handled by the datapack itself; the rest are
  * awarded from here or from the managers that own the event (Rift, Singer, Charoite enchanting, portal).
  *
- * <p>Mod-parity triggers verified against the reference mod's {@code ModAdvancements}:
- * planting Sculkflower seeds on Sculk, igniting wood inside the dimension, a tamed Blub
- * killing a Dark Snifter (owner), Blub taming, the Echo Golem returning the Soul Block.
- * {@code false_alarm} stays unwired: the mod grants it when an Ichor Snowball lands near a
- * Warden, and the plugin does not have an Ichor Snowball item yet. {@code like_father_and_son}
- * stays unwired: the mod grants it when an Echo Golem transfers the Soul Block to a Singer,
- * a mechanic the plugin does not implement.
+ * <p>All eight reference-mod triggers outside the vanilla datapack are wired: planting
+ * Sculkflower seeds on Sculk, igniting wood inside the dimension, a tamed Blub killing a
+ * Dark Snifter (owner), Blub taming, the Echo Golem returning the Soul Block, the Ichor
+ * Snowball Warden feint (false_alarm), mining Charoite/Siftite ore, and filling the Ichor
+ * bucket. The Echo Golem carrying Soul Blocks to Singers (like_father_and_son) is awarded
+ * by EchoGolemManager's delivery pulse.
  */
 public final class SiftAdvancementManager implements Listener {
     private static final String SIFT_WORLD = "thesift:the_sift";
     private final JavaPlugin plugin;
     private final NamespacedKey contentKey;
+    private final NamespacedKey firstEntryKey;
 
     public SiftAdvancementManager(JavaPlugin plugin) {
         this.plugin = plugin;
         this.contentKey = new NamespacedKey(plugin, "content");
+        this.firstEntryKey = new NamespacedKey(plugin, "sift_first_entry");
     }
 
     @EventHandler
     public void onEnterSift(PlayerChangedWorldEvent event) {
-        if (isSift(event.getPlayer().getWorld())) grant(event.getPlayer(), "root", "story/brave_the_unknown");
+        if (!isSift(event.getPlayer().getWorld())) return;
+        grant(event.getPlayer(), "root", "story/brave_the_unknown");
+        // Reference-mod 1.1.x: an ambient sting the first time a player enters the dimension.
+        Player player = event.getPlayer();
+        Long seen = player.getPersistentDataContainer().get(firstEntryKey, PersistentDataType.LONG);
+        if (seen == null) {
+            player.getPersistentDataContainer().set(firstEntryKey, PersistentDataType.LONG,
+                    System.currentTimeMillis());
+            player.playSound(player.getLocation(), Sound.AMBIENT_CAVE, 1.0f, 0.7f);
+            Messages.send(player, "world.first-entry", "The Sift hums around you for the first time.");
+        }
     }
 
     @EventHandler

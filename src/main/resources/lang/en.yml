@@ -27,6 +27,8 @@ doctor:
   new-config: "The Sift config is newer than this build; reload was rejected."
 spear:
   hint: "Siftite Spear"
+world:
+  first-entry: "The Sift hums around you for the first time."
 tide:
   flowing: "The Sift tide is flowing around you"
   ebbing: "The Sift tide is ebbing"

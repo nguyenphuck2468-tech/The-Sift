@@ -384,6 +384,7 @@ public final class SiftEcologyManager implements Listener {
                 generateCliffArch(chunk, random);
             } else if (key.contains("overgrown")) generateMonolith(chunk, random);
         }
+        if (random.nextInt(48) == 0) generateFossil(chunk, random);
         spawnSiftWildlife(chunk, key, random);
         generationOperations++;
         if ((key.endsWith("pink_meadows") || key.endsWith("overgrown_clearing")) && random.nextInt(22) == 0) {
@@ -433,6 +434,7 @@ public final class SiftEcologyManager implements Listener {
                 generateCliffArch(chunk, random);
             } else if (biome.contains("overgrown")) generateMonolith(chunk, random);
         }
+        if (random.nextInt(48) == 0) generateFossil(chunk, random);
         spawnSiftWildlife(chunk, biome, random);
         if ((biome.endsWith("pink_meadows") || biome.endsWith("overgrown_clearing")) && random.nextInt(22) == 0) summonSinger(chunk, random);
         else if ((biome.endsWith("crystal_spires") || biome.endsWith("siftslate_slopes")) && random.nextInt(55) == 0) summonEchoGolem(chunk, random);
@@ -1481,6 +1483,28 @@ public final class SiftEcologyManager implements Listener {
             state.setLevel(at, state.level(at) + 1);
             at.getWorld().spawnParticle(Particle.DRIPPING_DRIPSTONE_WATER,
                     at.clone().add(0.5, 1.1, 0.5), 6, 0.2, 0.15, 0.2, 0.01);
+        }
+    }
+
+    /** Reference-mod 1.1.x: fossils buried in cave floors (bone blocks with a coal pocket). */
+    private void generateFossil(Chunk chunk, Random random) {
+        World world = chunk.getWorld();
+        int x = chunk.getX() * 16 + 2 + random.nextInt(12);
+        int z = chunk.getZ() * 16 + 2 + random.nextInt(12);
+        int minHeight = world.getMinHeight() + 8;
+        int maxHeight = world.getMaxHeight() - 16;
+        for (int attempt = 0; attempt < 8; attempt++) {
+            int y = minHeight + random.nextInt(Math.max(1, maxHeight - minHeight));
+            Block floor = world.getBlockAt(x, y - 1, z);
+            Block spot = world.getBlockAt(x, y, z);
+            if (floor.getType() != Material.DEEPSLATE || !spot.getType().isAir()) continue;
+            int segments = 2 + random.nextInt(3);
+            for (int i = 0; i < segments; i++) {
+                Block bone = world.getBlockAt(x + i % 2, y - 1, z + (i + 1) % 2);
+                if (!bone.getType().isAir()) bone.setType(Material.BONE_BLOCK);
+            }
+            spot.setType(random.nextBoolean() ? Material.BONE_BLOCK : Material.COAL_ORE);
+            return;
         }
     }
 

@@ -377,6 +377,9 @@ public final class SiftiteContent implements Listener {
             case "siftslate_tiles" -> item(Material.DEEPSLATE_TILES, id, "Siftslate Tiles");
             case "chiseled_siftslate" -> item(Material.CHISELED_DEEPSLATE, id, "Chiseled Siftslate");
             case "reinforced_siftslate" -> item(Material.REINFORCED_DEEPSLATE, id, "Reinforced Siftslate");
+            case "rift_disc" -> item(Material.MUSIC_DISC_OTHERSIDE, id, "Rift Music Disc");
+            case "wellspring_disc" -> item(Material.MUSIC_DISC_MELLOHI, id, "Wellspring Music Disc");
+            case "sift_rubble" -> item(Material.GRAVEL, id, "Sift Rubble");
             default -> null;
         };
         if (foundationItem != null) return foundationItem;
@@ -418,6 +421,7 @@ public final class SiftiteContent implements Listener {
             case "siftslate_tiles" -> Material.DEEPSLATE_TILES;
             case "chiseled_siftslate" -> Material.CHISELED_DEEPSLATE;
             case "reinforced_siftslate" -> Material.REINFORCED_DEEPSLATE;
+            case "sift_rubble" -> Material.GRAVEL;
             case "sift_leaves" -> Material.CHERRY_LEAVES;
             case "sift_planks" -> Material.CHERRY_PLANKS;
             case "siftstone" -> Material.TUFF;

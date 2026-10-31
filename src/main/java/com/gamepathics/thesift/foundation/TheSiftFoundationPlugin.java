@@ -549,6 +549,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                 "ichor_bottle", "ichor_bucket", "ichor_shard", "ichor_snowball", "rift_key", "soul_block",
                 "sonorous_deepslate", "siftslate", "siftslate_bricks", "charoite",
                 "overgrown_willow_log", "overgrown_willow_planks", "overgrown_willow_boat",
+                "rift_disc", "wellspring_disc", "sift_rubble",
                 "siftite_ingot", "siftite_nugget", "siftite_upgrade_smithing_template");
         else if (args.length == 2 && args[0].equalsIgnoreCase("summon")) candidates = java.util.List.of(
                 "singer", "echo_golem", "rift", "blub", "dark_sniffer", "bulb", "loomer", "wisp",
