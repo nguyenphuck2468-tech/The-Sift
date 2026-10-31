@@ -351,7 +351,7 @@ public final class ResonanceManager implements Listener {
         }
     }
 
-    private boolean isSinger(Entity entity) {
+    boolean isSinger(Entity entity) {
         return SINGER_ID.equals(entity.getPersistentDataContainer().get(entityKey, PersistentDataType.STRING));
     }
 

@@ -1,6 +1,7 @@
 package com.gamepathics.thesift.foundation;
 
 import org.bukkit.Bukkit;
+import org.bukkit.block.Block;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -11,6 +12,8 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
+import org.bukkit.entity.IronGolem;
+import org.bukkit.GameMode;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -39,6 +42,8 @@ public final class EchoGolemManager implements Listener {
     private final NamespacedKey entityKey;
     private final NamespacedKey ownerKey;
     private final NamespacedKey cargoKey;
+    private final java.util.Set<UUID> trackedGolems = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private java.util.function.Predicate<Entity> singerTest;
     private SiftMobFactory mobFactory;
     private final Map<UUID, BossBar> bars = new HashMap<>();
     private long tick;
@@ -106,6 +111,7 @@ public final class EchoGolemManager implements Listener {
     public LivingEntity summonEchoGolem(Location location) {
         LivingEntity golem = sharedMobFactory().spawn(ECHO_GOLEM_ID, location, EntityType.IRON_GOLEM);
         if (golem == null) return null;
+        trackedGolems.add(golem.getUniqueId());
         golem.getPersistentDataContainer().set(entityKey, PersistentDataType.STRING, ECHO_GOLEM_ID);
         golem.setCustomName("§b§lEcho Golem");
         golem.setCustomNameVisible(true);
@@ -142,6 +148,7 @@ public final class EchoGolemManager implements Listener {
     }
 
     private void pulse() {
+        if (plugin.getConfig().getBoolean("echo-golem.auto-delivery", true)) pulseSoulDelivery();
         if (!plugin.getConfig().getBoolean("echo-golem.enabled", true)
                 || !plugin.getConfig().getBoolean("content.echo_golem", true)) {
             return;
@@ -330,6 +337,87 @@ public final class EchoGolemManager implements Listener {
         } catch (IllegalArgumentException ignored) {
             return null;
         }
+    }
+
+    /** Wire the singer probe so delivery can find its target (package-private). */
+    void setSingerTest(java.util.function.Predicate<Entity> singerTest) {
+        this.singerTest = singerTest;
+    }
+
+    /**
+     * Reference-mod loop for bonded Echo Golems: a free golem walks to the nearest Soul
+     * Block stand-in and picks it up, then carries it to a Singer. The hand-over grants the
+     * mod's like_father_and_son advancement to everyone within 16 blocks.
+     */
+    private void pulseSoulDelivery() {
+        for (UUID id : java.util.List.copyOf(trackedGolems)) {
+            Entity entity = Bukkit.getEntity(id);
+            if (!(entity instanceof IronGolem golem) || golem.isDead() || !golem.isValid()) {
+                trackedGolems.remove(id);
+                continue;
+            }
+            var pdc = golem.getPersistentDataContainer();
+            if (pdc.get(ownerKey, PersistentDataType.STRING) == null) continue; // only bonded golems work
+            if (pdc.has(cargoKey, PersistentDataType.BYTE)) {
+                LivingEntity singer = nearestSinger(golem.getLocation(), 32);
+                if (singer == null) continue;
+                if (golem.getLocation().distanceSquared(singer.getLocation()) > 4) {
+                    golem.getPathfinder().moveTo(singer.getLocation());
+                    continue;
+                }
+                pdc.remove(cargoKey);
+                singer.getWorld().spawnParticle(Particle.END_ROD,
+                        singer.getLocation().add(0, 1, 0), 12, 0.3, 0.4, 0.3, 0.02);
+                for (Entity nearby : singer.getWorld().getNearbyEntities(singer.getLocation(), 16, 16, 16)) {
+                    if (nearby instanceof Player player && !player.isDead()
+                            && player.getGameMode() != GameMode.SPECTATOR) {
+                        SiftAdvancementGrant.grant(plugin, player, "like_father_and_son");
+                    }
+                }
+            } else if (golem.getTarget() == null) {
+                Block soul = findNearbySoulBlock(golem.getLocation(), 5);
+                if (soul == null) continue;
+                if (golem.getLocation().distanceSquared(soul.getLocation()) > 2.25) {
+                    golem.getPathfinder().moveTo(soul.getLocation().add(0.5, 0, 0.5));
+                } else {
+                    soul.setType(Material.AIR);
+                    pdc.set(cargoKey, PersistentDataType.BYTE, (byte) 1);
+                    golem.getWorld().spawnParticle(Particle.SOUL,
+                            golem.getLocation().add(0, 1.2, 0), 10, 0.25, 0.3, 0.25, 0.02);
+                }
+            }
+        }
+    }
+
+    private Block findNearbySoulBlock(Location center, int radius) {
+        World world = center.getWorld();
+        if (world == null) return null;
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dy = -2; dy <= 2; dy++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    Block block = world.getBlockAt(
+                            center.getBlockX() + dx, center.getBlockY() + dy, center.getBlockZ() + dz);
+                    // The Soul Block stand-in is soul sand; generated Soul Canyons are made of it.
+                    if (block.getType() == Material.SOUL_SAND) return block;
+                }
+            }
+        }
+        return null;
+    }
+
+    private LivingEntity nearestSinger(Location center, double range) {
+        if (singerTest == null) return null;
+        LivingEntity best = null;
+        double bestDistance = range * range;
+        for (Entity entity : center.getWorld().getNearbyEntities(center, range, range, range)) {
+            if (!(entity instanceof LivingEntity living) || living.isDead() || !singerTest.test(entity)) continue;
+            double distance = living.getLocation().distanceSquared(center);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                best = living;
+            }
+        }
+        return best;
     }
 
     private void consumeOne(Player player) {

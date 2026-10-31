@@ -334,6 +334,13 @@ public final class ResourcePackBridge {
     private void buildZipFromResources() throws IOException {
         var url = getClass().getResource("/pack/pack.mcmeta");
         if (url == null) throw new IOException("Bundled pack directory not found in the plugin jar");
+        if (getClass().getResource("/pack/assets/thesift/textures/block/sculkflower.png") == null) {
+            // processResources strips PNGs from the jar, so a zip built from jar resources
+            // would ship models without textures and clients would reject the hash mismatch.
+            throw new IOException("Pack textures are not in the plugin jar; build the full pack"
+                    + " with './gradlew siftResourcePack' and place TheSift-resource-pack.zip in"
+                    + " the plugin data folder instead");
+        }
         String external = url.toString();
         if (external.startsWith("jar:")) {
             // Running from a jar: copy every entry under pack/ out of the plugin jar itself.
