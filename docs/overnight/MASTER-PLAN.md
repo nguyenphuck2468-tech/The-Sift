@@ -14,7 +14,7 @@ Branch: `overnight/hardening` · Base: `main` @ `adc1fc0` · PR: #12 (Draft)
 ## E2 — Echo Golem lifecycle tracking
 - ID: E2
 - Priority: P1
-- Status: OPEN
+- Status: FIXED
 - Cause: trackedGolems only populated at spawn; entities loaded from disk after restart not tracked
 - Fix: Seed from loaded worlds on first pulse (done in a8720ee), but need entity-load event listener too
 - Files: `EchoGolemManager.java`
