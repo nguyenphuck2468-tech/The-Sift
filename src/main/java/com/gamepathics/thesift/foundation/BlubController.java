@@ -129,7 +129,12 @@ final class BlubController implements Listener {
                 return;
             }
             pdc.set(blubOwnerKey, PersistentDataType.STRING, player.getUniqueId().toString());
-            if (target instanceof org.bukkit.entity.LivingEntity living) living.setRemoveWhenFarAway(false);
+            if (target instanceof org.bukkit.entity.LivingEntity living) {
+                // Ambient Blubs despawn naturally now (see SiftEcologyManager wildlife);
+                // a tamed companion must stay, like the mod's pet.
+                living.setRemoveWhenFarAway(false);
+                living.setPersistent(true);
+            }
             Messages.send(player, "blub.tamed", "The Blub accepts your Soul Block and follows you.");
             SiftAdvancementGrant.grant(plugin, player, "blub");
         } else if (ownerId != null && ownerId.equals(player.getUniqueId().toString())) {

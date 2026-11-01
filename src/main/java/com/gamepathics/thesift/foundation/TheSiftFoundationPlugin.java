@@ -273,6 +273,12 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             } else if (safeWorld != null) {
                 for (Player player : dimension.getPlayers()) player.teleport(safeWorld.getSpawnLocation());
             }
+            // Unload with save so a /reload can't hold a half-live dimension against a
+            // closing plugin (the crash class the Skilleed plugin had to patch). The world
+            // data is independent of this plugin; re-entry recreates/loads it on demand.
+            if (safeWorld != null && getServer().unloadWorld(dimension, true)) {
+                getLogger().info("The Sift dimension unloaded cleanly for plugin disable.");
+            }
         }
         if (ichorContent != null) ichorContent.removeRecipes();
         if (siftiteContent != null) siftiteContent.removeRecipes();

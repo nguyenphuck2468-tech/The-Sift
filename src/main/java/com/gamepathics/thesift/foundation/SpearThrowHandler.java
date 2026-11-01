@@ -14,15 +14,14 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.function.LongSupplier;
 
 /**
- * Owns the Siftite Spear throw lifecycle as a transactional operation.
+ * Owns the Siftite Spear throw lifecycle as a transactional operation, trident-style.
  *
- * <p>The projectile spawns FIRST; only after a successful spawn is the durability cost
- * committed to the held item and the cooldown consumed. If the spawner returns null or
- * throws, the player's inventory and cooldown state are untouched.
- *
- * <p>Durability uses an injectable {@link DurabilityStrategy} that defaults to
- * {@code ItemStack.damage(1, player)} which honours Unbreaking and Paper's pipeline.
- * Creative players keep their stack. Cooldown uses an injectable clock.
+ * <p>The projectile spawns FIRST; only after a successful spawn does the held item leave
+ * the hand. The thrown spear itself IS the item: it lands or hits exactly once and drops
+ * for pickup, so a throw never multiplies the item (a previous design kept a damaged copy
+ * in the hand while the projectile dropped another one — a dupe). Creative players keep
+ * their stack and their throws never drop a copy. If the spawner returns null or throws,
+ * inventory and cooldown stay untouched. Cooldown uses an injectable clock.
  */
 final class SpearThrowHandler {
     private final NamespacedKey spearTagKey;
@@ -36,12 +35,7 @@ final class SpearThrowHandler {
         Snowball spawn(Location eye, ItemStack item, Player shooter, double speed);
     }
 
-    interface DurabilityStrategy {
-        ItemStack apply(ItemStack held, Player player);
-    }
-
     private ProjectileSpawner spawner;
-    private DurabilityStrategy durabilityStrategy = (held, player) -> held.damage(1, player);
 
     SpearThrowHandler(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -53,7 +47,6 @@ final class SpearThrowHandler {
     }
 
     void setSpawner(ProjectileSpawner spawner) { this.spawner = spawner; }
-    void setDurabilityStrategy(DurabilityStrategy s) { this.durabilityStrategy = s; }
     void setClock(LongSupplier clock) { this.clock = clock; }
 
     private Snowball defaultSpawn(Location eye, ItemStack item, Player shooter, double speed) {
@@ -78,34 +71,25 @@ final class SpearThrowHandler {
         if (last != null && now - last < 500L) return null;
         boolean creative = player.getGameMode() == GameMode.CREATIVE;
 
-        ItemStack projectileItem;
-        if (creative) {
-            projectileItem = held.clone();
-        } else {
-            projectileItem = held.clone();
-            var meta = projectileItem.getItemMeta();
-            if (meta instanceof org.bukkit.inventory.meta.Damageable d) {
-                d.setDamage(d.getDamage() + 1);
-                projectileItem.setItemMeta(meta);
-            }
-        }
-
         Location eye = player.getEyeLocation();
         double reach = Math.max(1.0, plugin.getConfig().getDouble("siftite.spear-reach", 4.5));
         double speed = Math.max(0.8, Math.min(2.0, reach / 2.5));
         Snowball projectile;
         try {
-            projectile = spawner.spawn(eye, projectileItem, player, speed);
+            projectile = spawner.spawn(eye, held.clone(), player, speed);
         } catch (RuntimeException exception) {
             plugin.getLogger().warning("Spear projectile spawn failed: " + exception.getMessage());
             return null;
         }
         if (projectile == null) return null;
 
-        if (!creative) {
-            ItemStack damaged = durabilityStrategy.apply(held, player);
-            player.getInventory().setItem(hand,
-                    damaged == null || damaged.getType().isAir() ? null : damaged);
+        if (creative) {
+            // The stack stays in hand, so the throw must not yield a pickup-able copy.
+            projectile.getPersistentDataContainer().set(droppedKey, PersistentDataType.BYTE, (byte) 1);
+        } else {
+            // The held item IS the projectile now — clear the hand only after a successful
+            // spawn, otherwise a failed throw would delete the spear.
+            player.getInventory().setItem(hand, null);
         }
         player.getPersistentDataContainer().set(lastThrowKey, PersistentDataType.LONG, now);
         return projectile;

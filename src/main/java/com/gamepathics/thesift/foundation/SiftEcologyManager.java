@@ -72,6 +72,7 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey ichorContentKey;
     private final NamespacedKey snifferCorruptionStartKey;
     private final NamespacedKey snifferFleePathAtKey;
+    private final NamespacedKey snifferFleeScanAtKey;
     private final NamespacedKey darkSnifferSonicAtKey;
     private final NamespacedKey darkSnifferSonicTargetKey;
     private final NamespacedKey darkSnifferCombatTargetKey;
@@ -146,6 +147,7 @@ public final class SiftEcologyManager implements Listener {
         this.ichorContentKey = new NamespacedKey(plugin, "content");
         this.snifferCorruptionStartKey = new NamespacedKey(plugin, "sniffer_corruption_start");
         this.snifferFleePathAtKey = new NamespacedKey(plugin, "sniffer_flee_path_at");
+        this.snifferFleeScanAtKey = new NamespacedKey(plugin, "sniffer_flee_scan_at");
         this.darkSnifferSonicAtKey = new NamespacedKey(plugin, "dark_sniffer_sonic_at");
         this.darkSnifferSonicTargetKey = new NamespacedKey(plugin, "dark_sniffer_sonic_target");
         this.darkSnifferCombatTargetKey = new NamespacedKey(plugin, "dark_sniffer_combat_target");
@@ -190,7 +192,7 @@ public final class SiftEcologyManager implements Listener {
         this.darkSnifferCombatTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             tickDarkSnifferCombat();
             tickWardenPetting();
-        }, 1L, 1L);
+        }, 1L, 2L);
     }
 
     public void shutdown() {
@@ -228,7 +230,11 @@ public final class SiftEcologyManager implements Listener {
 
     @EventHandler
     public void onEntityAddToWorld(com.destroystokyo.paper.event.entity.EntityAddToWorldEvent event) {
-        wildlifeIndex.index(wildlifeKey(event.getEntity()), event.getEntity().getUniqueId());
+        Entity entity = event.getEntity();
+        // Review R3: no filter meant every item, arrow and XP orb on EVERY world was
+        // PDC-read and bucketed. The species ticks only ever query the Sift dimension.
+        if (!(entity instanceof LivingEntity) || !isSift(entity.getWorld())) return;
+        wildlifeIndex.index(wildlifeKey(entity), entity.getUniqueId());
     }
 
     @EventHandler
@@ -240,7 +246,9 @@ public final class SiftEcologyManager implements Listener {
 
     @EventHandler
     public void onEntityRemoveFromWorld(com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent event) {
-        wildlifeIndex.unindex(wildlifeKey(event.getEntity()), event.getEntity().getUniqueId());
+        Entity entity = event.getEntity();
+        if (!(entity instanceof LivingEntity) || !isSift(entity.getWorld())) return;
+        wildlifeIndex.unindex(wildlifeKey(entity), entity.getUniqueId());
     }
 
     /** One-time seed per world: entities loaded before this listener registered are not indexed. */
@@ -376,6 +384,9 @@ public final class SiftEcologyManager implements Listener {
         // run in both modes, and provider-mapped placements fail-and-retry until resolved.
         if (plugin.getConfig().getBoolean("providers.strict", true)) {
             decorateStrictProviderContent(chunk, key, random);
+            // Review R3: the strict branch skipped generateSiftResources, so strict worlds
+            // had no iron/copper/redstone/lapis/gold at all.
+            generateSiftResources(chunk, random);
             return 1;
         }
 
@@ -420,7 +431,8 @@ public final class SiftEcologyManager implements Listener {
             openNaturalRift(chunk);
             generationOperations++;
         }
-        if ((key.endsWith("bulb_forest") || key.endsWith("overgrown_forest")) && random.nextInt(160) == 0) {
+        if (plugin.getConfig().getBoolean("content.prism_warden", false)
+                && (key.endsWith("bulb_forest") || key.endsWith("overgrown_forest")) && random.nextInt(160) == 0) {
             spawnBoss(chunk, EntityType.WARDEN, "Prism Warden", "prism_warden", 180.0, 28.0);
             generationOperations++;
         } else if ((key.endsWith("shattered_peaks") || key.endsWith("siftslate_peaks")) && random.nextInt(120) == 0) {
@@ -1049,7 +1061,11 @@ public final class SiftEcologyManager implements Listener {
             Location spawnAt = new Location(world, x + .5, y, z + .5);
             Entity entity = mobFactory.spawn(mobId, spawnAt, type);
             if (entity == null) continue;
-            entity.setPersistent(true);
+            // Review R3: ambient wildlife persisted forever and grew linearly with explored
+            // chunks. Only the species the ecology mechanics depend on stay persistent;
+            // everything else despawns under vanilla rules. Blub persistence moves to the
+            // taming moment (BlubController).
+            if ("sifter".equals(mobId) || "dark_sniffer".equals(mobId)) entity.setPersistent(true);
             entity.setCustomName("§d" + name);
             entity.setCustomNameVisible(random.nextInt(4) == 0);
             entity.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING, mobId);
@@ -1608,6 +1624,11 @@ public final class SiftEcologyManager implements Listener {
             if (!"dark_sniffer".equals(pdc.get(creatureKey, PersistentDataType.STRING))) {
                 // Reference behavior: ordinary Sniffers flee from a Dark Sniffer within 20 blocks.
                 // Refresh the destination at most every 750 ms to avoid restarting pathfinding each tick.
+                // Review R3: the 20-block radius scan ran every tick per ordinary sniffer;
+                // throttle it to 250 ms per sniffer (path refresh stays on its own 750 ms clock).
+                Long lastScan = pdc.get(snifferFleeScanAtKey, PersistentDataType.LONG);
+                if (lastScan != null && now - lastScan < 250L) continue;
+                pdc.set(snifferFleeScanAtKey, PersistentDataType.LONG, now);
                 Entity threat = null;
                 double nearestThreatDistance = 20.0 * 20.0;
                 for (Entity nearby : entity.getNearbyEntities(20, 20, 20)) {
@@ -1682,9 +1703,9 @@ public final class SiftEcologyManager implements Listener {
                 try {
                     target = Bukkit.getPlayer(UUID.fromString(targetId));
                 } catch (IllegalArgumentException ignored) {
-                    // Invalid persisted UUID: drop the stale sonic target and move on to the
-                    // next sniffer in the batch instead of aborting the whole tick.
-                    pdc.set(darkSnifferSonicTargetKey, PersistentDataType.STRING, "");
+                    // Invalid persisted UUID (a previous build stored ""): clear the whole
+                    // wave state so the sniffer can re-target instead of looping here forever.
+                    clearDarkSnifferWave(pdc);
                     continue;
                 }
                 if (target == null || !target.isValid() || target.isDead()
@@ -2162,8 +2183,11 @@ public final class SiftEcologyManager implements Listener {
             Messages.send(player, "spawn-eggs.disabled", "Sift spawn eggs are disabled by configuration.");
             return;
         }
-        if (!"all".equals(plugin.getConfig().getString("spawn-eggs.permission-mode", "op"))
-                && !player.isOp()) {
+        String permMode = plugin.getConfig().getString("spawn-eggs.permission-mode", "op");
+        boolean allowed = "all".equals(permMode)
+                || ("permission".equals(permMode) && player.hasPermission("thesift.spawneggs"))
+                || (!"permission".equals(permMode) && player.isOp());
+        if (!allowed) {
             Messages.send(player, "spawn-eggs.denied", "Sift spawn eggs require op in the current permission mode.");
             return;
         }

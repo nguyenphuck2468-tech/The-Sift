@@ -23,7 +23,8 @@
       "id": "sift_shard",
       "material": "AMETHYST_SHARD",
       "name": "Sift Shard",
-      "model": "thesift:item/sift_shard"
+      "model": "thesift:item/sift_shard",
+      "fanmade": true
     },
     {
       "id": "spire_fragment",
@@ -50,7 +51,8 @@
       "id": "sift_core",
       "material": "ECHO_SHARD",
       "name": "Heart of the Sift",
-      "model": "thesift:item/sift_core"
+      "model": "thesift:item/sift_core",
+      "fanmade": true
     },
     {
       "id": "sift_catalyst",
@@ -91,7 +93,8 @@
       "id": "bulb_glow",
       "material": "GLOWSTONE_DUST",
       "name": "Bulb Glow",
-      "model": "thesift:item/bulb_glow"
+      "model": "thesift:item/bulb_glow",
+      "fanmade": true
     },
     {
       "id": "prism_blade",
@@ -175,43 +178,50 @@
       "id": "chiseled_siftstone",
       "material": "CHISELED_DEEPSLATE",
       "name": "Chiseled Siftstone",
-      "model": "thesift:item/chiseled_siftstone"
+      "model": "thesift:item/chiseled_siftstone",
+      "fanmade": true
     },
     {
       "id": "drifter",
       "material": "ENDERMAN_SPAWN_EGG",
       "name": "Drifter",
-      "model": "thesift:item/drifter"
+      "model": "thesift:item/drifter",
+      "fanmade": true
     },
     {
       "id": "frost_stalker",
       "material": "STRAY_SPAWN_EGG",
       "name": "Frost Stalker",
-      "model": "thesift:item/frost_stalker"
+      "model": "thesift:item/frost_stalker",
+      "fanmade": true
     },
     {
       "id": "glimmerwing",
       "material": "BEE_SPAWN_EGG",
       "name": "Glimmerwing",
-      "model": "thesift:item/glimmerwing"
+      "model": "thesift:item/glimmerwing",
+      "fanmade": true
     },
     {
       "id": "glowbell",
       "material": "BAT_SPAWN_EGG",
       "name": "Glowbell",
-      "model": "thesift:item/glowbell"
+      "model": "thesift:item/glowbell",
+      "fanmade": true
     },
     {
       "id": "heart_of_the_sift",
       "material": "ECHO_SHARD",
       "name": "Heart Of The Sift",
-      "model": "thesift:item/heart_of_the_sift"
+      "model": "thesift:item/heart_of_the_sift",
+      "fanmade": true
     },
     {
       "id": "hollow_bulb",
       "material": "ZOMBIE_SPAWN_EGG",
       "name": "Hollow Bulb",
-      "model": "thesift:item/hollow_bulb"
+      "model": "thesift:item/hollow_bulb",
+      "fanmade": true
     },
     {
       "id": "koi",
@@ -223,13 +233,15 @@
       "id": "loomer",
       "material": "RABBIT_SPAWN_EGG",
       "name": "Loomer",
-      "model": "thesift:item/loomer"
+      "model": "thesift:item/loomer",
+      "fanmade": true
     },
     {
       "id": "lumen_tulip",
       "material": "TORCHFLOWER_SEEDS",
       "name": "Lumen Tulip",
-      "model": "thesift:item/lumen_tulip"
+      "model": "thesift:item/lumen_tulip",
+      "fanmade": true
     },
     {
       "id": "prism_warden",
@@ -249,7 +261,8 @@
       "id": "rift_gate",
       "material": "CRYING_OBSIDIAN",
       "name": "Rift Gate",
-      "model": "thesift:item/rift_gate"
+      "model": "thesift:item/rift_gate",
+      "fanmade": true
     },
     {
       "id": "shard_axe",
@@ -283,79 +296,92 @@
       "id": "shardling",
       "material": "ENDERMITE_SPAWN_EGG",
       "name": "Shardling",
-      "model": "thesift:item/shardling"
+      "model": "thesift:item/shardling",
+      "fanmade": true
     },
     {
       "id": "sift_altar",
       "material": "CHISELED_DEEPSLATE",
       "name": "Sift Altar",
-      "model": "thesift:item/sift_altar"
+      "model": "thesift:item/sift_altar",
+      "fanmade": true
     },
     {
       "id": "sift_grass",
       "material": "MOSS_BLOCK",
       "name": "Sift Grass",
-      "model": "thesift:item/sift_grass"
+      "model": "thesift:item/sift_grass",
+      "fanmade": true
     },
     {
       "id": "sift_leaves",
       "material": "CHERRY_LEAVES",
       "name": "Sift Leaves",
-      "model": "thesift:item/sift_leaves"
+      "model": "thesift:item/sift_leaves",
+      "fanmade": true
     },
     {
       "id": "sift_log",
       "material": "CHERRY_LOG",
       "name": "Sift Log",
-      "model": "thesift:item/sift_log"
+      "model": "thesift:item/sift_log",
+      "fanmade": true
     },
     {
       "id": "sift_planks",
       "material": "CHERRY_PLANKS",
       "name": "Sift Planks",
-      "model": "thesift:item/sift_planks"
+      "model": "thesift:item/sift_planks",
+      "fanmade": true
     },
     {
       "id": "sift_soil",
       "material": "ROOTED_DIRT",
       "name": "Sift Soil",
-      "model": "thesift:item/sift_soil"
+      "model": "thesift:item/sift_soil",
+      "fanmade": true
     },
     {
       "id": "siftstone",
       "material": "TUFF",
       "name": "Siftstone",
-      "model": "thesift:item/siftstone"
+      "model": "thesift:item/siftstone",
+      "fanmade": true
     },
     {
       "id": "siftstone_bricks",
       "material": "TUFF_BRICKS",
       "name": "Siftstone Bricks",
-      "model": "thesift:item/siftstone_bricks"
+      "model": "thesift:item/siftstone_bricks",
+      "fanmade": true
     },
     {
       "id": "sunspore",
       "material": "MOOSHROOM_SPAWN_EGG",
       "name": "Sunspore",
-      "model": "thesift:item/sunspore"
+      "model": "thesift:item/sunspore",
+      "fanmade": true
     },
     {
       "id": "the_sifter",
       "material": "RAVAGER_SPAWN_EGG",
       "name": "The Sifter",
-      "model": "thesift:item/the_sifter"
+      "model": "thesift:item/the_sifter",
+      "fanmade": true
     },
     {
       "id": "thornback",
       "material": "TURTLE_SPAWN_EGG",
       "name": "Thornback",
-      "model": "thesift:item/thornback"
+      "model": "thesift:item/thornback",
+      "fanmade": true
     },
     {
       "id": "violet_wisp",
       "material": "VEX_SPAWN_EGG",
       "name": "Violet Wisp",
-      "model": "thesift:item/violet_wisp"
+      "model": "thesift:item/violet_wisp",
+      "fanmade": true
     },
     {
       "id": "wisp",
@@ -625,7 +651,8 @@
       "id": "polished_siftslate",
       "material": "POLISHED_DEEPSLATE",
       "name": "Polished Siftslate",
-      "model": null
+      "model": null,
+      "fanmade": true
     },
     {
       "id": "siftslate_bricks",
@@ -673,7 +700,8 @@
       "id": "siftslate_tiles",
       "material": "DEEPSLATE_TILES",
       "name": "Siftslate Tiles",
-      "model": null
+      "model": null,
+      "fanmade": true
     },
     {
       "id": "chiseled_siftslate",
@@ -697,13 +725,15 @@
       "id": "rift_disc",
       "material": "MUSIC_DISC_OTHERSIDE",
       "name": "Rift Music Disc",
-      "model": null
+      "model": null,
+      "fanmade": true
     },
     {
       "id": "wellspring_disc",
       "material": "MUSIC_DISC_MELLOHI",
       "name": "Wellspring Music Disc",
-      "model": null
+      "model": null,
+      "fanmade": true
     },
     {
       "id": "sift_rubble",
@@ -941,32 +971,38 @@
     {
       "id": "sift_grass",
       "material": "PAPER",
-      "model": "block/sift_grass"
+      "model": "block/sift_grass",
+      "fanmade": true
     },
     {
       "id": "sift_leaves",
       "material": "PAPER",
-      "model": "block/sift_leaves"
+      "model": "block/sift_leaves",
+      "fanmade": true
     },
     {
       "id": "sift_log",
       "material": "PAPER",
-      "model": "block/sift_log"
+      "model": "block/sift_log",
+      "fanmade": true
     },
     {
       "id": "siftstone",
       "material": "PAPER",
-      "model": "block/siftstone"
+      "model": "block/siftstone",
+      "fanmade": true
     },
     {
       "id": "siftstone_bricks",
       "material": "PAPER",
-      "model": "block/siftstone_bricks"
+      "model": "block/siftstone_bricks",
+      "fanmade": true
     },
     {
       "id": "ichor_water",
       "material": "PAPER",
-      "model": "block/ichor_water"
+      "model": "block/ichor_water",
+      "fanmade": true
     },
     {
       "id": "soul_block",

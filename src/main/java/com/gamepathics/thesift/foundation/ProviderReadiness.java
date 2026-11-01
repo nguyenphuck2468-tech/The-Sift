@@ -231,9 +231,10 @@ final class ProviderReadiness {
         boolean registered = plugin.getServer().getServicesManager().getRegistrations(type).stream()
                 .map(RegisteredServiceProvider::getProvider).anyMatch(provider -> provider != null
                         && configured.equalsIgnoreCase(serviceId(provider)));
-        return registered || configured.equals(type.getSimpleName().toLowerCase(Locale.ROOT))
-                || !List.of("vanilla", "nexo", "itemsadder", "oraxen", "mythicmobs", "elitemobs",
-                "siftitemprovider", "siftblockprovider", "siftmobprovider").contains(configured);
+        // Review R3: an unknown string used to count as "selected", so a typo silently
+        // pretended every backend was chosen. Only a provider whose ID matches counts;
+        // /sift doctor then reports the configured name as unresolved instead of green.
+        return registered;
     }
     private String serviceId(Object provider) {
         try { return String.valueOf(provider.getClass().getMethod("getProviderId").invoke(provider)); }
