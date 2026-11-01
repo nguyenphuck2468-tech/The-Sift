@@ -18,11 +18,19 @@ No plugin in this matrix has reached **Live checked** in this repository. `Gener
 | Custom mob spawning | — | Detected (registry probe + spawn path; definitions not generated) | — | Detected | Detected + Generated | Detected (file mapping only) | — | — | — | — | — | — | — |
 | Mob rendering | — | — | — | — | — | — | Detected (attach path) | — | — | — | — | — | — |
 | Bedrock level 1 detection | — | — | — | — | — | — | — | Detected | Detected | Detected | Detected | Detected | Detected |
-| Bedrock level 2 generated pack / Geyser mappings | **MISSING** | **MISSING** | **MISSING** | — | — | — | — | **MISSING** | **MISSING** | — | — | — | — |
+| Bedrock level 2 runtime guards (pack skip, sound fallbacks, doctor) | — | — | — | — | — | — | — | **Detected** | **PARTIAL** (BedrockBridge; no Bedrock pack yet) | — | — | — | — |
 
 `Detected` for optional plugins is based on the declared plugin name and reflective/service path in the code, not proof of API compatibility. `ResourcePackManager` is currently detection and doctor reporting only. Its public Java API supports pack registration, but integration is deferred; no API calls or telemetry are used. Geyser, Floodgate, ViaVersion, ViaBackwards, ViaRewind, and ResourcePackManager never gate dimension readiness.
 
-Bedrock level 2 (pack generation, custom mappings, and end-to-end Geyser validation) is estimated **high / roughly 1–3 engineering weeks**, assuming usable asset provenance and a test server with Geyser + ResourcePackManager. This is a planning estimate, not a commitment. Geyser documentation checked 2026-10-24 lists Java 26.3 support; Skilleed's product page (updated 2026-10-09) advises ViaVersion. This plugin has not been tested on a server with Geyser, either with or without ViaVersion.
+Bedrock level 2 operational tier is IMPLEMENTED (2026-11-01): `BedrockBridge` detects Geyser's
+API reflectively, the Java resource pack is never sent to Bedrock players, pack-bundled sounds
+(sonorous notes, rift portal trigger) fall back to vanilla equivalents per player, and
+/sift doctor reports Geyser/Floodgate/ViaVersion state plus Bedrock players online. What remains
+MISSING at the full level-2 tier: a generated Bedrock pack (.mcpack with custom item/block
+mappings) and end-to-end validation on a real Geyser server.
+
+Original level-2 estimate for that remaining tier:
+ **high / roughly 1–3 engineering weeks**, assuming usable asset provenance and a test server with Geyser + ResourcePackManager. This is a planning estimate, not a commitment. Geyser documentation checked 2026-10-24 lists Java 26.3 support; Skilleed's product page (updated 2026-10-09) advises ViaVersion. This plugin has not been tested on a server with Geyser, either with or without ViaVersion.
 
 ## Implemented feature slices
 

@@ -78,7 +78,7 @@ Do not publish a resource-pack ZIP yet: the repository contains PNG assets of un
 
 The note melody currently opens the temporary Rift feature, not the mod-style
 Ancient City dimension portal. Successful melodies share the configured
-server-wide cooldown (`rift.portal-song-cooldown-seconds`, default 1800);
+no server-wide cooldown (the reference mod has none between songs);
 unfinished melodies expire after `rift.portal-song-timeout-seconds` (default
 60) and are also cleared when a player quits. The cooldown is runtime-only and
 resets on a full server restart. With strict providers unresolved, an Overworld

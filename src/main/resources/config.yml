@@ -82,12 +82,6 @@ echo-golem:
   max-health: 34.0
   resonance-period: 8
   resonance-range: 20.0
-  # Chưa triển khai: các giá trị resonance/debuff bên dưới chưa được áp dụng trong gameplay.
-  resonance-damage: 6.0
-  slowness-seconds: 4
-  slowness-amplifier: 1
-  mining-fatigue-seconds: 6
-  mining-fatigue-amplifier: 2
   # Fan-made (KHÔNG có trong mod gốc): nhịp hồi máu cho chủ sở hữu. Mặc định TẮT để giữ
   # parity; bật lên nếu muốn cơ chế cộng hưởng tự chế này hoạt động.
   heal-enabled: false
@@ -119,9 +113,6 @@ rift:
   periodic-mobs: 1
   resonance-pulse-interval-seconds: 60
   resonance-range: 20.0
-  # A server-wide recovery period limits free Rift creation through the melody.
-  # Ignored: the reference mod has no cooldown between songs.
-  portal-song-cooldown-seconds: 0
   # Incomplete melodies expire after this many seconds without a note.
   portal-song-timeout-seconds: 60
 
@@ -143,24 +134,14 @@ ichor:
 charoite:
   enabled: true
   world: thesift:the_sift
-  # Carrier mod-parity: Charoite = Lapis Lazuli, quặng = Deepslate Lapis Ore (mod dùng thuộc tính Deepslate Lapis Ore).
-  material: LAPIS_LAZULI
+  # Carrier mod-parity: quặng = Deepslate Lapis Ore. Item Charoite dùng carrier LAPIS_LAZULI
+  # cố định trong code (key material cũ không được đọc nên đã bỏ).
   ore-material: DEEPSLATE_LAPIS_ORE
-  drop-min: 1
-  drop-max: 2
 
 siftite:
   enabled: true
-  # Chưa triển khai: recipe đang dùng vật liệu vanilla cố định.
-  ingot-material: NETHERITE_INGOT
   # Carrier mod-parity: quặng Siftite dùng thuộc tính Deepslate Diamond Ore (mod), không còn Ancient Debris.
   ore-material: DEEPSLATE_DIAMOND_ORE
-  # Chưa triển khai: recipe đang dùng vật liệu vanilla cố định.
-  nugget-material: IRON_NUGGET
-  # Chưa triển khai: recipe đang dùng vật liệu vanilla cố định.
-  template-material: NETHERITE_UPGRADE_SMITHING_TEMPLATE
-  # Chưa triển khai: hiện không thay đổi loại recipe.
-  smithing-only: true
   # Áp dụng khi chế tạo: cộng thêm (multiplier-1)*max durability vào item Siftite mới crafting.
   durability-multiplier: 1.2
   knockback-resistance: 0.1
@@ -183,8 +164,9 @@ requirements:
   # service:mob for plugins that register SiftItemProvider/SiftBlockProvider/SiftMobProvider.
   enabled: true
   hard-stop: false
-  all-of:
-    - ModelEngine
+  # ModelEngine chỉ là cosmetics (mob model), không phải điều kiện chức năng — để trống để
+  # server không có ModelEngine không bị cảnh báo mỗi lần boot. Thêm lại nếu muốn bắt buộc.
+  all-of: []
   any-of:
     items: [Nexo, ItemsAdder, Oraxen, "service:item"]
     blocks: [Nexo, ItemsAdder, Oraxen, "service:block"]

@@ -141,6 +141,11 @@ final class AncientCityGateManager implements Listener {
         melodies.expire(System.currentTimeMillis(), 60_000L);
     }
 
+    private BedrockBridge bedrock() {
+        return plugin instanceof TheSiftFoundationPlugin foundation
+                ? foundation.bedrockAccess() : new BedrockBridge(plugin);
+    }
+
     private Optional<Gate> findNearest(Location origin, int radiusChunks) {
         World world = origin.getWorld();
         if (world == null || world.getEnvironment() != World.Environment.NORMAL) return Optional.empty();
@@ -474,8 +479,10 @@ final class AncientCityGateManager implements Listener {
                 new Particle.DustOptions(Color.fromRGB(SonorousPalette.noteRgb(played)), 1.1f));
         // Reference-mod parity: each note plays its own Sonorous Deepslate recording
         // (thesift:block.sonorous_deepslate.sound_1..8, bundled with the resource pack).
-        event.getPlayer().playSound(noteBlock.getLocation(),
-                "thesift:block.sonorous_deepslate.sound_" + Math.min(8, Math.max(1, played)), 0.8f, 1.0f);
+        // Bedrock clients cannot resolve custom sound events: harp fallback per player.
+        bedrock().playSound(event.getPlayer(), noteBlock.getLocation(),
+                "thesift:block.sonorous_deepslate.sound_" + Math.min(8, Math.max(1, played)),
+                Sound.BLOCK_NOTE_BLOCK_HARP, 0.8f, 1.0f);
         spawnSonorousBeam(base, played);
         if (result == AncientCityMelodyTracker.Result.WRONG) {
             event.getPlayer().playSound(noteBlock.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.8f, 0.6f);

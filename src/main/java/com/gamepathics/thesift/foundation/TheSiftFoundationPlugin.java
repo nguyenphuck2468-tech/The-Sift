@@ -35,6 +35,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     private ProviderApiProbe providerApiProbe;
     private DatapackManagerBridge datapackBridge;
     private ResourcePackBridge resourcePackBridge;
+    private BedrockBridge bedrockBridge;
 
     /** Bridge used by other managers (e.g. ore generation) to query bundled pack state. */
     public DatapackManagerBridge datapackBridge() {
@@ -45,6 +46,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     public void onEnable() {
         datapackBridge = new DatapackManagerBridge(this);
         resourcePackBridge = new ResourcePackBridge(this);
+        bedrockBridge = new BedrockBridge(this);
         registerCommand("sift", new BasicCommand() {
             @Override
             public void execute(CommandSourceStack source, String[] args) {
@@ -59,7 +61,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             @Override
             public java.util.Collection<String> suggest(CommandSourceStack source, String[] args) {
                 return commandSuggestions(args, getServer().getOnlinePlayers().stream()
-                        .map(Player::getName).toList());
+                        .map(Player::getName).toList(), TheSiftFoundationPlugin.this::speciesSuggestionEnabled);
             }
         });
         saveDefaultConfig();
@@ -154,8 +156,6 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         getServer().getScheduler().runTask(this, this::verifyRequiredPlugins);
         getLogger().info("The Sift fan-made Paper 26.3 plugin enabled; not affiliated with Mojang or Microsoft.");
     }
-
-    /** The Sift depends fully on provider plugins: vanilla fallback mode is not available. */
 
     /** Lazily creates and returns the single shared {@link SiftiteContent} used by all managers. */
     private SiftiteContent sharedContent() {
@@ -375,6 +375,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             }
             for (String line : providerReadiness.summary().split("\\n")) sender.sendMessage(line);
             for (String line : providerApiProbe.inspect()) sender.sendMessage("API: " + line);
+            sender.sendMessage(bedrockStatus());
             if (siftEcologyManager != null) sender.sendMessage("Worldgen provider placement failures: "
                     + siftEcologyManager.providerPlacementFailureSummary());
             for (String warning : providerWarnings()) sender.sendMessage("WARNING: " + warning);
@@ -563,7 +564,16 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                 + "; required: " + getServer().isResourcePackRequired();
     }
 
-    static java.util.List<String> commandSuggestions(String[] args, java.util.Collection<String> players) {
+    /** Suggestion gate mirroring summonCreature's acceptance: core mobs always, fan mobs
+     *  only when content.sift_standin_mobs is on, rifts follow content.rift. */
+    private boolean speciesSuggestionEnabled(String species) {
+        if (species.equals("rift")) return getConfig().getBoolean("content.rift", true);
+        return SiftEcologyManager.FAN_CORE_MOBS.contains(species)
+                || getConfig().getBoolean("content.sift_standin_mobs", false);
+    }
+
+    static java.util.List<String> commandSuggestions(String[] args, java.util.Collection<String> players,
+                                                     java.util.function.Predicate<String> speciesEnabled) {
         java.util.List<String> candidates;
         if (args.length == 1) candidates = java.util.List.of("doctor", "reload", "datapack", "resourcepack", "dimension", "locate", "return", "give", "summon");
         else if (args.length == 2 && args[0].equalsIgnoreCase("datapack")) candidates = java.util.List.of("list", "enable", "disable");
@@ -578,7 +588,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                 "singer", "echo_golem", "rift", "blub", "dark_sniffer", "bulb", "loomer", "wisp",
                 "violet_wisp", "koi", "hollow_bulb", "glowbell", "thornback", "glimmerwing",
                 "the_sifter", "spire_tyrant", "sifter", "frost_stalker", "sunspore", "drifter", "shardling",
-                "prism_warden", "prismite", "lumen_tulip");
+                "prism_warden", "prismite", "lumen_tulip").stream().filter(speciesEnabled).toList();
         else if (args.length == 3 && (args[0].equalsIgnoreCase("give")
                 || args[0].equalsIgnoreCase("summon"))) candidates = java.util.List.copyOf(players);
         else return java.util.List.of();
@@ -593,6 +603,28 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         if (args.length == 0) return true;
         String sub = args[0].toLowerCase(java.util.Locale.ROOT);
         return !(sub.equals("locate") || sub.equals("dimension") || sub.equals("enter") || sub.equals("return"));
+    }
+
+    /** Bedrock runtime support status for /sift doctor (Geyser/Floodgate level-2 tier). */
+    private String bedrockStatus() {
+        if (bedrockBridge == null || !getConfig().getBoolean("providers.bedrock-enabled", false)) {
+            return "Bedrock: disabled (providers.bedrock-enabled=false); Geyser/Floodgate are not consulted.";
+        }
+        boolean geyser = getServer().getPluginManager().isPluginEnabled("Geyser-Spigot");
+        boolean floodgate = getServer().getPluginManager().isPluginEnabled("floodgate");
+        boolean via = getServer().getPluginManager().isPluginEnabled("ViaVersion");
+        long bedrockOnline = bedrockBridge.bedrockPlayersOnline();
+        return "Bedrock: Geyser " + (geyser ? "detected" : "MISSING")
+                + ", Floodgate " + (floodgate ? "detected" : "missing")
+                + ", ViaVersion " + (via ? "detected" : "missing")
+                + "; Bedrock players online: " + bedrockOnline
+                + ". Bedrock clients do not receive the Java resource pack and hear vanilla fallback sounds.";
+    }
+
+    /** Bedrock bridge access for managers (lazy-created for standalone/test use). */
+    public BedrockBridge bedrockAccess() {
+        if (bedrockBridge == null) bedrockBridge = new BedrockBridge(this);
+        return bedrockBridge;
     }
 
     private java.util.List<String> providerWarnings() {

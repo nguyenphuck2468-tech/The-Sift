@@ -38,6 +38,7 @@ public final class ResourcePackBridge {
     private static final List<String> PROVIDER_NAMES = List.of("resourcepackmanager", "multiverseresourcepacks");
 
     private final JavaPlugin plugin;
+    private BedrockBridge bedrockBridge;
     private final Path localZip;
     private final HttpClient httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
     private volatile String cachedSha1;
@@ -103,6 +104,12 @@ public final class ResourcePackBridge {
     }
 
     public void sendTo(Player player, boolean force) {
+        // Bedrock clients cannot use a Java resource pack; sending one is pure waste.
+        if (bedrockBridge == null) {
+            bedrockBridge = plugin instanceof TheSiftFoundationPlugin foundation
+                    ? foundation.bedrockAccess() : new BedrockBridge(plugin);
+        }
+        if (bedrockBridge.isBedrockPlayer(player.getUniqueId())) return;
         prepareIfNeeded();
         sendTo(player, findProviderPlugin(), force);
     }
