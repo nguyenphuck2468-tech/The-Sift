@@ -29,7 +29,7 @@ final class ProviderAccessGuard implements Listener {
         if (event.getTo() == null || !shouldBlock(event.getFrom().getWorld().getKey(),
                 event.getTo().getWorld().getKey(), readiness.strict(), readiness.dimensionAllowed())) return;
         event.setCancelled(true);
-        event.getPlayer().sendMessage("The Sift is locked because required provider IDs are unavailable. Run /sift doctor.");
+        Messages.send(event.getPlayer(), "sift.locked", "The Sift is locked because required provider IDs are unavailable. Run /sift doctor.");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
@@ -61,12 +61,12 @@ final class ProviderAccessGuard implements Listener {
                 ? preferredWorld : Bukkit.getWorlds().stream()
                 .filter(world -> !world.getKey().equals(SiftDimensionManager.DIMENSION_KEY)).findFirst().orElse(null);
         if (safeWorld == null) {
-            player.sendMessage("The Sift is locked, and no safe world is loaded. Ask an administrator to load a main world.");
+            Messages.send(player, "sift.locked-no-world", "The Sift is locked, and no safe world is loaded. Ask an administrator to load a main world.");
             return;
         }
         Location safe = safeWorld.getSpawnLocation();
         player.teleport(safe);
-        player.sendMessage("The Sift is locked because required provider IDs are unavailable. Run /sift doctor.");
+        Messages.send(player, "sift.locked", "The Sift is locked because required provider IDs are unavailable. Run /sift doctor.");
     }
 
     static boolean shouldBlock(NamespacedKey from, NamespacedKey to, boolean strict, boolean ready) {

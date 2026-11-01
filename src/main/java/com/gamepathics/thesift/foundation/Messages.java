@@ -1,6 +1,9 @@
 package com.gamepathics.thesift.foundation;
 
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Player;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -39,6 +42,15 @@ public final class Messages {
 
     public static void send(CommandSender sender, String key, String englishDefault) {
         sender.sendMessage(PREFIX + get(key, englishDefault));
+    }
+
+
+
+    /**
+     * Action bars carry no chat prefix; colour codes live in the translated string itself.
+     */
+    public static void actionBar(Player player, String key, String englishDefault) {
+        player.sendActionBar(get(key, englishDefault));
     }
 
     private final JavaPlugin plugin;

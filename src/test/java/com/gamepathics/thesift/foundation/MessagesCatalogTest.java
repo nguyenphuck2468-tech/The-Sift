@@ -84,8 +84,26 @@ class MessagesCatalogTest {
                 "dimension.entered", "dimension.returned", "dimension.no-overworld",
                 "world.first-entry",
                 "gate.disabled", "gate.not-found", "gate.no-landing", "gate.silent",
-                "gate.cannot-open", "gate.locked", "gate.gate-city",
-                "rift.dimension-unavailable"}) {
+                "gate.cannot-open", "gate.locked", "gate.gate-city", "gate.nearest",
+                "gate.cannot-awaken", "gate.singer-failed", "gate.awakened", "gate.horn-first",
+                "gate.opened", "gate.missing-notes", "gate.set-notes", "gate.no-return-site",
+                "gate.return-frame-failed", "gate.returned", "gate.crossed",
+                "sift.reload-done", "sift.datapack-usage", "sift.resourcepack-sent",
+                "sift.resourcepack-no-provider", "sift.resourcepack-broadcast", "sift.version",
+                "sift.runtime-target", "sift.dimension-disabled", "sift.dimension-locked",
+                "sift.dimension-ready", "sift.dimension-load-failed", "sift.locate-console-only",
+                "sift.return-console-only", "sift.ichor-disabled", "sift.rift-disabled",
+                "sift.siftite-disabled", "sift.singer-disabled", "sift.echo-golem-disabled",
+                "sift.creature-disabled", "sift.player-not-found", "sift.bottle-unresolved",
+                "sift.key-unavailable", "sift.item-unresolved", "sift.gave", "sift.summon-usage",
+                "sift.summon-usage-echo", "sift.summon-usage-rift", "sift.summon-usage-generic",
+                "sift.summoned", "sift.unknown-creature", "sift.usage", "sift.locked",
+                "sift.locked-no-world",
+                "rift.dimension-unavailable", "rift.blocked-providers", "rift.blocked-world",
+                "rift.tear-open", "rift.tearing-open", "rift.carries", "rift.open-failed",
+                "sonorous.note", "sonorous.wrong-note", "sonorous.melody", "sonorous.awaken-first",
+                "sonorous.no-frame", "sonorous.already-open", "sonorous.complete", "sonorous.closed",
+                "soul.no-provider", "siftite.mini-rift-returned"}) {
             assertTrue(vi.contains(key), "vi.yml is missing runtime key " + key);
         }
     }

@@ -70,7 +70,7 @@ public final class SoulBlockListener implements Listener {
         ItemStack drop = content.forId(ID);
         if (drop == null) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage("Soul Block item is unavailable from the configured provider. Run /sift doctor.");
+            Messages.send(event.getPlayer(), "soul.no-provider", "Soul Block item is unavailable from the configured provider. Run /sift doctor.");
             return;
         }
         remove(block);

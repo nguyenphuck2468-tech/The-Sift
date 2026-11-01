@@ -71,7 +71,7 @@ public final class SiftiteRecoveryManager implements Listener {
             }
             recovered.remove(player.getUniqueId());
             savePendingRecoveries();
-            player.sendMessage("§5A Mini Rift returned your Siftite equipment.");
+            Messages.send(player, "siftite.mini-rift-returned", "§5A Mini Rift returned your Siftite equipment.");
         });
     }
 

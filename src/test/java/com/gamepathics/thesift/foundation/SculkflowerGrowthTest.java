@@ -149,13 +149,15 @@ class SculkflowerGrowthTest {
     void growthTickGrowsRegisteredCrops() {
         Block crop = plantedCrop(9, 70, 4);
 
+        // The tick can advance stage 0 -> 1 -> flower inside one tick (each sample has a 1/3
+        // growth gate), so the deterministic signal is the mature flower block, not age==1.
         boolean grew = false;
         for (int i = 0; i < 128 && !grew; i++) {
             manager.tickGrowth(world);
-            grew = manager.cropAge(crop) == 1;
+            grew = crop.getType() == Material.CACTUS_FLOWER;
         }
-        assertTrue(grew, "a registered stage-0 crop must advance to stage 1");
-        assertEquals(1, registry(crop).length, "an intermediate stage stays registered");
+        assertTrue(grew, "a registered stage-0 crop must mature into the sculkflower");
+        assertNull(registry(crop), "the mature flower leaves the registry");
     }
 
     @Test

@@ -317,7 +317,8 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             reportProviderReadiness();
             datapackBridge.stageBundledPacks();
             resourcePackBridge.prepare();
-            sender.sendMessage("The Sift config was reloaded. Restart the server to apply content flag changes.");
+            Messages.send(sender, "sift.reload-done",
+                    "The Sift config was reloaded. Restart the server to apply content flag changes.");
             sender.sendMessage(datapackBridge.status());
             return true;
         }
@@ -329,7 +330,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             if (args.length == 3) {
                 boolean enable = args[1].equalsIgnoreCase("enable");
                 if (!enable && !args[1].equalsIgnoreCase("disable")) {
-                    sender.sendMessage("Usage: /sift datapack <list|enable|disable> [name]");
+                    Messages.send(sender, "sift.datapack-usage", "Usage: /sift datapack <list|enable|disable> [name]");
                     return true;
                 }
                 sender.sendMessage(datapackBridge.setEnabled(args[2], enable)
@@ -337,19 +338,20 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                         : "Datapack '" + args[2] + "' not discovered yet; run /datapack list or restart.");
                 return true;
             }
-            sender.sendMessage("Usage: /sift datapack <list|enable|disable> [name]");
+            Messages.send(sender, "sift.datapack-usage", "Usage: /sift datapack <list|enable|disable> [name]");
             return true;
         }
         if (args.length >= 2 && args[0].equalsIgnoreCase("resourcepack")) {
             boolean force = args.length >= 3 && args[2].equalsIgnoreCase("force");
             if (sender instanceof Player player) {
                 resourcePackBridge.sendTo(player, force);
-                sender.sendMessage("The Sift resource pack sent to you (" + (force ? "forced" : "additive") + ").");
+                sender.sendMessage(Messages.get("sift.resourcepack-sent",
+                        "The Sift resource pack sent to you (%mode%).").replace("%mode%", force ? "forced" : "additive"));
             } else {
                 // Broadcast only makes sense when delivery can actually happen.
                 if (!resourcePackBridge.canDeliver()) {
-                    sender.sendMessage("No resource-pack provider plugin detected and resource-pack.server-url"
-                            + " is empty; set an http(s) download URL or install a provider before broadcasting.");
+                    Messages.send(sender, "sift.resourcepack-no-provider",
+                            "No resource-pack provider plugin detected and resource-pack.server-url is empty; set an http(s) download URL or install a provider before broadcasting.");
                     return true;
                 }
                 resourcePackBridge.broadcastToPlayers(sender, force);
@@ -357,8 +359,9 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             return true;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("doctor")) {
-            sender.sendMessage("The Sift foundation: " + getPluginMeta().getVersion());
-            sender.sendMessage("Runtime target: Paper 26.3 / Paper API 26.3.build.218-stable");
+            sender.sendMessage(Messages.get("sift.version", "The Sift foundation: %version%")
+                    .replace("%version%", getPluginMeta().getVersion()));
+            Messages.send(sender, "sift.runtime-target", "Runtime target: Paper 26.3 / Paper API 26.3.build.218-stable");
             sender.sendMessage(contentPackStatus());
             for (Map.Entry<ContentId, Boolean> entry : contentRegistry.snapshot().entrySet()) {
                 sender.sendMessage("- " + entry.getKey().key() + ": "
@@ -375,31 +378,31 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         if (args.length == 1 && (args[0].equalsIgnoreCase("dimension")
                 || args[0].equalsIgnoreCase("enter"))) {
             if (siftDimensionManager == null) {
-                sender.sendMessage("The Sift dimension is disabled.");
+                Messages.send(sender, "sift.dimension-disabled", "The Sift dimension is disabled.");
             } else if (!providerReadiness.dimensionAllowed() && providerReadiness.strict()) {
-                sender.sendMessage("The Sift dimension is locked because required provider IDs are missing. Run /sift doctor; see integrations/README.md for setup instructions.");
+                Messages.send(sender, "sift.dimension-locked", "The Sift dimension is locked because required provider IDs are missing. Run /sift doctor; see integrations/README.md for setup instructions.");
             } else if (sender instanceof Player player) {
                 siftDimensionManager.enter(player);
             } else {
                 if (siftDimensionManager.getOrCreateWorld() != null) {
-                    sender.sendMessage("The Sift dimension is ready. Players can enter with /sift dimension.");
+                    Messages.send(sender, "sift.dimension-ready", "The Sift dimension is ready. Players can enter with /sift dimension.");
                 } else {
-                    sender.sendMessage("The Sift dimension could not be loaded; check the datapack and server log.");
+                    Messages.send(sender, "sift.dimension-load-failed", "The Sift dimension could not be loaded; check the datapack and server log.");
                 }
             }
             return true;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("locate")) {
-            if (!(sender instanceof Player player)) sender.sendMessage("Only players can locate an Ancient City gate.");
-            else if (ancientCityGateManager == null) sender.sendMessage("Ancient City gates are disabled.");
+            if (!(sender instanceof Player player)) Messages.send(sender, "sift.locate-console-only", "Only players can locate an Ancient City gate.");
+            else if (ancientCityGateManager == null) sender.sendMessage(Messages.get("gate.disabled", "Ancient City gates are disabled."));
             else ancientCityGateManager.locate(player);
             return true;
         }
         if (args.length == 1 && args[0].equalsIgnoreCase("return")) {
             if (siftDimensionManager == null) {
-                sender.sendMessage("The Sift dimension is disabled.");
+                Messages.send(sender, "sift.dimension-disabled", "The Sift dimension is disabled.");
             } else if (!(sender instanceof Player player)) {
-                sender.sendMessage("Only players can return from The Sift.");
+                Messages.send(sender, "sift.return-console-only", "Only players can return from The Sift.");
             } else {
                 siftDimensionManager.returnToOverworld(player);
             }
@@ -408,124 +411,133 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         if (args.length == 3 && args[0].equalsIgnoreCase("give")
                 && args[1].equalsIgnoreCase("ichor_bottle")) {
             if (ichorContent == null || !contentRegistry.isEnabled(ContentId.ICHOR_BOTTLE)) {
-                sender.sendMessage("Ichor content is disabled.");
+                Messages.send(sender, "sift.ichor-disabled", "Ichor content is disabled.");
                 return true;
             }
             Player target = getServer().getPlayerExact(args[2]);
             if (target == null) {
-                sender.sendMessage("Player not found.");
+                Messages.send(sender, "sift.player-not-found", "Player not found.");
                 return true;
             }
             ItemStack bottle = ichorContent.ichorBottle();
-            if (bottle == null) sender.sendMessage("Item ID 'ichor_bottle' is unresolved by the selected provider. Run /sift doctor.");
+            if (bottle == null) Messages.send(sender, "sift.bottle-unresolved", "Item ID 'ichor_bottle' is unresolved by the selected provider. Run /sift doctor.");
             else {
                 giveOrDrop(target, bottle);
-                sender.sendMessage("Gave Ichor Bottle to " + target.getName() + ".");
+                sender.sendMessage(Messages.get("sift.gave", "Gave %item% to %target%.")
+                        .replace("%item%", "Ichor Bottle").replace("%target%", target.getName()));
             }
             return true;
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("give")
                 && args[1].equalsIgnoreCase("rift_key")) {
             if (riftManager == null) {
-                sender.sendMessage("Rift content is disabled.");
+                Messages.send(sender, "sift.rift-disabled", "Rift content is disabled.");
                 return true;
             }
             Player target = getServer().getPlayerExact(args[2]);
             if (target == null) {
-                sender.sendMessage("Player not found.");
+                Messages.send(sender, "sift.player-not-found", "Player not found.");
             } else {
                 ItemStack key = riftManager.createRiftKey();
-                if (key == null) sender.sendMessage("Item ID 'rift_key' is unavailable in strict provider mode. Run /sift doctor.");
+                if (key == null) Messages.send(sender, "sift.key-unavailable", "Item ID 'rift_key' is unavailable in strict provider mode. Run /sift doctor.");
                 else {
                     giveOrDrop(target, key);
-                    sender.sendMessage("Gave Rift Key to " + target.getName() + ".");
+                    sender.sendMessage(Messages.get("sift.gave", "Gave %item% to %target%.")
+                            .replace("%item%", "Rift Key").replace("%target%", target.getName()));
                 }
             }
             return true;
         }
         if (args.length == 3 && args[0].equalsIgnoreCase("give")) {
             if (siftiteContent == null) {
-                sender.sendMessage("Charoite/Siftite content is disabled.");
+                Messages.send(sender, "sift.siftite-disabled", "Charoite/Siftite content is disabled.");
                 return true;
             }
             Player target = getServer().getPlayerExact(args[2]);
             ItemStack item = siftiteContent.forId(args[1].toLowerCase());
             if (target == null) {
-                sender.sendMessage("Player not found.");
+                Messages.send(sender, "sift.player-not-found", "Player not found.");
             } else if (item == null) {
-                sender.sendMessage("Item ID '" + args[1].toLowerCase() + "' is unknown or unresolved by the selected provider. Run /sift doctor.");
+                sender.sendMessage(Messages.get("sift.item-unresolved", "Item ID '%item%' is unknown or unresolved by the selected provider. Run /sift doctor.")
+                        .replace("%item%", args[1].toLowerCase()));
             } else {
                 giveOrDrop(target, item);
-                sender.sendMessage("Gave " + args[1] + " to " + target.getName() + ".");
+                sender.sendMessage(Messages.get("sift.gave", "Gave %item% to %target%.")
+                        .replace("%item%", args[1]).replace("%target%", target.getName()));
             }
             return true;
         }
         if (args.length >= 2 && args[0].equalsIgnoreCase("summon")
                 && args[1].equalsIgnoreCase("singer")) {
             if (resonanceManager == null) {
-                sender.sendMessage("Singer content is disabled.");
+                Messages.send(sender, "sift.singer-disabled", "Singer content is disabled.");
                 return true;
             }
             Player target = args.length >= 3 ? getServer().getPlayerExact(args[2])
                     : sender instanceof Player player ? player : null;
             if (target == null) {
-                sender.sendMessage("Usage: /sift summon singer <player>");
+                Messages.send(sender, "sift.summon-usage", "Usage: /sift summon singer <player>");
             } else {
                 resonanceManager.summonSinger(target.getLocation());
-                sender.sendMessage("Summoned a Singer near " + target.getName() + ".");
+                sender.sendMessage(Messages.get("sift.summoned", "Summoned %mob% near %target%.")
+                        .replace("%mob%", "a Singer").replace("%target%", target.getName()));
             }
             return true;
         }
         if (args.length >= 2 && args[0].equalsIgnoreCase("summon")
                 && args[1].equalsIgnoreCase("echo_golem")) {
             if (echoGolemManager == null) {
-                sender.sendMessage("Echo Golem content is disabled.");
+                Messages.send(sender, "sift.echo-golem-disabled", "Echo Golem content is disabled.");
                 return true;
             }
             Player target = args.length >= 3 ? getServer().getPlayerExact(args[2])
                     : sender instanceof Player player ? player : null;
             if (target == null) {
-                sender.sendMessage("Usage: /sift summon echo_golem <player>");
+                Messages.send(sender, "sift.summon-usage-echo", "Usage: /sift summon echo_golem <player>");
             } else {
                 echoGolemManager.summonEchoGolem(target.getLocation());
-                sender.sendMessage("Summoned an Echo Golem near " + target.getName() + ".");
+                sender.sendMessage(Messages.get("sift.summoned", "Summoned %mob% near %target%.")
+                        .replace("%mob%", "an Echo Golem").replace("%target%", target.getName()));
             }
             return true;
         }
         if (args.length >= 2 && args[0].equalsIgnoreCase("summon")
                 && args[1].equalsIgnoreCase("rift")) {
             if (riftManager == null) {
-                sender.sendMessage("Rift content is disabled.");
+                Messages.send(sender, "sift.rift-disabled", "Rift content is disabled.");
                 return true;
             }
             Player target = args.length >= 3 ? getServer().getPlayerExact(args[2])
                     : sender instanceof Player player ? player : null;
             if (target == null) {
-                sender.sendMessage("Usage: /sift summon rift <player>");
+                Messages.send(sender, "sift.summon-usage-rift", "Usage: /sift summon rift <player>");
             } else {
                 if (riftManager.openRift(target.getLocation().add(0, 1, 0), target)) {
-                    sender.sendMessage("Opened a Rift near " + target.getName() + ".");
-                } else sender.sendMessage("Rift content is currently disabled.");
+                    sender.sendMessage(Messages.get("sift.summoned", "Summoned %mob% near %target%.")
+                        .replace("%mob%", "a Rift").replace("%target%", target.getName()));
+                } else Messages.send(sender, "sift.rift-disabled", "Rift content is currently disabled.");
             }
             return true;
         }
         if (args.length >= 2 && args[0].equalsIgnoreCase("summon")) {
             if (siftEcologyManager == null) {
-                sender.sendMessage("Sift creature content is disabled.");
+                Messages.send(sender, "sift.creature-disabled", "Sift creature content is disabled.");
                 return true;
             }
             Player target = args.length >= 3 ? getServer().getPlayerExact(args[2])
                     : sender instanceof Player player ? player : null;
             if (target == null) {
-                sender.sendMessage("Usage: /sift summon <species> [player]");
+                Messages.send(sender, "sift.summon-usage-generic", "Usage: /sift summon <species> [player]");
             } else if (siftEcologyManager.summonCreature(args[1], target.getLocation())) {
-                sender.sendMessage("Summoned Sift creature " + args[1] + " near " + target.getName() + ".");
+                sender.sendMessage(Messages.get("sift.summoned", "Summoned %mob% near %target%.")
+                        .replace("%mob%", "Sift creature " + args[1]).replace("%target%", target.getName()));
             } else {
-                sender.sendMessage("Unknown Sift creature: " + args[1]);
+                sender.sendMessage(Messages.get("sift.unknown-creature", "Unknown Sift creature: %species%")
+                        .replace("%species%", args[1]));
             }
             return true;
         }
-        sender.sendMessage("Usage: /sift <doctor|reload|datapack <list|enable|disable>|resourcepack [force]|dimension|locate|return|give <item> <player>|summon <species> [player]>");
+        Messages.send(sender, "sift.usage", "Usage: /sift <doctor|reload|datapack <list|enable|disable>|resourcepack [force]|dimension|locate|return|give <item> <player>|summon <species> [player]>");
         return true;
     }
 

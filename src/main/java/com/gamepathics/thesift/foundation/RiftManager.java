@@ -352,7 +352,8 @@ public final class RiftManager implements Listener {
                 || location == null || location.getWorld() == null) return false;
         if (providerReadiness.strict() && !providerReadiness.dimensionAllowed()
                 && !location.getWorld().getKey().equals(SiftDimensionManager.DIMENSION_KEY)) {
-            String message = "Rift blocked: required providers for The Sift are unavailable. Run /sift doctor.";
+            String message = Messages.get("rift.blocked-providers",
+                    "Rift blocked: required providers for The Sift are unavailable. Run /sift doctor.");
             plugin.getLogger().severe(message + " Existing dimension save was left untouched.");
             if (opener != null && opener.isOnline()) opener.sendMessage(message);
             return false;
@@ -362,7 +363,8 @@ public final class RiftManager implements Listener {
                     .findFirst().orElse(null)
                 : dimensionManager.getOrCreateWorld();
         if (destinationWorld == null) {
-            String message = "Rift blocked: its destination world could not be loaded. Check the server log and /sift doctor.";
+            String message = Messages.get("rift.blocked-world",
+                    "Rift blocked: its destination world could not be loaded. Check the server log and /sift doctor.");
             plugin.getLogger().severe(message);
             if (opener != null && opener.isOnline()) opener.sendMessage(message);
             return false;
@@ -426,7 +428,7 @@ public final class RiftManager implements Listener {
         int z = target.getLocation().getBlockZ() + (int) Math.round(Math.sin(angle) * distance);
         int y = sift.getHighestBlockYAt(x, z) + 1;
         if (openRift(new Location(sift, x + 0.5, y, z + 0.5), target)) {
-            target.sendMessage("\u00a75A Rift tears open somewhere nearby...");
+            Messages.send(target, "rift.tear-open", "\u00a75A Rift tears open somewhere nearby...");
         }
     }
 
@@ -497,12 +499,12 @@ public final class RiftManager implements Listener {
                 rider.teleport(destination);
                 entity.addPassenger(rider);
                 if (rider instanceof Player player) {
-                    player.sendMessage("§5The Rift carries you between worlds.");
+                    Messages.send(player, "rift.carries", "§5The Rift carries you between worlds.");
                     SiftAdvancementGrant.grant(plugin, player, "rifter");
                 }
             }
             if (entity instanceof Player player) {
-                player.sendMessage("§5The Rift carries you between worlds.");
+                Messages.send(player, "rift.carries", "§5The Rift carries you between worlds.");
                 SiftAdvancementGrant.grant(plugin, player, "rifter");
             }
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -549,7 +551,8 @@ public final class RiftManager implements Listener {
             int next = (noteBlock.getNote().getId() + 1) % 8;
             noteBlock.setNote(new Note(next));
             block.setBlockData(noteBlock, false);
-            event.getPlayer().sendActionBar("§bSift note: " + (next + 1));
+            event.getPlayer().sendActionBar(Messages.get("sonorous.note", "§bSift note: %note%")
+                    .replace("%note%", String.valueOf(next + 1)));
             return;
         }
         if (event.getAction() != Action.LEFT_CLICK_BLOCK) return;
@@ -620,11 +623,11 @@ public final class RiftManager implements Listener {
     private void beginIgnition(Player player, Block played, java.util.List<SonorousConsoleTracker.Note> notes) {
         AncientCityPortal.Frame frame = ancientCity.findNearestFrame(played.getLocation());
         if (frame == null && plugin.getConfig().getBoolean("ancient-city.require-frame", true)) {
-            player.sendActionBar("§7The song echoes, but no Reinforced Deepslate frame answers.");
+            Messages.actionBar(player, "sonorous.no-frame", "§7The song echoes, but no Reinforced Deepslate frame answers.");
             return;
         }
         if (frame != null && hasGateAt(frame.bottomCenter())) {
-            player.sendActionBar("§7The portal is already open. Play the song backwards to close it.");
+            Messages.actionBar(player, "sonorous.already-open", "§7The portal is already open. Play the song backwards to close it.");
             return;
         }
         java.util.List<Location> sources = new java.util.ArrayList<>();
@@ -659,7 +662,7 @@ public final class RiftManager implements Listener {
     private void openGate(Player player, AncientCityPortal.Frame frame, Block played, java.util.List<Location> sources) {
         Location at = frame != null ? frame.bottomCenter() : played.getLocation().add(0.5, 1, 0.5);
         if (!openRift(at, player, true)) {
-            if (player.isOnline()) player.sendActionBar("§cThe Rift could not open; check provider readiness.");
+            if (player.isOnline()) Messages.actionBar(player, "rift.open-failed", "§cThe Rift could not open; check provider readiness.");
             return;
         }
         RiftInstance rift = lastOpened;
@@ -667,7 +670,7 @@ public final class RiftManager implements Listener {
             rift.setGate(frame.gate(), frame.arrival(frame.sideOf(played.getLocation())));
             ancientCity.fireBeams(sources, at);
         }
-        if (player.isOnline()) player.sendActionBar("§bThe Sonorous song is complete.");
+        if (player.isOnline()) Messages.actionBar(player, "sonorous.complete", "§bThe Sonorous song is complete.");
     }
 
     private boolean hasGateAt(Location location) {
@@ -686,7 +689,7 @@ public final class RiftManager implements Listener {
                     || !rift.center.getWorld().equals(block.getWorld())
                     || rift.center.distanceSquared(block.getLocation()) > radius * radius) continue;
             rift.beginClosing();
-            player.sendActionBar("§5The portal folds back into the deepslate.");
+            Messages.actionBar(player, "sonorous.closed", "§5The portal folds back into the deepslate.");
             return;
         }
     }
@@ -782,7 +785,7 @@ public final class RiftManager implements Listener {
             phase = 0;
             center.getWorld().playSound(center, Sound.BLOCK_PORTAL_AMBIENT, 1.0f, 0.5f);
             center.getWorld().spawnParticle(Particle.PORTAL, center.clone().add(0, 1, 0), 50, 2, 2, 2, 0.1);
-            notifyOpener("§5The rift begins to tear open...");
+            notifyOpener(Messages.get("rift.tearing-open", "§5The rift begins to tear open..."));
             
         }
 
