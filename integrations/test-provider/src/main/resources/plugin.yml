@@ -1,0 +1,6 @@
+name: TheSiftTestProvider
+version: 1.0.0
+main: com.gamepathics.thesift.testprovider.TestProviderPlugin
+api-version: '1.21'
+depend: [TheSift]
+description: Test SPI provider for CI strict-boot verification
