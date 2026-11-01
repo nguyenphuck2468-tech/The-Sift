@@ -206,6 +206,9 @@ public final class ResonanceManager implements Listener {
                 plugin.getConfig().getInt("resonance.singer.soul-event-seconds", 60));
         if (soulEventSeconds > 0) {
             soulEventUntil.put(singer.getUniqueId(), now + soulEventSeconds * 1000L);
+            // Lift the entity-level invulnerable flag so the player can actually damage the
+            // Singer during the window - without this the soul event mechanic is a no-op.
+            singer.setInvulnerable(false);
             player.sendActionBar("\u00a75The Singer accepts the Soul Block \u2014 it can be harmed for "
                     + soulEventSeconds + "s.");
         }
