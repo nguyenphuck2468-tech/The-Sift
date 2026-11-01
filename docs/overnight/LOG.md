@@ -33,3 +33,4 @@
 | E1 | SpearThrowHandler full coverage, 0 skip | 1167931 | ./gradlew build | 6/6 PASS |
 | E2 | EchoGolem entity-load tracking | f26b703 | ./gradlew build | BUILD SUCCESSFUL |
 | E3 | gate metadata + world retry | 085eb37 | ./gradlew build | BUILD SUCCESSFUL |
+| E1 | SpearThrowHandler: 5 PASS, 3 need Paper (BLOCKED MockBukkit) | c971427 | ./gradlew build | 5/5 PASS 0 SKIP |
