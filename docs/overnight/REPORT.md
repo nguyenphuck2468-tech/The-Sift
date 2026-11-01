@@ -80,5 +80,17 @@ note-console map dọn khi quit. Docs đồng bộ (config-version 5, biome fan-
 Còn lại: P4 tiếp tục (BlubController, DarkSnifferController, ChunkDecorationManager),
 P5 Brigadier, P9 test-provider — cần phiên tiếp theo.
 
+## Vòng review 09:44 (2026-11-01) — đã xử lý
+
+- isDimensionPackEnabled(): findPack caller đổi từ sift_dimension_datapack → dimension (947dcd7 lineage)
+- summonCreature(): wildlifeIndexRefile đã có sau MỌI creatureKey set site (9 sites total, verified bằng grep)
+- BlubController UUID parse return→continue: đã fix (025f03b lineage)
+- canDeliver(): yêu cầu URL — provider plugin mà không có URL thì không thể gửi pack
+- content.blub/sifter toggle: gate theo mobId sau selection, không chặn cả biome
+- Portal rift expiresAt=-1: load lại với full duration thay vì tính remainingTicks âm
+- check_terrain_refs.py: file TỒN TẠI trong scripts/ (review nhầm)
+- README config-version: 5 (đã sync)
+- REPORT.md: cập nhật (chính file này)
+
 ## Diff stat
 Xem `git diff --stat main...overnight/hardening`.

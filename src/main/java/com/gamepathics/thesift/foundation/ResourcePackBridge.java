@@ -304,7 +304,9 @@ public final class ResourcePackBridge {
 
     /** True when pack delivery can actually reach clients: a provider plugin, or an http(s) URL. */
     public boolean canDeliver() {
-        return findProviderPlugin() != null || packUrlOrNull() != null;
+        // Both paths need a URL: the provider bridge checks resource-pack.server-url before
+        // calling the provider API, so a provider plugin without a URL cannot actually deliver.
+        return packUrlOrNull() != null;
     }
 
     // ------------------------------------------------------------------ hashing / staging
