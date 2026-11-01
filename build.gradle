@@ -140,8 +140,10 @@ tasks.register("generateProviderDefinitions") {
                 .append("import java.util.List;").append(nl).append(nl)
                 .append("/** Generated strict-readiness IDs from integrations/content-spec.json. */").append(nl)
                 .append("final class ProviderContentIds {").append(nl)
+        def fanmadeIds = (spec.items + spec.blocks + spec.mobs)
+                .findAll { it.fanmade }.collect { it.id }
         [["ITEM_IDS", spec.items.collect { it.id }], ["BLOCK_IDS", spec.blocks.collect { it.id }],
-         ["MOB_IDS", spec.mobs.collect { it.id }]].each { pair ->
+         ["MOB_IDS", spec.mobs.collect { it.id }], ["FANMADE_IDS", fanmadeIds]].each { pair ->
             idSource.append("    static final List<String> ${pair[0]} = List.of(").append(nl)
             pair[1].collate(6).eachWithIndex { group, index ->
                 idSource.append("            ").append(group.collect { quote(it) }.join(", "))

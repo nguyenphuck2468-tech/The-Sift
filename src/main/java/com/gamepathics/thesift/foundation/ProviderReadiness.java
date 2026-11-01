@@ -57,7 +57,7 @@ final class ProviderReadiness {
         String configured = configured("integrations.items.provider");
         for (String backend : List.of("SiftItemProvider", "Nexo", "ItemsAdder", "Oraxen")) {
             if (!(backend.equals("SiftItemProvider") ? serviceSelected(configured, SiftItemProvider.class) : selected(configured, backend))) continue;
-            List<String> missing = ProviderContentIds.ITEM_IDS.stream().filter(id -> !items.resolves(backend, id)).toList();
+            List<String> missing = mandatory(ProviderContentIds.ITEM_IDS).stream().filter(id -> !items.resolves(backend, id)).toList();
             result.add(new Backend(backend, installed(backend), missing));
         }
         return result;
@@ -73,7 +73,7 @@ final class ProviderReadiness {
         String configured = configured("integrations.blocks.provider");
         for (String backend : List.of("SiftBlockProvider", "Nexo", "ItemsAdder", "Oraxen")) {
             if (!(backend.equals("SiftBlockProvider") ? serviceSelected(configured, SiftBlockProvider.class) : selected(configured, backend))) continue;
-            List<String> missing = ProviderContentIds.BLOCK_IDS.stream().filter(id -> !blocks.resolves(backend, id)).toList();
+            List<String> missing = mandatory(ProviderContentIds.BLOCK_IDS).stream().filter(id -> !blocks.resolves(backend, id)).toList();
             result.add(new Backend(backend, installed(backend), missing));
         }
         return result;
@@ -90,7 +90,7 @@ final class ProviderReadiness {
         for (String backend : List.of("SiftMobProvider", "ItemsAdder", "MythicMobs", "EliteMobs")) {
             if (!(backend.equals("SiftMobProvider") ? serviceSelected(configured, SiftMobProvider.class) : selected(configured, backend))) continue;
             boolean installed = isService(backend) ? hasService(backend) : plugin.getServer().getPluginManager().isPluginEnabled(backend);
-            List<String> missing = ProviderContentIds.MOB_IDS.stream().filter(id -> !mobResolves(backend, id)).toList();
+            List<String> missing = mandatory(ProviderContentIds.MOB_IDS).stream().filter(id -> !mobResolves(backend, id)).toList();
             result.add(new Backend(backend, installed, missing));
         }
         return result;
@@ -104,6 +104,16 @@ final class ProviderReadiness {
     }
 
     boolean itemsReady() { return itemBackends().stream().anyMatch(Backend::complete); }
+
+    /**
+     * Fan-made content ids (flagged in content-spec.json) leave the mandatory readiness set
+     * while their umbrella gate (content.sift_standin_mobs) is off, so a mod-parity server
+     * does not need provider definitions for content it has disabled.
+     */
+    private List<String> mandatory(List<String> all) {
+        boolean fanOn = plugin.getConfig().getBoolean("content.sift_standin_mobs", false);
+        return fanOn ? all : all.stream().filter(id -> !ProviderContentIds.FANMADE_IDS.contains(id)).toList();
+    }
 
     static boolean allowed(boolean strict, boolean contentProvidersComplete, boolean mobProviderComplete) {
         return !strict || contentProvidersComplete && mobProviderComplete;

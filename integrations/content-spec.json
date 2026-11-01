@@ -29,19 +29,22 @@
       "id": "spire_fragment",
       "material": "AMETHYST_SHARD",
       "name": "Spire Fragment",
-      "model": "thesift:item/spire_fragment"
+      "model": "thesift:item/spire_fragment",
+      "fanmade": true
     },
     {
       "id": "sky_fragment",
       "material": "PHANTOM_MEMBRANE",
       "name": "Sky Fragment",
-      "model": "thesift:item/sky_fragment"
+      "model": "thesift:item/sky_fragment",
+      "fanmade": true
     },
     {
       "id": "frost_fragment",
       "material": "PRISMARINE_SHARD",
       "name": "Frost Fragment",
-      "model": "thesift:item/frost_fragment"
+      "model": "thesift:item/frost_fragment",
+      "fanmade": true
     },
     {
       "id": "sift_core",
@@ -53,19 +56,22 @@
       "id": "sift_catalyst",
       "material": "BLAZE_POWDER",
       "name": "Sift Catalyst",
-      "model": "thesift:item/sift_catalyst"
+      "model": "thesift:item/sift_catalyst",
+      "fanmade": true
     },
     {
       "id": "sift_crown",
       "material": "GOLDEN_HELMET",
       "name": "Sift Crown",
-      "model": "thesift:item/sift_crown"
+      "model": "thesift:item/sift_crown",
+      "fanmade": true
     },
     {
       "id": "rift_key",
       "material": "TRIAL_KEY",
       "name": "Rift Key",
-      "model": "thesift:item/rift_key"
+      "model": "thesift:item/rift_key",
+      "fanmade": true
     },
     {
       "id": "raw_loomer",
@@ -89,37 +95,43 @@
       "id": "prism_blade",
       "material": "NETHERITE_SWORD",
       "name": "Prism Blade",
-      "model": "thesift:item/prism_blade"
+      "model": "thesift:item/prism_blade",
+      "fanmade": true
     },
     {
       "id": "prism_helmet",
       "material": "NETHERITE_HELMET",
       "name": "Prism Helmet",
-      "model": "thesift:item/prism_helmet"
+      "model": "thesift:item/prism_helmet",
+      "fanmade": true
     },
     {
       "id": "prism_chestplate",
       "material": "NETHERITE_CHESTPLATE",
       "name": "Prism Chestplate",
-      "model": "thesift:item/prism_chestplate"
+      "model": "thesift:item/prism_chestplate",
+      "fanmade": true
     },
     {
       "id": "prism_leggings",
       "material": "NETHERITE_LEGGINGS",
       "name": "Prism Leggings",
-      "model": "thesift:item/prism_leggings"
+      "model": "thesift:item/prism_leggings",
+      "fanmade": true
     },
     {
       "id": "prism_boots",
       "material": "NETHERITE_BOOTS",
       "name": "Prism Boots",
-      "model": "thesift:item/prism_boots"
+      "model": "thesift:item/prism_boots",
+      "fanmade": true
     },
     {
       "id": "phase_boots",
       "material": "DIAMOND_BOOTS",
       "name": "Phase Boots",
-      "model": "thesift:item/phase_boots"
+      "model": "thesift:item/phase_boots",
+      "fanmade": true
     },
     {
       "id": "ichor_bottle",
@@ -221,13 +233,15 @@
       "id": "prism_warden",
       "material": "WARDEN_SPAWN_EGG",
       "name": "Prism Warden",
-      "model": "thesift:item/prism_warden"
+      "model": "thesift:item/prism_warden",
+      "fanmade": true
     },
     {
       "id": "prismite",
       "material": "SILVERFISH_SPAWN_EGG",
       "name": "Prismite",
-      "model": "thesift:item/prismite"
+      "model": "thesift:item/prismite",
+      "fanmade": true
     },
     {
       "id": "rift_gate",
@@ -239,25 +253,29 @@
       "id": "shard_axe",
       "material": "NETHERITE_AXE",
       "name": "Shard Axe",
-      "model": "thesift:item/shard_axe"
+      "model": "thesift:item/shard_axe",
+      "fanmade": true
     },
     {
       "id": "shard_ore",
       "material": "AMETHYST_BLOCK",
       "name": "Shard Ore",
-      "model": "thesift:item/shard_ore"
+      "model": "thesift:item/shard_ore",
+      "fanmade": true
     },
     {
       "id": "shard_pickaxe",
       "material": "NETHERITE_PICKAXE",
       "name": "Shard Pickaxe",
-      "model": "thesift:item/shard_pickaxe"
+      "model": "thesift:item/shard_pickaxe",
+      "fanmade": true
     },
     {
       "id": "shard_sword",
       "material": "NETHERITE_SWORD",
       "name": "Shard Sword",
-      "model": "thesift:item/shard_sword"
+      "model": "thesift:item/shard_sword",
+      "fanmade": true
     },
     {
       "id": "shardling",
@@ -698,7 +716,8 @@
       "type": "ALLAY",
       "display": "&dWisp",
       "health": 20,
-      "damage": 4
+      "damage": 4,
+      "fanmade": true
     },
     {
       "id": "blub",
@@ -712,70 +731,80 @@
       "type": "RABBIT",
       "display": "&dLoomer",
       "health": 16,
-      "damage": 2
+      "damage": 2,
+      "fanmade": true
     },
     {
       "id": "koi",
       "type": "TROPICAL_FISH",
       "display": "&bKoi",
       "health": 10,
-      "damage": 2
+      "damage": 2,
+      "fanmade": true
     },
     {
       "id": "bulb",
       "type": "SLIME",
       "display": "&aBulb",
       "health": 28,
-      "damage": 4
+      "damage": 4,
+      "fanmade": true
     },
     {
       "id": "violet_wisp",
       "type": "VEX",
       "display": "&5Violet Wisp",
       "health": 24,
-      "damage": 5
+      "damage": 5,
+      "fanmade": true
     },
     {
       "id": "hollow_bulb",
       "type": "ZOMBIE",
       "display": "&dHollow Bulb",
       "health": 32,
-      "damage": 5
+      "damage": 5,
+      "fanmade": true
     },
     {
       "id": "frost_stalker",
       "type": "STRAY",
       "display": "&bFrost Stalker",
       "health": 36,
-      "damage": 6
+      "damage": 6,
+      "fanmade": true
     },
     {
       "id": "thornback",
       "type": "TURTLE",
       "display": "&dThornback",
       "health": 40,
-      "damage": 5
+      "damage": 5,
+      "fanmade": true
     },
     {
       "id": "glimmerwing",
       "type": "BEE",
       "display": "&eGlimmerwing",
       "health": 24,
-      "damage": 5
+      "damage": 5,
+      "fanmade": true
     },
     {
       "id": "sunspore",
       "type": "MOOSHROOM",
       "display": "&dSunspore",
       "health": 32,
-      "damage": 2
+      "damage": 2,
+      "fanmade": true
     },
     {
       "id": "drifter",
       "type": "ENDERMAN",
       "display": "&5Drifter",
       "health": 40,
-      "damage": 7
+      "damage": 7,
+      "fanmade": true
     },
     {
       "id": "dark_sniffer",
@@ -789,42 +818,48 @@
       "type": "SILVERFISH",
       "display": "&dPrismite",
       "health": 14,
-      "damage": 4
+      "damage": 4,
+      "fanmade": true
     },
     {
       "id": "shardling",
       "type": "ENDERMITE",
       "display": "&dShardling",
       "health": 18,
-      "damage": 5
+      "damage": 5,
+      "fanmade": true
     },
     {
       "id": "prism_warden",
       "type": "WARDEN",
       "display": "&5&lPrism Warden",
       "health": 180,
-      "damage": 28
+      "damage": 28,
+      "fanmade": true
     },
     {
       "id": "the_sifter",
       "type": "RAVAGER",
       "display": "&5&lThe Sifter",
       "health": 220,
-      "damage": 24
+      "damage": 24,
+      "fanmade": true
     },
     {
       "id": "glowbell",
       "type": "BAT",
       "display": "&dGlowbell",
       "health": 12,
-      "damage": 2
+      "damage": 2,
+      "fanmade": true
     },
     {
       "id": "sift_wastes_stalker",
       "type": "HUSK",
       "display": "&5Sift Wastes Stalker",
       "health": 36,
-      "damage": 6
+      "damage": 6,
+      "fanmade": true
     },
     {
       "id": "singer",
@@ -845,7 +880,8 @@
       "type": "ENDERMAN",
       "display": "&5Rift Walker",
       "health": 40,
-      "damage": 7
+      "damage": 7,
+      "fanmade": true
     }
   ],
   "blocks": [
