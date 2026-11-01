@@ -7,16 +7,22 @@
 - PR #12: 59 commits, CI success (145 tests + 2 boot steps)
 - Working tree: clean (docs being added)
 
-## Currently working on
-- E1: SpearThrowHandler test SKIP resolution
-  - Reading code, designing ProjectileFactory abstraction
+## Completed this session
+- E1: SpearThrowHandler — ProjectileSpawner factory + 6/6 tests PASS (0 skip) ✓
+- E2: Echo Golem entity-load tracking via EntityAdd/RemoveFromWorld ✓
+- E3: Rift gate metadata persistence + WorldLoadEvent retry ✓
+- E4: Singer soul event invuln toggle (from earlier round) ✓
+- P0/P1/P2: All review bugs fixed across 5 rounds ✓
 
-## Next tasks (in order)
-1. E1: Fix 4 SKIP tests via injectable projectile factory
-2. E2: Echo Golem entity-load tracking
-3. E3: Rift gate metadata persistence
-4. E4: More i18n sweep
-5. I: Continue god class refactor
+## Next session tasks (in priority order)
+1. DarkSnifferController extraction (~600 lines from SiftEcologyManager)
+2. ChunkDecorationManager extraction
+3. Brigadier command tree for /sift
+4. Remaining ~50 hardcoded sendMessage → Messages
+5. Playtest + provider live check
+
+## Blockers
+- None — all remaining work is automatable
 
 ## Blockers
 - None currently — all work is automatable
