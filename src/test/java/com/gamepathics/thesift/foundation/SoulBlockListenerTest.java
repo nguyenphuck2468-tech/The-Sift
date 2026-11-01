@@ -47,7 +47,7 @@ class SoulBlockListenerTest {
     void providerItemMarksSoulBlockAndVanillaReplacementClearsStaleMarker() {
         var world = server.addSimpleWorld("soul-block-provider");
         Block placed = world.getBlockAt(1, 64, 1);
-        placed.setType(Material.SOUL_SAND);
+        placed.setType(Material.SOUL_SOIL);
         ItemStack providerItem = new FixtureItemProvider().createItem("soul_block");
         listener.onPlace(placeEvent(placed, providerItem));
 
@@ -67,8 +67,8 @@ class SoulBlockListenerTest {
         var world = server.addSimpleWorld("soul-block-piston");
         Block source = world.getBlockAt(1, 64, 1);
         Block destination = world.getBlockAt(2, 64, 1);
-        source.setType(Material.SOUL_SAND);
-        destination.setType(Material.SOUL_SAND); // Represents Paper's post-move block state.
+        source.setType(Material.SOUL_SOIL);
+        destination.setType(Material.SOUL_SOIL); // Represents Paper's post-move block state.
         SoulBlockListener.markGenerated(plugin, source);
 
         listener.onPistonExtend(new BlockPistonExtendEvent(world.getBlockAt(0, 64, 1),
@@ -94,8 +94,8 @@ class SoulBlockListenerTest {
                 .parseString(java.nio.file.Files.readString(loot)).getAsJsonObject();
         String entryName = table.getAsJsonArray("pools").get(0).getAsJsonObject()
                 .getAsJsonArray("entries").get(0).getAsJsonObject().get("name").getAsString();
-        assertEquals("minecraft:soul_sand", entryName,
-                "Soul Block stands in for SOUL_SAND; the loot entry must match");
+        assertEquals("minecraft:soul_soil", entryName,
+                "Soul Block stands in for SOUL_SOIL; the loot entry must match");
         com.google.gson.JsonObject customData = table.getAsJsonArray("pools").get(0).getAsJsonObject()
                 .getAsJsonArray("entries").get(0).getAsJsonObject()
                 .getAsJsonArray("functions").get(0).getAsJsonObject()
@@ -109,7 +109,7 @@ class SoulBlockListenerTest {
         @Override public String getProviderId() { return "fixture-items"; }
         @Override public ItemStack createItem(String contentId) {
             if (!"soul_block".equals(contentId)) return null;
-            ItemStack item = new ItemStack(Material.SOUL_SAND);
+            ItemStack item = new ItemStack(Material.SOUL_SOIL);
             item.editMeta(meta -> meta.setDisplayName("Provider Soul Block"));
             return item;
         }

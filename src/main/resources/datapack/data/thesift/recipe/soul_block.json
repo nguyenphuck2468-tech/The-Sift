@@ -12,7 +12,7 @@
   ],
   "result": {
     "count": 1,
-    "id": "minecraft:soul_sand",
+    "id": "minecraft:soul_soil",
     "components": {
       "minecraft:custom_data": {"PublicBukkitValues": {"thesift:content": "soul_block"}},
       "minecraft:custom_name": {"text": "Soul Block", "color": "light_purple", "italic": false}

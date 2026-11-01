@@ -107,18 +107,19 @@ final class AncientCityGateManager implements Listener {
 
     Optional<Location> locate(Player player) {
         if (readiness.strict() && !readiness.dimensionAllowed()) {
-            player.sendMessage("Ancient City gates are locked because required providers are unresolved. Run /sift doctor.");
+            player.sendMessage("§c" + Messages.get("gate.locked", "Ancient City gates are locked because required providers are unresolved. Run /sift doctor."));
             return Optional.empty();
         }
         Optional<Gate> gate = findNearest(player.getLocation(), 32);
         if (gate.isEmpty()) {
-            player.sendMessage("No generated Ancient City gate was found within 512 blocks.");
+            player.sendMessage("§7" + Messages.get("gate.not-found", "No generated Ancient City gate was found within 512 blocks."));
             return Optional.empty();
         }
         Location target = gate.orElseThrow().center();
         player.setCompassTarget(target);
-        player.sendMessage("Nearest The Sift gate: " + target.getBlockX() + ", " + target.getBlockY()
-                + ", " + target.getBlockZ() + ". Your compass now points to it.");
+        player.sendMessage(Messages.get("gate.nearest",
+                "Nearest The Sift gate: %coords%. Your compass now points to it.").replace("%coords%",
+                target.getBlockX() + ", " + target.getBlockY() + ", " + target.getBlockZ()));
         return Optional.of(target);
     }
 
@@ -138,6 +139,11 @@ final class AncientCityGateManager implements Listener {
             findNearest(player.getLocation(), 16);
         }
         melodies.expire(System.currentTimeMillis(), 60_000L);
+    }
+
+    private BedrockBridge bedrock() {
+        return plugin instanceof TheSiftFoundationPlugin foundation
+                ? foundation.bedrockAccess() : new BedrockBridge(plugin);
     }
 
     private Optional<Gate> findNearest(Location origin, int radiusChunks) {
@@ -215,7 +221,7 @@ final class AncientCityGateManager implements Listener {
     private boolean placeSonorous(Block block) {
         if (readiness.strict()) return blocks.place("sonorous_deepslate", block.getLocation());
         if (blocks.place("sonorous_deepslate", block.getLocation())) return true;
-        block.setType(Material.DEEPSLATE, false);
+        block.setType(Material.REINFORCED_DEEPSLATE, false);
         return true;
     }
 
@@ -411,17 +417,19 @@ final class AncientCityGateManager implements Listener {
         Gate gate = nearbyGate(event.getPlayer().getLocation(), 48);
         if (gate == null || gate.awakened) return;
         if (readiness.strict() && !readiness.dimensionAllowed()) {
-            event.getPlayer().sendMessage("The Sift gate cannot awaken: required providers are unresolved. Run /sift doctor.");
+            Messages.send(event.getPlayer(), "gate.cannot-awaken",
+                "The Sift gate cannot awaken: required providers are unresolved. Run /sift doctor.");
             return;
         }
         if (resonance == null || resonance.summonSinger(gate.center()) == null) {
-            event.getPlayer().sendMessage("The Singer could not appear. Check the required mob provider with /sift doctor.");
+            Messages.send(event.getPlayer(), "gate.singer-failed",
+                "The Singer could not appear. Check the required mob provider with /sift doctor.");
             plugin.getLogger().warning("Goat Horn gate activation failed because the Singer provider did not spawn singer.");
             return;
         }
         gate.awakened = true;
         persist(gate);
-        event.getPlayer().sendMessage("The Singer's song awakens the Sonorous Deepslate.");
+        Messages.send(event.getPlayer(), "gate.awakened", "The Singer's song awakens the Sonorous Deepslate.");
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -431,7 +439,8 @@ final class AncientCityGateManager implements Listener {
         Gate gate = gateForSonorous(placed.getRelative(org.bukkit.block.BlockFace.DOWN));
         if (gate != null && !gate.awakened) {
             event.setCancelled(true);
-            event.getPlayer().sendMessage("Play a Goat Horn near the Ancient City gate to awaken its Sonorous Deepslate first.");
+            Messages.send(event.getPlayer(), "gate.horn-first",
+                "Play a Goat Horn near the Ancient City gate to awaken its Sonorous Deepslate first.");
         }
     }
 
@@ -445,7 +454,7 @@ final class AncientCityGateManager implements Listener {
         Gate gate = gateForSonorous(base);
         if (gate == null) return;
         if (!gate.awakened) {
-            event.getPlayer().sendActionBar("§cAwaken this city's Sonorous Deepslate with a Goat Horn first.");
+            Messages.actionBar(event.getPlayer(), "sonorous.awaken-first", "§cAwaken this city's Sonorous Deepslate with a Goat Horn first.");
             return;
         }
         if (!(noteBlock.getBlockData() instanceof NoteBlock data)) return;
@@ -454,7 +463,8 @@ final class AncientCityGateManager implements Listener {
             int next = (data.getNote().getId() + 1) % 8;
             data.setNote(new Note(next));
             noteBlock.setBlockData(data, false);
-            event.getPlayer().sendActionBar("§bSift note: " + (next + 1));
+            event.getPlayer().sendActionBar(Messages.get("sonorous.note", "§bSift note: %note%")
+                    .replace("%note%", String.valueOf(next + 1)));
             return;
         }
         if (event.getAction() != Action.LEFT_CLICK_BLOCK) return;
@@ -467,18 +477,22 @@ final class AncientCityGateManager implements Listener {
         event.getPlayer().getWorld().spawnParticle(Particle.DUST,
                 noteBlock.getLocation().add(0.5, 1.1, 0.5), 8, 0.35, 0.15, 0.35,
                 new Particle.DustOptions(Color.fromRGB(SonorousPalette.noteRgb(played)), 1.1f));
-        event.getPlayer().playSound(noteBlock.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 0.8f,
-                (float) Math.pow(2.0, (played - 1) / 12.0));
+        // Reference-mod parity: each note plays its own Sonorous Deepslate recording
+        // (thesift:block.sonorous_deepslate.sound_1..8, bundled with the resource pack).
+        // Bedrock clients cannot resolve custom sound events: harp fallback per player.
+        bedrock().playSound(event.getPlayer(), noteBlock.getLocation(),
+                "thesift:block.sonorous_deepslate.sound_" + Math.min(8, Math.max(1, played)),
+                Sound.BLOCK_NOTE_BLOCK_HARP, 0.8f, 1.0f);
         spawnSonorousBeam(base, played);
         if (result == AncientCityMelodyTracker.Result.WRONG) {
             event.getPlayer().playSound(noteBlock.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.8f, 0.6f);
-            event.getPlayer().sendActionBar("§cWrong note; the gate melody resets.");
+            Messages.actionBar(event.getPlayer(), "sonorous.wrong-note", "§cWrong note; the gate melody resets.");
         } else if (result == AncientCityMelodyTracker.Result.COMPLETE) {
             replayMelody(gate);
             if (openPortal(gate, event.getPlayer()))
-                event.getPlayer().sendMessage("§bThe Ancient City portal opens into The Sift!");
-        } else event.getPlayer().sendActionBar("§bAncient City melody: "
-                + melodies.progress(event.getPlayer().getUniqueId(), gate.key) + "/8");
+                Messages.send(event.getPlayer(), "gate.opened", "§bThe Ancient City portal opens into The Sift!");
+        } else event.getPlayer().sendActionBar(Messages.get("sonorous.melody", "§bAncient City melody: %progress%/8")
+                .replace("%progress%", String.valueOf(melodies.progress(event.getPlayer().getUniqueId(), gate.key))));
     }
 
     @EventHandler(ignoreCancelled = true)
@@ -490,20 +504,22 @@ final class AncientCityGateManager implements Listener {
         if (gate == null || gate.open) return;
         Player player = event.getPlayer();
         if (readiness.strict() && !readiness.dimensionAllowed()) {
-            player.sendMessage("This gate cannot open yet: required content and mob providers are unresolved. Run /sift doctor.");
+            player.sendMessage("§c" + Messages.get("gate.cannot-open", "This gate cannot open yet: required content and mob providers are unresolved. Run /sift doctor."));
         } else if (!gate.awakened) {
-            player.sendMessage("This gate is silent. Play a Goat Horn near its Sonorous Deepslate to summon a Singer.");
+            player.sendMessage("§7" + Messages.get("gate.silent", "This gate is silent. Play a Goat Horn near its Sonorous Deepslate to summon a Singer."));
         } else {
             List<AncientCityFrame.BlockPos> missing = gate.frame.sonorousPositions(gate.side).stream()
                     .filter(position -> gate.world.getBlockAt(position.x(), position.y() + 1, position.z()).getType()
                             != Material.NOTE_BLOCK).toList();
             if (!missing.isEmpty()) {
-                player.sendMessage("Place Note Blocks on all 8 Sonorous Deepslate blocks; missing " + missing.size() + ".");
+                player.sendMessage(Messages.get("gate.missing-notes",
+                    "Place Note Blocks on all 8 Sonorous Deepslate blocks; missing %count%.")
+                    .replace("%count%", String.valueOf(missing.size())));
                 for (AncientCityFrame.BlockPos position : missing)
                     gate.world.spawnParticle(Particle.DUST, position.x() + 0.5, position.y() + 1.2,
                             position.z() + 0.5, 4, 0.1, 0.1, 0.1,
                             new Particle.DustOptions(Color.fromRGB(0xE53935), 1.0f));
-            } else player.sendMessage("Set the 8 note blocks, then play 1 → 3 → 7 → 6 → 5 → 2 → 4 → 8.");
+            } else Messages.send(player, "gate.set-notes", "Set the 8 note blocks, then play 1 → 3 → 7 → 6 → 5 → 2 → 4 → 8.");
         }
     }
 
@@ -525,6 +541,15 @@ final class AncientCityGateManager implements Listener {
         if (cached != null) return cached;
         return findNearest(location, (int) Math.ceil(range / 16.0))
                 .filter(gate -> gate.center().distanceSquared(location) <= range * range).orElse(null);
+    }
+
+    /**
+     * True when a gate exists (or can be generated) within {@code range} blocks. The legacy
+     * mod-port portal uses this to defer to this manager instead of building its own console
+     * row inside an Ancient City.
+     */
+    boolean hasGateNear(Location location, double range) {
+        return nearbyGate(location, range) != null;
     }
 
     private Gate gateForSonorous(Block block) {
@@ -594,21 +619,23 @@ final class AncientCityGateManager implements Listener {
     private boolean openPortal(Gate gate, Player opener) {
         if (gate.open) return true;
         if (readiness.strict() && !readiness.dimensionAllowed()) {
-            opener.sendMessage("The Sift portal is locked because provider requirements are unresolved. Run /sift doctor.");
+            Messages.send(opener, "gate.locked", "The Sift portal is locked because provider requirements are unresolved. Run /sift doctor.");
             return false;
         }
         World sift = dimensions.getOrCreateWorld();
         if (sift == null) return false;
         Location returnLocation = findSafeLanding(sift, gate.center().getBlockX(), gate.center().getBlockZ(), 12);
         if (returnLocation == null) {
-            opener.sendMessage("No safe 1:1 return-portal site is available at these X/Z coordinates in The Sift.");
+            Messages.send(opener, "gate.no-return-site",
+                "No safe 1:1 return-portal site is available at these X/Z coordinates in The Sift.");
             return false;
         }
         int returnMinY = returnLocation.getBlockY() - 1;
         AncientCityFrame returnFrame = new AncientCityFrame(gate.frame.minX(), returnMinY, gate.frame.minZ(),
                 gate.frame.maxX(), returnMinY + 7, gate.frame.maxZ(), gate.frame.longAxis());
         if (!buildReturnFrame(sift, returnFrame)) {
-            opener.sendMessage("The 1:1 return frame could not be built safely; no blocks were changed.");
+            Messages.send(opener, "gate.return-frame-failed",
+                "The 1:1 return frame could not be built safely; no blocks were changed.");
             return false;
         }
         gate.open = true;
@@ -685,7 +712,7 @@ final class AncientCityGateManager implements Listener {
 
     private void travel(Player player, Gate source) {
         if (readiness.strict() && !readiness.dimensionAllowed()) {
-            player.sendMessage("This gate is locked because required providers are unresolved. Run /sift doctor.");
+            player.sendMessage("§c" + Messages.get("gate.locked", "This gate is locked because required providers are unresolved. Run /sift doctor."));
             plugin.getLogger().severe("Blocked gate travel because strict provider requirements are unresolved; saves were preserved.");
             return;
         }
@@ -716,7 +743,7 @@ final class AncientCityGateManager implements Listener {
         }
         if (destination == null) {
             travelling.remove(player.getUniqueId());
-            player.sendMessage("The portal could not find a safe 1:1 landing. No teleport was performed.");
+            player.sendMessage("§c" + Messages.get("gate.no-landing", "The portal could not find a safe 1:1 landing. No teleport was performed."));
             return;
         }
         if (!player.teleport(destination, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.PLUGIN)) {
@@ -724,8 +751,8 @@ final class AncientCityGateManager implements Listener {
             return;
         }
         player.sendMessage(source.world.getKey().equals(SiftDimensionManager.DIMENSION_KEY)
-                ? "You returned to the Overworld through the Ancient City gate."
-                : "You crossed the Ancient City gate into The Sift.");
+                ? Messages.get("gate.returned", "You returned to the Overworld through the Ancient City gate.")
+                : Messages.get("gate.crossed", "You crossed the Ancient City gate into The Sift."));
         Bukkit.getScheduler().runTaskLater(plugin, () -> travelling.remove(player.getUniqueId()), 20L);
     }
 

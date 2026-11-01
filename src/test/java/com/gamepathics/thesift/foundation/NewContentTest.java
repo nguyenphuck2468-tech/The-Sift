@@ -63,7 +63,7 @@ class EchoGolemManagerTest {
         mockPlugin.getConfig().set("providers.strict", false);
         var world = server.addSimpleWorld("golem-charoite");
         org.mockbukkit.mockbukkit.entity.PlayerMock player = server.addPlayer();
-        ItemStack charoite = echoGolemManager.content().item(Material.AMETHYST_SHARD, "charoite", "Charoite");
+        ItemStack charoite = echoGolemManager.content().item(Material.LAPIS_LAZULI, "charoite", "Charoite");
 
         assertFalse(echoGolemManager.protectedByCharoite(player));
 
@@ -75,7 +75,7 @@ class EchoGolemManagerTest {
         assertTrue(echoGolemManager.protectedByCharoite(player));
 
         // Untagged vanilla items must not be mistaken for Charoite.
-        player.getInventory().setItemInOffHand(new ItemStack(Material.AMETHYST_SHARD));
+        player.getInventory().setItemInOffHand(new ItemStack(Material.LAPIS_LAZULI));
         assertFalse(echoGolemManager.protectedByCharoite(player));
     }
 
@@ -85,7 +85,7 @@ class EchoGolemManagerTest {
         mockPlugin.getConfig().set("echo-golem.charoite-protection", false);
         org.mockbukkit.mockbukkit.entity.PlayerMock player = server.addPlayer();
         player.getInventory().setItem(0,
-                echoGolemManager.content().item(Material.AMETHYST_SHARD, "charoite", "Charoite"));
+                echoGolemManager.content().item(Material.LAPIS_LAZULI, "charoite", "Charoite"));
 
         assertFalse(echoGolemManager.protectedByCharoite(player));
     }

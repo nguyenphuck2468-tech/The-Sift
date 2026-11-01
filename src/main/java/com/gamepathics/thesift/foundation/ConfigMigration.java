@@ -9,7 +9,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public final class ConfigMigration {
-    public static final int CURRENT_VERSION = 4;
+    public static final int CURRENT_VERSION = 5;
 
     private ConfigMigration() {
     }
@@ -33,6 +33,13 @@ public final class ConfigMigration {
         }
         if (!IchorState.migrateLegacyConfig(config, dataFolder, saveConfig, logger)) {
             return false;
+        }
+        if (version < 5) {
+            // 4 -> 5: the overnight hardening defaults. Only add keys the config lacks;
+            // a value the owner already set must survive untouched.
+            if (!config.contains("rift.reward-drops")) config.set("rift.reward-drops", 0);
+            if (!config.contains("rift.rift-key-chance")) config.set("rift.rift-key-chance", 0.0);
+            if (!config.contains("rift.reward-cooldown-minutes")) config.set("rift.reward-cooldown-minutes", 30);
         }
         if (version < CURRENT_VERSION) {
             config.set("config-version", CURRENT_VERSION);

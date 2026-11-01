@@ -1,3 +1,6 @@
 {
-  "parent": "minecraft:item/glass_bottle"
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "thesift:item/ichor_bottle"
+  }
 }

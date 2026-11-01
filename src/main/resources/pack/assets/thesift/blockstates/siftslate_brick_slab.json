@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "thesift:block/siftslate_brick_slab"
+    },
+    "type=top": {
+      "model": "thesift:block/siftslate_brick_slab_top"
+    },
+    "type=double": {
+      "model": "thesift:block/siftslate_bricks"
+    }
+  }
+}

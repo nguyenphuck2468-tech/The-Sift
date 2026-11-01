@@ -42,6 +42,7 @@ public final class EchoGolemManager implements Listener {
     private final NamespacedKey entityKey;
     private final NamespacedKey ownerKey;
     private final NamespacedKey cargoKey;
+    private final ExternalBlockBridge blockBridge;
     private final java.util.Set<UUID> trackedGolems = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private java.util.function.Predicate<Entity> singerTest;
     private SiftMobFactory mobFactory;
@@ -75,6 +76,7 @@ public final class EchoGolemManager implements Listener {
         this.entityKey = new NamespacedKey(plugin, "echo_golem_entity");
         this.ownerKey = new NamespacedKey(plugin, "echo_golem_owner");
         this.cargoKey = new NamespacedKey(plugin, "echo_golem_soul_block");
+        this.blockBridge = new ExternalBlockBridge(plugin);
     }
 
     EchoGolemManager(JavaPlugin plugin, SiftiteContent content) {
@@ -94,6 +96,8 @@ public final class EchoGolemManager implements Listener {
     SiftMobFactory mobFactory() {
         return sharedMobFactory();
     }
+
+    private boolean golemsSeeded = false;
 
     public void start() {
         long interval = 20L;
@@ -148,6 +152,20 @@ public final class EchoGolemManager implements Listener {
     }
 
     private void pulse() {
+        if (!golemsSeeded) {
+            golemsSeeded = true;
+            // Entities loaded from disk (server restart) don't fire EntityAddToWorldEvent
+            // for our listener, so seed the tracking set from all loaded golems.
+            for (World world : Bukkit.getWorlds()) {
+                for (Entity entity : world.getEntities()) {
+                    if (entity.getPersistentDataContainer().has(entityKey, PersistentDataType.STRING)
+                            && ECHO_GOLEM_ID.equals(entity.getPersistentDataContainer()
+                                    .get(entityKey, PersistentDataType.STRING))) {
+                        trackedGolems.add(entity.getUniqueId());
+                    }
+                }
+            }
+        }
         if (plugin.getConfig().getBoolean("echo-golem.auto-delivery", true)) pulseSoulDelivery();
         if (!plugin.getConfig().getBoolean("echo-golem.enabled", true)
                 || !plugin.getConfig().getBoolean("content.echo_golem", true)) {
@@ -227,7 +245,18 @@ public final class EchoGolemManager implements Listener {
 
     @EventHandler
     public void onEntityAddedToWorld(EntityAddToWorldEvent event) {
-        if (event.getEntity() instanceof LivingEntity living && isEchoGolem(living)) ensureBar(living);
+        if (event.getEntity() instanceof LivingEntity living && isEchoGolem(living)) {
+            ensureBar(living);
+            // Re-seed tracking for entities loaded from disk (restart/chunk reload).
+            trackedGolems.add(living.getUniqueId());
+        }
+    }
+
+    @EventHandler
+    public void onEntityRemovedFromWorld(com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent event) {
+        if (event.getEntity() instanceof LivingEntity living && isEchoGolem(living)) {
+            trackedGolems.remove(living.getUniqueId());
+        }
     }
 
     int trackedBossBarCount() {
@@ -280,7 +309,11 @@ public final class EchoGolemManager implements Listener {
 
     @EventHandler
     public void onEchoGolemTarget(EntityTargetEvent event) {
-        if (isEchoGolem(event.getEntity()) && event.getTarget() instanceof Player) {
+        // Reference-mod parity: the Echo Golem is a neutral guardian with no attack behaviour
+        // of its own. The Iron Golem stand-in otherwise keeps vanilla hostility (hunting
+        // monsters, retaliating against anything that hit it), so every target acquisition
+        // is refused — not just player targets (review P1).
+        if (isEchoGolem(event.getEntity())) {
             event.setCancelled(true);
         }
     }
@@ -352,10 +385,26 @@ public final class EchoGolemManager implements Listener {
     private void pulseSoulDelivery() {
         for (UUID id : java.util.List.copyOf(trackedGolems)) {
             Entity entity = Bukkit.getEntity(id);
-            if (!(entity instanceof IronGolem golem) || golem.isDead() || !golem.isValid()) {
+            if (entity == null) {
+                // The entity is not accessible (unloaded chunk, or removed between add/remove
+                // events): drop it from tracking instead of NPE-ing the tick (review P1).
+                // EntityAddToWorldEvent re-seeds the set when the golem returns.
                 trackedGolems.remove(id);
                 continue;
             }
+            Entity golemEntity = entity;
+            if (golemEntity.isDead() || !golemEntity.isValid()
+                    || !isEchoGolem(golemEntity)) {
+                trackedGolems.remove(id);
+                continue;
+            }
+            if (!(golemEntity instanceof Mob golem)) {
+                trackedGolems.remove(id);
+                continue;
+            }
+            // Vanilla Iron Golem hostility can survive restarts (target set before this
+            // listener registered); drop any stray target every pulse (review P1).
+            if (golem.getTarget() != null) golem.setTarget(null);
             var pdc = golem.getPersistentDataContainer();
             if (pdc.get(ownerKey, PersistentDataType.STRING) == null) continue; // only bonded golems work
             if (pdc.has(cargoKey, PersistentDataType.BYTE)) {
@@ -397,8 +446,10 @@ public final class EchoGolemManager implements Listener {
                 for (int dz = -radius; dz <= radius; dz++) {
                     Block block = world.getBlockAt(
                             center.getBlockX() + dx, center.getBlockY() + dy, center.getBlockZ() + dz);
-                    // The Soul Block stand-in is soul sand; generated Soul Canyons are made of it.
-                    if (block.getType() == Material.SOUL_SAND) return block;
+                    // The Soul Block stand-in is soul soil (mod parity); generated Soul Canyons are made of it.
+                    // A provider may place a custom block instead — check via the block bridge.
+                    if (block.getType() == Material.SOUL_SOIL
+                            || blockBridge.isBlock("soul_block", block)) return block;
                 }
             }
         }
@@ -421,6 +472,7 @@ public final class EchoGolemManager implements Listener {
     }
 
     private void consumeOne(Player player) {
+        if (player.getGameMode() == GameMode.CREATIVE) return;
         ItemStack hand = player.getInventory().getItemInMainHand();
         if (hand.getAmount() <= 1) player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
         else hand.setAmount(hand.getAmount() - 1);

@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/slab",
+  "textures": {
+    "bottom": "thesift:block/overgrown_willow_planks",
+    "side": "thesift:block/overgrown_willow_planks",
+    "top": "thesift:block/overgrown_willow_planks"
+  }
+}

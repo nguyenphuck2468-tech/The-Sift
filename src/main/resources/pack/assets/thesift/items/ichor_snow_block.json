@@ -1,6 +1,6 @@
 {
   "model": {
-    "model": "thesift:item/ichor_snow_block",
-    "type": "minecraft:model"
+    "type": "minecraft:model",
+    "model": "thesift:block/ichor_snow_block"
   }
 }

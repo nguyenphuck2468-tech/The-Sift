@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "mode=horn": {
+      "model": "thesift:block/sonorous_deepslate_horn"
+    },
+    "mode=note": {
+      "model": "thesift:block/sonorous_deepslate_note"
+    }
+  }
+}

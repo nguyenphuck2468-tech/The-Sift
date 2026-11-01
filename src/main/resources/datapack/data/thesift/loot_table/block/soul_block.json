@@ -6,7 +6,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "minecraft:soul_sand",
+          "name": "minecraft:soul_soil",
           "functions": [
             {
               "function": "minecraft:set_components",

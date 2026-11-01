@@ -1,7 +1,7 @@
 MIT License
 
 Copyright (c) 2026 The Sift fan project contributors
-Portions Copyright (c) 2026 Mielon (see NOTICE.draft.md and docs/parity-matrix.md)
+Portions Copyright (c) 2026 Mielon (see NOTICE.md and docs/parity-matrix.md)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -27,5 +27,5 @@ Provenance note: parts of this repository are ports of, or derived from, the
 MIT-licensed community project "Mielon's The Sift" (Copyright (c) 2026 Mielon,
 <https://github.com/Arta48/Mielons-The-Sift>). That upstream MIT copyright and
 permission notice is preserved here as required by its license terms. See
-NOTICE.draft.md for the per-file provenance audit. Minecraft, Mojang, and
+NOTICE.md for the per-file provenance audit. Minecraft, Mojang, and
 Microsoft are not affiliated with this fan-made project.

@@ -104,7 +104,7 @@ public final class SiftiteListener implements Listener {
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onOreBreak(BlockBreakEvent event) {
         Block block = event.getBlock();
-        Material siftiteOreMaterial = Material.matchMaterial(plugin.getConfig().getString("siftite.ore-material", "ANCIENT_DEBRIS"));
+        Material siftiteOreMaterial = Material.matchMaterial(plugin.getConfig().getString("siftite.ore-material", "DEEPSLATE_DIAMOND_ORE"));
         if (plugin.getConfig().getBoolean("content.siftite", true)
                 && plugin.getConfig().getBoolean("content.siftite_ore", true)
                 && plugin.getConfig().getBoolean("content.siftite_nugget", true)
@@ -132,7 +132,7 @@ public final class SiftiteListener implements Listener {
                 || !plugin.getConfig().getBoolean("content.charoite_item", true)) return;
         String configuredWorld = plugin.getConfig().getString("charoite.world", "thesift:the_sift");
         if (!block.getWorld().getKey().toString().equalsIgnoreCase(configuredWorld)) return;
-        Material oreMaterial = Material.matchMaterial(plugin.getConfig().getString("charoite.ore-material", "AMETHYST_BLOCK"));
+        Material oreMaterial = Material.matchMaterial(plugin.getConfig().getString("charoite.ore-material", "DEEPSLATE_LAPIS_ORE"));
         boolean markedCharoite = isMarked(block, oreMarker)
                 || (oreMaterial != null && block.getType() == oreMaterial && isEmbeddedInHostRock(block));
         if (!markedCharoite && !blockBridge.isBlock("charoite_ore", block)) return;

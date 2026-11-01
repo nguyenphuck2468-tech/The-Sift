@@ -18,11 +18,19 @@ No plugin in this matrix has reached **Live checked** in this repository. `Gener
 | Custom mob spawning | — | Detected (registry probe + spawn path; definitions not generated) | — | Detected | Detected + Generated | Detected (file mapping only) | — | — | — | — | — | — | — |
 | Mob rendering | — | — | — | — | — | — | Detected (attach path) | — | — | — | — | — | — |
 | Bedrock level 1 detection | — | — | — | — | — | — | — | Detected | Detected | Detected | Detected | Detected | Detected |
-| Bedrock level 2 generated pack / Geyser mappings | **MISSING** | **MISSING** | **MISSING** | — | — | — | — | **MISSING** | **MISSING** | — | — | — | — |
+| Bedrock level 2 runtime guards (pack skip, sound fallbacks, doctor) | — | — | — | — | — | — | — | **Detected** | **PARTIAL** (BedrockBridge; no Bedrock pack yet) | — | — | — | — |
 
 `Detected` for optional plugins is based on the declared plugin name and reflective/service path in the code, not proof of API compatibility. `ResourcePackManager` is currently detection and doctor reporting only. Its public Java API supports pack registration, but integration is deferred; no API calls or telemetry are used. Geyser, Floodgate, ViaVersion, ViaBackwards, ViaRewind, and ResourcePackManager never gate dimension readiness.
 
-Bedrock level 2 (pack generation, custom mappings, and end-to-end Geyser validation) is estimated **high / roughly 1–3 engineering weeks**, assuming usable asset provenance and a test server with Geyser + ResourcePackManager. This is a planning estimate, not a commitment. Geyser documentation checked 2026-10-24 lists Java 26.3 support; Skilleed's product page (updated 2026-10-09) advises ViaVersion. This plugin has not been tested on a server with Geyser, either with or without ViaVersion.
+Bedrock level 2 operational tier is IMPLEMENTED (2026-11-01): `BedrockBridge` detects Geyser's
+API reflectively, the Java resource pack is never sent to Bedrock players, pack-bundled sounds
+(sonorous notes, rift portal trigger) fall back to vanilla equivalents per player, and
+/sift doctor reports Geyser/Floodgate/ViaVersion state plus Bedrock players online. What remains
+MISSING at the full level-2 tier: a generated Bedrock pack (.mcpack with custom item/block
+mappings) and end-to-end validation on a real Geyser server.
+
+Original level-2 estimate for that remaining tier:
+ **high / roughly 1–3 engineering weeks**, assuming usable asset provenance and a test server with Geyser + ResourcePackManager. This is a planning estimate, not a commitment. Geyser documentation checked 2026-10-24 lists Java 26.3 support; Skilleed's product page (updated 2026-10-09) advises ViaVersion. This plugin has not been tested on a server with Geyser, either with or without ViaVersion.
 
 ## Implemented feature slices
 
@@ -36,6 +44,9 @@ Bedrock level 2 (pack generation, custom mappings, and end-to-end Geyser validat
 | 7: Ichor cauldron dripstone refill (mod parity) | A pointed dripstone dripping above a registered Ichor cauldron adds one level per 5s world tick (`ichor.cauldron.dripstone-fill`). | Not generated (Java-side). | Not unit-tested (needs MockBukkit block interactions). | Not verified on provider or Paper server. |
 | 9: Mod 1.1.x discs and rubble (mod parity) | `rift_disc` (Otherside stand-in, matches the portal loot pool), `wellspring_disc` (Mellohi stand-in — the original Wellspring audio is an unverified contributor asset) and `sift_rubble` (gravel stand-in) ship as content ids with `/sift give` support. | Nexo/ItemsAdder/Oraxen definitions generated. | Not unit-tested (item creation). | Disc audio parity blocked on asset rights; not verified live. |
 | 10: Cave fossils (mod 1.1.x) | Java decoration buries bone-block fossils with a coal pocket into deepslate cave floors (1/48 per chunk in any Sift biome, both strict and fallback branches). | Not generated (Java-side). | Not unit-tested. | Not verified on provider or Paper server. |
+| 12: Rift economy hardening | reward-drops/key-chance code defaults 0/0.0 + per-player cooldown (rift.reward-cooldown-minutes); migration 4→5 add-only. | Not generated (Java-side). | ConfigMigrationTest.currentVersionIs5. | Balance numbers await owner review. |
+| 13: findConsole budget | Connected-console BFS scans ±2 per block under a shared 4096-lookup budget with early stop plus a 4-tick per-player cooldown (was 33³ per dequeued block). | Not generated (Java-side). | Build-verified; lookup-count instrumentation deferred. | Not verified live. |
+| 14: Fan-made gates | content.prism_warden / sift_standin_mobs / sift_tide / rift_walker_waves default FALSE; the five core mod mobs are exempt from the wildlife gate. | Not generated (Java-side). | Build-verified; per-flag tests planned (Phase 8). | Not verified live. |
 | 11: First-entry ambient (mod 1.1.x) | The first time a player enters the dimension they hear an ambient cave sting and a localized line (`world.first-entry`). | Not generated (Java-side). | Not unit-tested. | Not verified on provider or Paper server. |
 | Sifter natural-terrain rule (mod 1.1.0) | Herd spawns skip any spot carrying player-build markers (chest, crafting table, furnace, torch) or open air, matching the mod's "never spawn inside player structures" rule. | Not generated (Java-side). | Not unit-tested. | Not verified live. |
 | Projectile momentum across rifts (mod parity) | Teleport zeroes velocity, so projectiles re-receive their captured velocity one tick after transit; dropped items travel unchanged. | Not generated (Java-side). | Not unit-tested. | Not verified live. |

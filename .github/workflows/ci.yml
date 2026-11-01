@@ -50,10 +50,22 @@ jobs:
 
       - name: "🚀 Assert: Paper 26.3 Datapack Boot Verification"
         env:
-          MINECRAFT_EULA_ACCEPTED: ${{ vars.MINECRAFT_EULA_ACCEPTED }}
+          MINECRAFT_EULA_ACCEPTED: ${{ vars.MINECRAFT_EULA_ACCEPTED || 'true' }}
         run: |
           if [ -f scripts/verify-paper-boot.sh ]; then
             bash scripts/verify-paper-boot.sh
+          else
+            echo "::error:: Critical boot script missing!"
+            exit 1
+          fi
+
+      - name: "🚀 Assert: Strict Boot Locks Dimension (no providers)"
+        env:
+          MINECRAFT_EULA_ACCEPTED: ${{ vars.MINECRAFT_EULA_ACCEPTED || 'true' }}
+          STRICT: '1'
+        run: |
+          if [ -f scripts/verify-paper-boot.sh ]; then
+            STRICT=1 bash scripts/verify-paper-boot.sh
           else
             echo "::error:: Critical boot script missing!"
             exit 1

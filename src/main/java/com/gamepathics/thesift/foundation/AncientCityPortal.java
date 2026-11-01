@@ -84,12 +84,24 @@ final class AncientCityPortal implements Listener {
     private final NamespacedKey singerKey;
     private final Map<UUID, Long> hornScanCooldownUntil = new HashMap<>();
     private Function<Location, LivingEntity> singerSpawner;
+    /**
+     * The modern structure-bounded gate manager. When it owns a gate near the played horn,
+     * this mod-port flow defers to it so one Ancient City never ends up with two console
+     * rows and two openable portals (review P1). {@code ancient-city.gate-mode: false}
+     * restores the legacy dual-flow behaviour.
+     */
+    private AncientCityGateManager gateOwner;
 
     AncientCityPortal(JavaPlugin plugin) {
         this.plugin = plugin;
         this.registry = new SonorousBlockRegistry(plugin);
         this.blockBridge = new ExternalBlockBridge(plugin);
         this.singerKey = new NamespacedKey(plugin, "resonance_entity");
+    }
+
+    /** Wired by the plugin once the gate manager exists (stays null when the dimension is disabled). */
+    void setGateOwner(AncientCityGateManager gateOwner) {
+        this.gateOwner = gateOwner;
     }
 
     /** Wired by the plugin once the Singer manager exists (may stay null when the Singer is disabled). */
@@ -133,6 +145,15 @@ final class AncientCityPortal implements Listener {
         // The summon fires 3 s after the horn; the player may have logged off by then.
         if (!player.isOnline()) return;
         if (!enabled() || origin.getWorld() == null) return;
+        // Gate unification: when the structure-bounded gate manager owns a gate near this
+        // horn, it has already handled the awakening — do not summon a second Singer or
+        // place a second Sonorous row at the mod's row-distance.
+        if (gateOwner != null && plugin.getConfig().getBoolean("ancient-city.gate-mode", true)
+                && gateOwner.hasGateNear(origin, 48)) {
+            player.sendActionBar("§7" + Messages.get("gate.gate-city",
+                    "This Ancient City's portal belongs to its Sift gate — awaken it with a Goat Horn at the Sonorous Deepslate."));
+            return;
+        }
         Frame frame = findNearestFrame(origin);
         if (frame == null) return;
         SiftAdvancementGrant.grant(plugin, player, "story/song_of_the_past");
@@ -203,7 +224,7 @@ final class AncientCityPortal implements Listener {
         boolean placed = blockBridge.place("sonorous_deepslate", block.getLocation());
         if (!placed) {
             if (plugin.getConfig().getBoolean("providers.strict", true)) return false;
-            block.setType(Material.DEEPSLATE, false);
+            block.setType(Material.REINFORCED_DEEPSLATE, false);
         }
         registry.mark(block);
         return true;

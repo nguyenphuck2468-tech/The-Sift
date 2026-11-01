@@ -30,6 +30,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.HashSet;
@@ -48,6 +49,8 @@ public final class RiftManager implements Listener {
 
     private final JavaPlugin plugin;
     private AncientCityGateManager gateOwner;
+    private final NamespacedKey riftLastRewardKey;
+    private final java.util.Map<java.util.UUID, Long> noteConsoleLookupAt = new java.util.HashMap<>();
     private final NamespacedKey riftKey;
     private final SiftMobFactory mobFactory;
     private final ExternalBlockBridge blockBridge;
@@ -68,6 +71,7 @@ public final class RiftManager implements Listener {
     /** Shared wiring: reuse the plugin-wide content registry and mob factory when provided. */
     public RiftManager(JavaPlugin plugin, ProviderReadiness providerReadiness, SiftiteContent sharedContent,
                        SiftMobFactory sharedMobFactory) {
+        this.riftLastRewardKey = new NamespacedKey(plugin, "rift_last_reward");
         this.plugin = plugin;
         this.providerReadiness = providerReadiness;
         this.dimensionManager = new SiftDimensionManager(plugin, providerReadiness);
@@ -102,6 +106,11 @@ public final class RiftManager implements Listener {
         return ancientCity;
     }
 
+    private BedrockBridge bedrock() {
+        return plugin instanceof TheSiftFoundationPlugin foundation
+                ? foundation.bedrockAccess() : new BedrockBridge(plugin);
+    }
+
     private SiftiteContent riftContent() {
         if (sharedContent == null) sharedContent = new SiftiteContent(plugin);
         return sharedContent;
@@ -112,8 +121,209 @@ public final class RiftManager implements Listener {
         if (updateTask == null) updateTask = Bukkit.getScheduler().runTaskTimer(plugin, this::updateRifts, 20L, 20L);
     }
 
+    // ---- persistence: plugins/TheSift/rifts.json (atomic write, expired entries skipped) ----
+
+    /** One persisted rift. Portal rifts keep expiresAt = -1 (they close via their gate). */
+    static final class RiftSaveEntry {
+        String id;
+        boolean portal;
+        String world;
+        int cx, cy, cz;
+        String exitWorld;
+        int ex, ey, ez;
+        long expiresAt;
+        // Gate metadata (null when not a gate rift)
+        Double gateMinX, gateMinY, gateMinZ, gateMaxX, gateMaxY, gateMaxZ;
+        String gateArrivalWorld;
+        Integer gateArrivalX, gateArrivalY, gateArrivalZ;
+    }
+
+    private java.nio.file.Path riftsFile() {
+        return plugin.getDataFolder().toPath().resolve("rifts.json");
+    }
+
+    /** Writes every active rift with an exit; survives restarts via an atomic temp-file move. */
+    void saveRifts() {
+        try {
+            java.nio.file.Path file = riftsFile();
+            java.nio.file.Files.createDirectories(file.getParent());
+            List<RiftSaveEntry> entries = new java.util.ArrayList<>();
+            long now = System.currentTimeMillis();
+            for (RiftInstance rift : rifts.values()) {
+                if (rift.state != RiftState.ACTIVE || rift.exitCenter == null
+                        || rift.center.getWorld() == null || rift.exitCenter.getWorld() == null) continue;
+                RiftSaveEntry entry = new RiftSaveEntry();
+                entry.id = rift.id.toString();
+                entry.portal = rift.portal;
+                entry.world = rift.center.getWorld().getName();
+                entry.cx = rift.center.getBlockX();
+                entry.cy = rift.center.getBlockY();
+                entry.cz = rift.center.getBlockZ();
+                entry.exitWorld = rift.exitCenter.getWorld().getName();
+                entry.ex = rift.exitCenter.getBlockX();
+                entry.ey = rift.exitCenter.getBlockY();
+                entry.ez = rift.exitCenter.getBlockZ();
+                if (rift.portal) {
+                    // Portal rifts with a gate never auto-close; -1 means "never expires"
+                    // in skipExpired(). Without a gate they close via active-duration.
+                    entry.expiresAt = rift.gate != null ? -1L
+                            : now + Math.max(0, plugin.getConfig().getInt("rift.portal-active-seconds", 900)) * 20L * 50L
+                              - rift.stateTimer * 50L;
+                } else {
+                    int durationTicks = Math.max(1, plugin.getConfig().getInt("rift.active-duration-seconds", 300)) * 20;
+                    int remainingTicks = Math.max(0, durationTicks - rift.stateTimer);
+                    entry.expiresAt = now + remainingTicks * 50L;
+                }
+                
+                if (rift.gate != null && rift.center.getWorld() != null) {
+                    entry.gateMinX = rift.gate.getMinX();
+                    entry.gateMinY = rift.gate.getMinY();
+                    entry.gateMinZ = rift.gate.getMinZ();
+                    entry.gateMaxX = rift.gate.getMaxX();
+                    entry.gateMaxY = rift.gate.getMaxY();
+                    entry.gateMaxZ = rift.gate.getMaxZ();
+                    if (rift.gateArrival != null && rift.gateArrival.getWorld() != null) {
+                        entry.gateArrivalWorld = rift.gateArrival.getWorld().getName();
+                        entry.gateArrivalX = rift.gateArrival.getBlockX();
+                        entry.gateArrivalY = rift.gateArrival.getBlockY();
+                        entry.gateArrivalZ = rift.gateArrival.getBlockZ();
+                    }
+                }entries.add(entry);
+            }
+            String json = new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(entries);
+            java.nio.file.Path temp = java.nio.file.Files.createTempFile(file.getParent(), "rifts", ".tmp");
+            java.nio.file.Files.writeString(temp, json);
+            try {
+                java.nio.file.Files.move(temp, file, java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                        java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+            } catch (java.nio.file.AtomicMoveNotSupportedException exception) {
+                java.nio.file.Files.move(temp, file, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            } finally {
+                java.nio.file.Files.deleteIfExists(temp);
+            }
+        } catch (Exception exception) {
+            plugin.getLogger().log(java.util.logging.Level.WARNING, "Could not save rifts.json", exception);
+        }
+    }
+
+    /**
+     * Restores active rifts saved by a previous session. Entries whose worlds have not loaded
+     * yet (e.g. the Sift dimension is created later, or strict mode locked it) stay pending:
+     * the save file is kept and {@link #onWorldLoad} retries until every world exists. A rift
+     * is only restored once ALL of its worlds exist — restoring it without its gate arrival
+     * world would drop the gate metadata for good.
+     */
+    void loadRifts() {
+        java.nio.file.Path file = riftsFile();
+        if (!java.nio.file.Files.exists(file)) {
+            riftsLoaded = true;
+            return;
+        }
+        try {
+            RiftSaveEntry[] entries = new com.google.gson.Gson().fromJson(
+                    java.nio.file.Files.readString(file), RiftSaveEntry[].class);
+            if (entries == null) {
+                riftsLoaded = true;
+                return;
+            }
+            long now = System.currentTimeMillis();
+            int restored = 0;
+            int skipped = 0;
+            for (RiftSaveEntry entry : skipExpired(entries, now)) {
+                // Already active from an earlier partial pass — the file simply still holds it.
+                if (rifts.containsKey(UUID.fromString(entry.id))) continue;
+                World centerWorld = Bukkit.getWorld(entry.world);
+                World exitWorld = Bukkit.getWorld(entry.exitWorld);
+                World arrivalWorld = entry.gateArrivalWorld == null ? null : Bukkit.getWorld(entry.gateArrivalWorld);
+                if (centerWorld == null || exitWorld == null
+                        || (entry.gateArrivalWorld != null && arrivalWorld == null)) {
+                    skipped++;
+                    continue;
+                }
+                RiftInstance rift = new RiftInstance(UUID.fromString(entry.id),
+                        new Location(centerWorld, entry.cx + 0.5, entry.cy, entry.cz + 0.5), null, entry.portal);
+                int durationTicks = (entry.portal
+                        ? Math.max(1, plugin.getConfig().getInt("rift.portal-active-seconds", 900))
+                        : Math.max(1, plugin.getConfig().getInt("rift.active-duration-seconds", 300))) * 20;
+                int remainingTicks;
+                if (entry.expiresAt < 0) {
+                    // Portal rift with gate: never expires on its own; restore with full duration.
+                    remainingTicks = durationTicks;
+                } else {
+                    remainingTicks = Math.max(0, (int) Math.min(durationTicks,
+                            (entry.expiresAt - now) / 50L));
+                }
+                rift.restoreActive(new Location(exitWorld, entry.ex + 0.5, entry.ey, entry.ez + 0.5),
+                        remainingTicks);
+                if (entry.gateMinX != null && entry.gateArrivalWorld != null) {
+                    rift.setGate(
+                            new org.bukkit.util.BoundingBox(
+                                    entry.gateMinX, entry.gateMinY, entry.gateMinZ,
+                                    entry.gateMaxX, entry.gateMaxY, entry.gateMaxZ),
+                            new Location(arrivalWorld,
+                                    entry.gateArrivalX + 0.5, entry.gateArrivalY, entry.gateArrivalZ + 0.5));
+                }
+                rifts.put(rift.id, rift);
+                restored++;
+            }
+            if (skipped == 0) {
+                // Every entry is restored (or was already active): the save file is consumed
+                // and no further world-load retries are needed.
+                riftsLoaded = true;
+                java.nio.file.Files.deleteIfExists(file);
+                if (restored > 0) plugin.getLogger().info("Restored " + restored + " rift(s) from rifts.json.");
+            } else {
+                plugin.getLogger().warning("Restored " + restored + " rift(s); " + skipped
+                        + " waiting for their world(s) to load — rifts.json kept for retry on world load.");
+            }
+        } catch (Exception exception) {
+            plugin.getLogger().log(java.util.logging.Level.WARNING,
+                    "Could not load rifts.json; starting with no persisted rifts.", exception);
+        }
+    }
+
+    /** Drops entries whose expiry has passed (static for tests). */
+    static List<RiftSaveEntry> skipExpired(RiftSaveEntry[] entries, long now) {
+        List<RiftSaveEntry> result = new java.util.ArrayList<>();
+        for (RiftSaveEntry entry : entries) {
+            if (entry != null && (entry.expiresAt < 0 || entry.expiresAt > now)) result.add(entry);
+        }
+        return result;
+    }
+
+    /** Inspection accessors for persistence tests (package-private). */
+    int activeRiftCount() {
+        return rifts.size();
+    }
+
+    java.util.List<UUID> activeRiftIds() {
+        return new java.util.ArrayList<>(rifts.keySet());
+    }
+
+    RiftInstance activeRift(UUID id) {
+        return rifts.get(id);
+    }
+
+    private boolean riftsLoaded = false;
+
+    /** Retries loadRifts() when a world loads and the save file still has unrestored entries. */
+    @EventHandler
+    public void onWorldLoad(org.bukkit.event.world.WorldLoadEvent event) {
+        if (riftsLoaded || !java.nio.file.Files.exists(riftsFile())) return;
+        // Only retry when the loading world matches one of the saved rift worlds.
+        try {
+            String content = java.nio.file.Files.readString(riftsFile());
+            if (content.contains("\"" + event.getWorld().getName() + "\"")) {
+                plugin.getLogger().info("World '" + event.getWorld().getName()
+                        + "' loaded; retrying rift restoration.");
+                loadRifts();
+            }
+        } catch (Exception ignored) { }
+    }
+
     public void shutdown() {
         if (updateTask != null) updateTask.cancel();
+        saveRifts();
         rifts.values().forEach(RiftInstance::discard);
         rifts.clear();
         travelling.clear();
@@ -147,7 +357,8 @@ public final class RiftManager implements Listener {
                 || location == null || location.getWorld() == null) return false;
         if (providerReadiness.strict() && !providerReadiness.dimensionAllowed()
                 && !location.getWorld().getKey().equals(SiftDimensionManager.DIMENSION_KEY)) {
-            String message = "Rift blocked: required providers for The Sift are unavailable. Run /sift doctor.";
+            String message = Messages.get("rift.blocked-providers",
+                    "Rift blocked: required providers for The Sift are unavailable. Run /sift doctor.");
             plugin.getLogger().severe(message + " Existing dimension save was left untouched.");
             if (opener != null && opener.isOnline()) opener.sendMessage(message);
             return false;
@@ -157,7 +368,8 @@ public final class RiftManager implements Listener {
                     .findFirst().orElse(null)
                 : dimensionManager.getOrCreateWorld();
         if (destinationWorld == null) {
-            String message = "Rift blocked: its destination world could not be loaded. Check the server log and /sift doctor.";
+            String message = Messages.get("rift.blocked-world",
+                    "Rift blocked: its destination world could not be loaded. Check the server log and /sift doctor.");
             plugin.getLogger().severe(message);
             if (opener != null && opener.isOnline()) opener.sendMessage(message);
             return false;
@@ -167,6 +379,7 @@ public final class RiftManager implements Listener {
         rifts.put(id, rift);
         lastOpened = rift;
         rift.beginOpening();
+        saveRifts();
         return true;
     }
 
@@ -220,7 +433,7 @@ public final class RiftManager implements Listener {
         int z = target.getLocation().getBlockZ() + (int) Math.round(Math.sin(angle) * distance);
         int y = sift.getHighestBlockYAt(x, z) + 1;
         if (openRift(new Location(sift, x + 0.5, y, z + 0.5), target)) {
-            target.sendMessage("\u00a75A Rift tears open somewhere nearby...");
+            Messages.send(target, "rift.tear-open", "\u00a75A Rift tears open somewhere nearby...");
         }
     }
 
@@ -291,12 +504,12 @@ public final class RiftManager implements Listener {
                 rider.teleport(destination);
                 entity.addPassenger(rider);
                 if (rider instanceof Player player) {
-                    player.sendMessage("§5The Rift carries you between worlds.");
+                    Messages.send(player, "rift.carries", "§5The Rift carries you between worlds.");
                     SiftAdvancementGrant.grant(plugin, player, "rifter");
                 }
             }
             if (entity instanceof Player player) {
-                player.sendMessage("§5The Rift carries you between worlds.");
+                Messages.send(player, "rift.carries", "§5The Rift carries you between worlds.");
                 SiftAdvancementGrant.grant(plugin, player, "rifter");
             }
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
@@ -343,17 +556,26 @@ public final class RiftManager implements Listener {
             int next = (noteBlock.getNote().getId() + 1) % 8;
             noteBlock.setNote(new Note(next));
             block.setBlockData(noteBlock, false);
-            event.getPlayer().sendActionBar("§bSift note: " + (next + 1));
+            event.getPlayer().sendActionBar(Messages.get("sonorous.note", "§bSift note: %note%")
+                    .replace("%note%", String.valueOf(next + 1)));
             return;
         }
         if (event.getAction() != Action.LEFT_CLICK_BLOCK) return;
         event.setCancelled(true);
         Player player = event.getPlayer();
         int played = noteBlock.getNote().getId() + 1;
-        player.playSound(block.getLocation(), "minecraft:block.note_block.harp", 0.8f,
-                (float) Math.pow(2.0, (played - 1) / 12.0));
+        // Reference-mod parity: the mod's Sonorous Deepslate recordings (pack-bundled).
+        // Bedrock clients cannot resolve custom sound events: harp fallback per player.
+        bedrock().playSound(player, block.getLocation(),
+                "thesift:block.sonorous_deepslate.sound_" + Math.min(8, Math.max(1, played)),
+                Sound.BLOCK_NOTE_BLOCK_HARP, 0.8f, 1.0f);
         block.getWorld().spawnParticle(Particle.NOTE, block.getLocation().add(0.5, 1.2, 0.5), 1,
                 0, 0, 0, (played - 1) / 24.0);
+        // findConsole walks connected note blocks; cap repeat lookups to 4 ticks per player.
+        Long nextAllowed = noteConsoleLookupAt.get(player.getUniqueId());
+        long nowMs = System.currentTimeMillis();
+        if (nextAllowed != null && nowMs < nextAllowed) return;
+        noteConsoleLookupAt.put(player.getUniqueId(), nowMs + 200L);
         java.util.List<Block> console = findConsole(block);
         Block anchor = console.stream()
                 .min(java.util.Comparator.<Block>comparingInt(Block::getY)
@@ -373,11 +595,16 @@ public final class RiftManager implements Listener {
         found.add(origin);
         queue.add(origin);
         World world = origin.getWorld();
-        while (!queue.isEmpty() && found.size() < 64) {
+        // Each dequeued block used to scan a 33x33x33 cube - up to ~2.3M getType() calls on
+        // the main thread for a full console. The neighbours of a connected console are far
+        // closer, so a shared 4096-lookup budget with early stop finds the same group.
+        int lookups = 4096;
+        while (!queue.isEmpty() && found.size() < 64 && lookups > 0) {
             Block current = queue.poll();
-            for (int dx = -16; dx <= 16; dx++) {
-                for (int dy = -16; dy <= 16; dy++) {
-                    for (int dz = -16; dz <= 16; dz++) {
+            for (int dx = -2; dx <= 2 && lookups > 0; dx++) {
+                for (int dy = -2; dy <= 2 && lookups > 0; dy++) {
+                    for (int dz = -2; dz <= 2 && lookups > 0; dz++) {
+                        lookups--;
                         int x = current.getX() + dx;
                         int y = current.getY() + dy;
                         int z = current.getZ() + dz;
@@ -404,11 +631,11 @@ public final class RiftManager implements Listener {
     private void beginIgnition(Player player, Block played, java.util.List<SonorousConsoleTracker.Note> notes) {
         AncientCityPortal.Frame frame = ancientCity.findNearestFrame(played.getLocation());
         if (frame == null && plugin.getConfig().getBoolean("ancient-city.require-frame", true)) {
-            player.sendActionBar("§7The song echoes, but no Reinforced Deepslate frame answers.");
+            Messages.actionBar(player, "sonorous.no-frame", "§7The song echoes, but no Reinforced Deepslate frame answers.");
             return;
         }
         if (frame != null && hasGateAt(frame.bottomCenter())) {
-            player.sendActionBar("§7The portal is already open. Play the song backwards to close it.");
+            Messages.actionBar(player, "sonorous.already-open", "§7The portal is already open. Play the song backwards to close it.");
             return;
         }
         java.util.List<Location> sources = new java.util.ArrayList<>();
@@ -443,7 +670,7 @@ public final class RiftManager implements Listener {
     private void openGate(Player player, AncientCityPortal.Frame frame, Block played, java.util.List<Location> sources) {
         Location at = frame != null ? frame.bottomCenter() : played.getLocation().add(0.5, 1, 0.5);
         if (!openRift(at, player, true)) {
-            if (player.isOnline()) player.sendActionBar("§cThe Rift could not open; check provider readiness.");
+            if (player.isOnline()) Messages.actionBar(player, "rift.open-failed", "§cThe Rift could not open; check provider readiness.");
             return;
         }
         RiftInstance rift = lastOpened;
@@ -451,7 +678,7 @@ public final class RiftManager implements Listener {
             rift.setGate(frame.gate(), frame.arrival(frame.sideOf(played.getLocation())));
             ancientCity.fireBeams(sources, at);
         }
-        if (player.isOnline()) player.sendActionBar("§bThe Sonorous song is complete.");
+        if (player.isOnline()) Messages.actionBar(player, "sonorous.complete", "§bThe Sonorous song is complete.");
     }
 
     private boolean hasGateAt(Location location) {
@@ -470,7 +697,7 @@ public final class RiftManager implements Listener {
                     || !rift.center.getWorld().equals(block.getWorld())
                     || rift.center.distanceSquared(block.getLocation()) > radius * radius) continue;
             rift.beginClosing();
-            player.sendActionBar("§5The portal folds back into the deepslate.");
+            Messages.actionBar(player, "sonorous.closed", "§5The portal folds back into the deepslate.");
             return;
         }
     }
@@ -502,6 +729,7 @@ public final class RiftManager implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         portalSongTracker.remove(event.getPlayer().getUniqueId());
+        noteConsoleLookupAt.remove(event.getPlayer().getUniqueId());
     }
 
     boolean canHandlePortalSong(Block noteBlock) {
@@ -514,7 +742,7 @@ public final class RiftManager implements Listener {
     public class RiftInstance {
         private final UUID id;
         private final Location center;
-        private final Player opener;
+        private final UUID openerId;
         private final boolean portal;
         private Location exitCenter;
         private org.bukkit.util.BoundingBox gate;
@@ -528,10 +756,25 @@ public final class RiftManager implements Listener {
         }
 
         public RiftInstance(UUID id, Location center, Player opener, boolean portal) {
+            this.openerId = opener == null ? null : opener.getUniqueId();
             this.id = id;
             this.center = center;
-            this.opener = opener;
+
             this.portal = portal;
+        }
+
+        /** Rebuilds an ACTIVE rift from a saved session without replaying effects. */
+        void restoreActive(Location exit, int remainingTicks) {
+            this.exitCenter = exit;
+            this.state = RiftState.ACTIVE;
+            this.phase = 1;
+            this.stateTimer = Math.max(0, durationTicksTotal() - remainingTicks);
+        }
+
+        private int durationTicksTotal() {
+            return (portal
+                    ? Math.max(1, plugin.getConfig().getInt("rift.portal-active-seconds", 900))
+                    : Math.max(1, plugin.getConfig().getInt("rift.active-duration-seconds", 300))) * 20;
         }
 
         void setGate(org.bukkit.util.BoundingBox gate, Location arrival) {
@@ -548,9 +791,15 @@ public final class RiftManager implements Listener {
             state = RiftState.OPENING;
             stateTimer = 0;
             phase = 0;
-            center.getWorld().playSound(center, Sound.BLOCK_PORTAL_AMBIENT, 1.0f, 0.5f);
+            // Reference-mod parity: the Sift portal trigger sting (pack-bundled OGG).
+            // Bedrock clients cannot resolve custom sound events: vanilla portal fallback.
+            for (org.bukkit.entity.Player nearby : center.getWorld().getPlayers()) {
+                if (nearby.getLocation().distanceSquared(center) > 48.0 * 48.0) continue;
+                bedrock().playSound(nearby, center, "thesift:block.sift_portal.trigger",
+                        Sound.BLOCK_PORTAL_TRIGGER, 1.0f, 0.9f);
+            }
             center.getWorld().spawnParticle(Particle.PORTAL, center.clone().add(0, 1, 0), 50, 2, 2, 2, 0.1);
-            notifyOpener("§5The rift begins to tear open...");
+            notifyOpener(Messages.get("rift.tearing-open", "§5The rift begins to tear open..."));
             
         }
 
@@ -592,6 +841,8 @@ public final class RiftManager implements Listener {
         }
 
         private void pulseResonance() {
+            // Plan default: the fan-made rift resonance pulse is OFF (content.rift_walker_waves).
+            if (!plugin.getConfig().getBoolean("content.rift_walker_waves", false)) return;
             center.getWorld().playSound(center, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 0.6f);
             center.getWorld().spawnParticle(Particle.SONIC_BOOM, center.clone().add(0, 1, 0), 1);
             for (Player p : center.getWorld().getPlayers()) {
@@ -604,6 +855,7 @@ public final class RiftManager implements Listener {
         }
 
         private void spawnRiftMobs(int count) {
+            if (!plugin.getConfig().getBoolean("content.rift_walker_waves", false)) return;
             for (int i = 0; i < count; i++) {
                 Location spawnLoc = center.clone().add(
                     ThreadLocalRandom.current().nextDouble(-5, 5),
@@ -642,11 +894,24 @@ public final class RiftManager implements Listener {
                 exitCenter.getWorld().spawnParticle(Particle.SMOKE, exitCenter, 30, 1, 1, 1, 0.03);
                 exitCenter.getWorld().playSound(exitCenter, Sound.BLOCK_PORTAL_AMBIENT, 0.5f, 0.5f);
             }
+            RiftManager.this.saveRifts();
         }
 
         private void dropRewards() {
-            // Drop Siftite, Charoite, etc.
-            int rewardCount = Math.max(0, plugin.getConfig().getInt("rift.reward-drops", 3));
+            // Plan default: rifts are not an income source unless the owner opts in.
+            // Per-player cooldown further caps repeat farming when rewards are enabled.
+            int rewardCount = Math.max(0, plugin.getConfig().getInt("rift.reward-drops", 0));
+            Player player = resolveOpener();
+            long now = System.currentTimeMillis();
+            long cooldownMinutes = Math.max(0, plugin.getConfig().getInt("rift.reward-cooldown-minutes", 30));
+            if (player != null && cooldownMinutes > 0) {
+                Long lastReward = player.getPersistentDataContainer().get(riftLastRewardKey,
+                        PersistentDataType.LONG);
+                if (lastReward != null && now - lastReward < cooldownMinutes * 60_000L) {
+                    return;
+                }
+                player.getPersistentDataContainer().set(riftLastRewardKey, PersistentDataType.LONG, now);
+            }
             SiftiteContent content = riftContent();
             ItemStack reward = rewardCount == 0 ? null
                     : content.item(Material.NETHERITE_INGOT, "siftite_ingot", "Siftite Ingot");
@@ -659,7 +924,7 @@ public final class RiftManager implements Listener {
             }
             // Rift Key fragment chance
             if (ThreadLocalRandom.current().nextDouble()
-                    < plugin.getConfig().getDouble("rift.rift-key-chance", 0.3)) {
+                    < plugin.getConfig().getDouble("rift.rift-key-chance", 0.0)) {
                 ItemStack key = createRiftKey();
                 if (key != null) center.getWorld().dropItemNaturally(center.clone().add(0, 1, 0), key);
             }
@@ -739,7 +1004,12 @@ public final class RiftManager implements Listener {
             }
         }
 
+        private Player resolveOpener() {
+            return openerId == null ? null : org.bukkit.Bukkit.getPlayer(openerId);
+        }
+
         private void notifyOpener(String message) {
+            Player opener = resolveOpener();
             if (opener != null && opener.isOnline()) opener.sendMessage(message);
         }
     }

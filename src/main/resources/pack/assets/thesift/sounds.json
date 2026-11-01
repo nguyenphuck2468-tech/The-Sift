@@ -1,0 +1,398 @@
+{
+  "block.sonorous_deepslate.sound_1": {
+    "sounds": [
+      "thesift:block/sonorous/sonorous_deepslate_sound_1"
+    ],
+    "subtitle": "subtitles.thesift.block.sonorous_deepslate.sound_1"
+  },
+  "block.sonorous_deepslate.sound_2": {
+    "sounds": [
+      "thesift:block/sonorous/sonorous_deepslate_sound_2"
+    ],
+    "subtitle": "subtitles.thesift.block.sonorous_deepslate.sound_2"
+  },
+  "block.sonorous_deepslate.sound_3": {
+    "sounds": [
+      "thesift:block/sonorous/sonorous_deepslate_sound_3"
+    ],
+    "subtitle": "subtitles.thesift.block.sonorous_deepslate.sound_3"
+  },
+  "block.sonorous_deepslate.sound_4": {
+    "sounds": [
+      "thesift:block/sonorous/sonorous_deepslate_sound_4"
+    ],
+    "subtitle": "subtitles.thesift.block.sonorous_deepslate.sound_4"
+  },
+  "block.sonorous_deepslate.sound_5": {
+    "sounds": [
+      "thesift:block/sonorous/sonorous_deepslate_sound_5"
+    ],
+    "subtitle": "subtitles.thesift.block.sonorous_deepslate.sound_5"
+  },
+  "block.sonorous_deepslate.sound_6": {
+    "sounds": [
+      "thesift:block/sonorous/sonorous_deepslate_sound_6"
+    ],
+    "subtitle": "subtitles.thesift.block.sonorous_deepslate.sound_6"
+  },
+  "block.sonorous_deepslate.sound_7": {
+    "sounds": [
+      "thesift:block/sonorous/sonorous_deepslate_sound_7"
+    ],
+    "subtitle": "subtitles.thesift.block.sonorous_deepslate.sound_7"
+  },
+  "block.sonorous_deepslate.sound_8": {
+    "sounds": [
+      "thesift:block/sonorous/sonorous_deepslate_sound_8"
+    ],
+    "subtitle": "subtitles.thesift.block.sonorous_deepslate.sound_8"
+  },
+  "sonorous_autoplay_glitch": {
+    "sounds": [
+      "thesift:block/sonorous/autoplay_glitch"
+    ],
+    "subtitle": "subtitles.thesift.sonorous_autoplay_glitch"
+  },
+  "the_sift_portal_open": {
+    "sounds": [
+      "thesift:block/sift_portal/open"
+    ],
+    "subtitle": "subtitles.thesift.the_sift_portal_open"
+  },
+  "the_sift_portal_close": {
+    "sounds": [
+      "thesift:block/sift_portal/close"
+    ],
+    "subtitle": "subtitles.thesift.the_sift_portal_close"
+  },
+  "entity.rift.appear": {
+    "sounds": [
+      "thesift:entity/rift/appear"
+    ],
+    "subtitle": "subtitles.thesift.entity.rift.appear"
+  },
+  "entity.singer.sing": {
+    "sounds": [
+      "thesift:entity/singer/sing"
+    ],
+    "subtitle": "subtitles.thesift.entity.singer.sing"
+  },
+  "entity.singer.idle": {
+    "sounds": [
+      "thesift:entity/singer/idle_0",
+      "thesift:entity/singer/idle_1",
+      "thesift:entity/singer/idle_2"
+    ],
+    "subtitle": "subtitles.thesift.entity.singer.idle"
+  },
+  "entity.singer.hurt": {
+    "sounds": [
+      "thesift:entity/singer/hurt_0",
+      "thesift:entity/singer/hurt_1",
+      "thesift:entity/singer/hurt_2",
+      "thesift:entity/singer/hurt_3"
+    ],
+    "subtitle": "subtitles.thesift.entity.singer.hurt"
+  },
+  "entity.singer.death": {
+    "sounds": [
+      "thesift:entity/singer/death_0",
+      "thesift:entity/singer/death_1"
+    ],
+    "subtitle": "subtitles.thesift.entity.singer.death"
+  },
+  "entity.singer.happy": {
+    "sounds": [
+      "thesift:entity/singer/happy_0"
+    ],
+    "subtitle": "subtitles.thesift.entity.singer.happy"
+  },
+  "music_disc.rift": {
+    "sounds": [
+      {
+        "name": "thesift:music/fuzja_jadrowa_rift",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.thesift.music_disc.rift"
+  },
+  "entity.sifter.ambient": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.parrot.ambient",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.sifter.ambient"
+  },
+  "entity.sifter.hurt": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.parrot.hurt",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.sifter.hurt"
+  },
+  "entity.sifter.death": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.parrot.death",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.sifter.death"
+  },
+  "entity.sifter.step": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.parrot.step",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.sifter.step"
+  },
+  "entity.sifter.attack": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.evoker_fangs.attack",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.sifter.attack"
+  },
+  "entity.blub.idle_water": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.axolotl.idle_water",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.blub.idle_water"
+  },
+  "entity.blub.idle_air": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.axolotl.idle_air",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.blub.idle_air"
+  },
+  "entity.blub.hurt": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.axolotl.hurt",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.blub.hurt"
+  },
+  "entity.blub.death": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.axolotl.death",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.blub.death"
+  },
+  "entity.blub.swim": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.axolotl.swim",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.blub.swim"
+  },
+  "entity.blub.splash": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.axolotl.splash",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.blub.splash"
+  },
+  "entity.blub.attack": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.axolotl.attack",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.blub.attack"
+  },
+  "entity.singer.emerge": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.warden.emerge",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.singer.emerge"
+  },
+  "entity.singer.dig": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.warden.dig",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.singer.dig"
+  },
+  "entity.dark_sniffer.sniff": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.sniffer.sniffing",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.dark_sniffer.sniff"
+  },
+  "entity.echo_golem.spawn": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.copper_golem.spawn",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.echo_golem.spawn"
+  },
+  "entity.echo_golem.item_drop": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.copper_golem.item_drop",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.echo_golem.item_drop"
+  },
+  "entity.echo_golem.item_get": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.copper_golem.no_item_get",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.echo_golem.item_get"
+  },
+  "entity.echo_golem.hurt": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.copper_golem.hurt",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.echo_golem.hurt"
+  },
+  "entity.echo_golem.death": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.copper_golem.death",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.echo_golem.death"
+  },
+  "entity.echo_golem.step": {
+    "sounds": [
+      {
+        "name": "minecraft:entity.copper_golem.step",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.entity.echo_golem.step"
+  },
+  "block.sift_portal.ambient": {
+    "sounds": [
+      {
+        "name": "minecraft:block.portal.ambient",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.block.sift_portal.ambient"
+  },
+  "block.sift_portal.trigger": {
+    "sounds": [
+      {
+        "name": "minecraft:block.portal.trigger",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.block.sift_portal.trigger"
+  },
+  "block.dark_sniffer.bloom": {
+    "sounds": [
+      {
+        "name": "minecraft:block.sculk_catalyst.bloom",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.block.dark_sniffer.bloom"
+  },
+  "item.ichor_bottle.fill": {
+    "sounds": [
+      {
+        "name": "minecraft:item.bottle.fill",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.item.ichor_bottle.fill"
+  },
+  "item.ichor_bottle.empty": {
+    "sounds": [
+      {
+        "name": "minecraft:item.bottle.empty",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.item.ichor_bottle.empty"
+  },
+  "item.ichor_bucket.fill": {
+    "sounds": [
+      {
+        "name": "minecraft:item.bucket.fill",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.item.ichor_bucket.fill"
+  },
+  "item.ichor_bucket.empty": {
+    "sounds": [
+      {
+        "name": "minecraft:item.bucket.empty",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.item.ichor_bucket.empty"
+  },
+  "item.siftite_armor.equip": {
+    "sounds": [
+      {
+        "name": "minecraft:item.armor.equip_netherite",
+        "type": "event"
+      }
+    ],
+    "subtitle": "subtitles.thesift.item.siftite_armor.equip"
+  },
+  "music_disc.wellspring": {
+    "sounds": [
+      {
+        "name": "thesift:music/music_disc_wellspring",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.thesift.music_disc.wellspring"
+  },
+  "sift_intro": {
+    "sounds": [
+      {
+        "name": "thesift:ambient/sift_intro",
+        "stream": true
+      }
+    ],
+    "subtitle": "subtitles.thesift.sift_intro"
+  }
+}

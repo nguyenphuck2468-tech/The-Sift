@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/leaves",
+  "textures": {
+    "all": "thesift:block/overgrown_willow_foliage"
+  }
+}

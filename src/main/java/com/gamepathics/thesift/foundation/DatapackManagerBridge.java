@@ -75,7 +75,7 @@ public final class DatapackManagerBridge {
             // The hazard only exists when the dimension pack is actually ENABLED right now.
             // Checking mere discovery (findPack != null) refused to disable the pack even when
             // it was already switched off, making the toggle unusable.
-            Datapack dimensionPack = findPack(guardManager.getPacks(), "sift_dimension_datapack");
+            Datapack dimensionPack = findPack(guardManager.getPacks(), "dimension");
             boolean dimensionActive = dimensionPack != null && dimensionPack.isEnabled();
             if (dimensionActive) {
                 plugin.getLogger().warning("Refusing to disable the dimension datapack ('" + name
@@ -95,8 +95,7 @@ public final class DatapackManagerBridge {
 
     private static boolean isDimensionPackName(String name) {
         String needle = name.toLowerCase(Locale.ROOT);
-        return needle.equals("sift_dimension_datapack") || needle.equals("thesift:dimension")
-                || needle.equals("dimension");
+        return needle.equals("dimension") || needle.equals("sift_dimension_datapack") || needle.equals("thesift:dimension") || needle.endsWith("/dimension");
     }
 
     public String status() {
@@ -144,10 +143,14 @@ public final class DatapackManagerBridge {
         for (Datapack pack : packs) {
             if (pack.getName().toLowerCase(Locale.ROOT).equals(needle)) return pack;
         }
-        // Then namespace-qualified form ("thesift:<name>") and folder-name suffix "<name>.zip".
+        // Then namespace-qualified forms. Paper reports plugin-registered packs as
+        // "<PluginName>/<id>", e.g. "TheSift/dimension" for registrar id "dimension" - the
+        // colon form never matches, which starved /sift datapack enable/disable and the
+        // ore-feature gate of their lookups.
         for (Datapack pack : packs) {
             String lower = pack.getName().toLowerCase(Locale.ROOT);
-            if (lower.equals("thesift:" + needle) || lower.equals(needle + ".zip")) return pack;
+            if (lower.equals("thesift:" + needle) || lower.equals(needle + ".zip")
+                    || lower.equals("thesift/" + needle) || lower.endsWith("/" + needle)) return pack;
         }
         return null;
     }

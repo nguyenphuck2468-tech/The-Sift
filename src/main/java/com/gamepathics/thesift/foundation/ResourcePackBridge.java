@@ -38,6 +38,7 @@ public final class ResourcePackBridge {
     private static final List<String> PROVIDER_NAMES = List.of("resourcepackmanager", "multiverseresourcepacks");
 
     private final JavaPlugin plugin;
+    private BedrockBridge bedrockBridge;
     private final Path localZip;
     private final HttpClient httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
     private volatile String cachedSha1;
@@ -95,12 +96,20 @@ public final class ResourcePackBridge {
             sendTo(player, provider, force);
         }
         if (origin != null) {
-            origin.sendMessage("The Sift resource pack sent to " + Bukkit.getOnlinePlayers().size()
-                    + " player(s) via " + (provider == null ? "native Bukkit API" : provider.getName()) + ".");
+            origin.sendMessage(Messages.get("sift.resourcepack-broadcast",
+                    "The Sift resource pack sent to %count% player(s) via %provider%.")
+                    .replace("%count%", String.valueOf(Bukkit.getOnlinePlayers().size()))
+                    .replace("%provider%", provider == null ? "native Bukkit API" : provider.getName()));
         }
     }
 
     public void sendTo(Player player, boolean force) {
+        // Bedrock clients cannot use a Java resource pack; sending one is pure waste.
+        if (bedrockBridge == null) {
+            bedrockBridge = plugin instanceof TheSiftFoundationPlugin foundation
+                    ? foundation.bedrockAccess() : new BedrockBridge(plugin);
+        }
+        if (bedrockBridge.isBedrockPlayer(player.getUniqueId())) return;
         prepareIfNeeded();
         sendTo(player, findProviderPlugin(), force);
     }
@@ -304,7 +313,9 @@ public final class ResourcePackBridge {
 
     /** True when pack delivery can actually reach clients: a provider plugin, or an http(s) URL. */
     public boolean canDeliver() {
-        return findProviderPlugin() != null || packUrlOrNull() != null;
+        // Both paths need a URL: the provider bridge checks resource-pack.server-url before
+        // calling the provider API, so a provider plugin without a URL cannot actually deliver.
+        return packUrlOrNull() != null;
     }
 
     // ------------------------------------------------------------------ hashing / staging

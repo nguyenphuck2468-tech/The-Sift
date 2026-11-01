@@ -5,6 +5,9 @@
     },
     "age=1": {
       "model": "thesift:block/sculkflower_crop_stage1"
+    },
+    "age=2": {
+      "model": "thesift:block/sculkflower"
     }
   }
 }

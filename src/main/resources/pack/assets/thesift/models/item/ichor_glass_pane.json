@@ -1,3 +1,6 @@
 {
-  "parent": "minecraft:item/glass_pane"
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "thesift:block/ichor_glass"
+  }
 }
