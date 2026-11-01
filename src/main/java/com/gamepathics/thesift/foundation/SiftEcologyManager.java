@@ -970,6 +970,7 @@ public final class SiftEcologyManager implements Listener {
             sniffer.setCustomNameVisible(false);
             sniffer.setPersistent(true);
             sniffer.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING, "dark_sniffer");
+            wildlifeIndexRefile(sniffer);
         }
     }
 
@@ -985,12 +986,9 @@ public final class SiftEcologyManager implements Listener {
                 spawnSifterHerd(chunk, random);
                 return;
             }
-            // Honor the content.blub / content.sifter toggles from config.yml: species that are
-            // disabled must not spawn in the wild. Previously these keys were display-only.
-            if (!plugin.getConfig().getBoolean("content.blub", true)
-                    && biome.endsWith("carapace")) continue;
-            if (!plugin.getConfig().getBoolean("content.sifter", true)
-                    && biome.contains("sift_wastes")) continue;
+            // Honor the content.blub / content.sifter toggles: gate by mob id after selection,
+            // not by biome (blocking an entire biome's wildlife when one species is disabled
+            // was the old behavior).
             int x = chunk.getX() * 16 + 2 + random.nextInt(12);
             int z = chunk.getZ() * 16 + 2 + random.nextInt(12);
             int y = world.getHighestBlockYAt(x, z) + 1;
@@ -1041,6 +1039,8 @@ public final class SiftEcologyManager implements Listener {
             }
             String mobId = name.toLowerCase(Locale.ROOT).replace(' ', '_');
             if (!FAN_CORE_MOBS.contains(mobId) && !fanMobEnabled(mobId)) continue;
+            if ("blub".equals(mobId) && !plugin.getConfig().getBoolean("content.blub", true)) continue;
+            if ("sifter".equals(mobId) && !plugin.getConfig().getBoolean("content.sifter", true)) continue;
             Location spawnAt = new Location(world, x + .5, y, z + .5);
             Entity entity = mobFactory.spawn(mobId, spawnAt, type);
             if (entity == null) continue;
@@ -1180,6 +1180,7 @@ public final class SiftEcologyManager implements Listener {
             spawned.setVelocity(eye.getDirection().normalize().multiply(1.5));
             spawned.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING,
                     "thrown_ichor_snowball");
+            wildlifeIndexRefile(spawned);
         });
         // Vanilla consumes the snowball itself for a real snowball throw; this handler runs
         // before that for RIGHT_CLICK_AIR and alongside block placement for blocks, so the
@@ -1345,6 +1346,7 @@ public final class SiftEcologyManager implements Listener {
         entity.setCustomName((boss ? "§5§l" : "§d") + display);
         entity.setCustomNameVisible(true);
         entity.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING, id);
+        wildlifeIndexRefile(entity);
         if (entity instanceof LivingEntity living) {
             living.setRemoveWhenFarAway(false);
             if (boss) {

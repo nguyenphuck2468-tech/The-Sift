@@ -74,7 +74,7 @@ final class BlubController implements Listener {
             try {
                 owner = Bukkit.getPlayer(UUID.fromString(ownerId));
             } catch (IllegalArgumentException ignored) {
-                return;
+                continue;
             }
             if (owner == null || !owner.isOnline() || owner.getWorld() != sift) continue;
             // Defend: target the most recent hostile attacker of the owner within range,

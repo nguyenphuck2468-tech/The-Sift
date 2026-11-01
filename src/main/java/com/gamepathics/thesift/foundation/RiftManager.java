@@ -202,8 +202,14 @@ public final class RiftManager implements Listener {
                 int durationTicks = (entry.portal
                         ? Math.max(1, plugin.getConfig().getInt("rift.portal-active-seconds", 900))
                         : Math.max(1, plugin.getConfig().getInt("rift.active-duration-seconds", 300))) * 20;
-                int remainingTicks = Math.max(0, (int) Math.min(durationTicks,
-                        (entry.expiresAt - now) / 50L));
+                int remainingTicks;
+                if (entry.expiresAt < 0) {
+                    // Portal rift with gate: never expires on its own; restore with full duration.
+                    remainingTicks = durationTicks;
+                } else {
+                    remainingTicks = Math.max(0, (int) Math.min(durationTicks,
+                            (entry.expiresAt - now) / 50L));
+                }
                 rift.restoreActive(new Location(exitWorld, entry.ex + 0.5, entry.ey, entry.ez + 0.5),
                         remainingTicks);
                 rifts.put(rift.id, rift);

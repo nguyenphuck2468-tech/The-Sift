@@ -95,7 +95,7 @@ public final class DatapackManagerBridge {
 
     private static boolean isDimensionPackName(String name) {
         String needle = name.toLowerCase(Locale.ROOT);
-        return needle.equals("sift_dimension_datapack") || needle.equals("thesift:dimension")
+        return needle.equals("dimension") || needle.equals("sift_dimension_datapack") || needle.equals("thesift:dimension") || needle.endsWith("/dimension")
                 || needle.equals("dimension");
     }
 
