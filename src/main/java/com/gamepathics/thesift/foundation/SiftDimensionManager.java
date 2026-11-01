@@ -57,7 +57,7 @@ public final class SiftDimensionManager {
         player.getPersistentDataContainer().set(lastOverworldKey, PersistentDataType.INTEGER_ARRAY,
                 new int[]{from.getBlockX(), from.getBlockY(), from.getBlockZ()});
         player.teleport(spawn);
-        player.sendMessage("You have entered The Sift.");
+        player.sendMessage("§d" + Messages.get("dimension.entered", "You have entered The Sift."));
         return true;
     }
 
@@ -67,7 +67,7 @@ public final class SiftDimensionManager {
                 .findFirst()
                 .orElse(null);
         if (overworld == null) {
-            player.sendMessage("The Overworld is unavailable.");
+            player.sendMessage("§d" + Messages.get("dimension.no-overworld", "The Overworld is unavailable."));
             return false;
         }
 
@@ -87,7 +87,7 @@ public final class SiftDimensionManager {
             }
         }
         player.teleport(spawn);
-        player.sendMessage("You have returned to the Overworld.");
+        player.sendMessage("§d" + Messages.get("dimension.returned", "You have returned to the Overworld."));
         return true;
     }
 }

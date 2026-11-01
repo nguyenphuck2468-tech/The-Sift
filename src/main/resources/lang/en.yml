@@ -27,6 +27,10 @@ doctor:
   new-config: "The Sift config is newer than this build; reload was rejected."
 spear:
   hint: "Siftite Spear"
+dimension:
+  entered: "You have entered The Sift."
+  returned: "You have returned to the Overworld."
+  no-overworld: "The Overworld is unavailable."
 world:
   first-entry: "The Sift hums around you for the first time."
 tide:

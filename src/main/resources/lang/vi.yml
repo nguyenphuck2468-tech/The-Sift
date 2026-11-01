@@ -27,6 +27,10 @@ doctor:
   new-config: "Cấu hình mới hơn bản build này; đã từ chối reload."
 spear:
   hint: "Giáo Siftite"
+dimension:
+  entered: "Bạn đã bước vào The Sift."
+  returned: "Bạn đã trở về Overworld."
+  no-overworld: "Overworld không khả dụng."
 world:
   first-entry: "The Sift ngân vang quanh bạn lần đầu tiên."
 tide:
