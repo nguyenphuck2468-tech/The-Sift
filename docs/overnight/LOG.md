@@ -16,3 +16,4 @@
 | P6.1 | Dimension 1:1 enter/return | 1e03770 | ./gradlew build | BUILD SUCCESSFUL |
 | P6.2 | spec fanmade metadata + readiness filter | ef68411 | ./gradlew build | BUILD SUCCESSFUL |
 | P6.3 | dimension i18n | b8b41e9 | ./gradlew build | BUILD SUCCESSFUL |
+| P4.1 | WildlifeIndex extraction + 5 unit tests | a4e8ead | ./gradlew build | BUILD SUCCESSFUL |
