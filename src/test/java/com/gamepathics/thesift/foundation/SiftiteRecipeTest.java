@@ -59,7 +59,7 @@ class SiftiteRecipeTest {
     void strictModeRefusesVanillaTaggedItemWhenProviderIdIsMissing() {
         plugin.getConfig().set("providers.strict", true);
         plugin.getConfig().set("integrations.items.provider", "missing-provider");
-        assertNull(content.item(Material.AMETHYST_SHARD, "charoite", "Charoite"));
+        assertNull(content.item(Material.LAPIS_LAZULI, "charoite", "Charoite"));
     }
 
     @Test

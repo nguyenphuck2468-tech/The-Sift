@@ -49,7 +49,7 @@ class SiftAdvancementManagerTest {
     void pickingUpCharoiteRequestsKindaPurpleish() {
         var player = server.addPlayer();
         Item charoite = player.getWorld().dropItem(player.getLocation(),
-                new SiftiteContent(plugin).item(Material.AMETHYST_SHARD, "charoite", "Charoite"));
+                new SiftiteContent(plugin).item(Material.LAPIS_LAZULI, "charoite", "Charoite"));
         EntityPickupItemEvent event = new EntityPickupItemEvent(player, charoite, 0);
         NamespacedKey advancementKey = new NamespacedKey(plugin, "kinda_purpleish");
 

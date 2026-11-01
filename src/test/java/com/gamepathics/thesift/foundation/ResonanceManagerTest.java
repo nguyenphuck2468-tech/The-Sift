@@ -68,7 +68,7 @@ class ResonanceManagerTest {
     void taggedCharoiteInPersonalInventoryImmunizesFromDamageAndSlowness() throws Exception {
         Player player = playerNearSinger();
         player.getInventory().setItem(0,
-                new SiftiteContent(plugin).item(Material.AMETHYST_SHARD, "charoite", "Charoite"));
+                new SiftiteContent(plugin).item(Material.LAPIS_LAZULI, "charoite", "Charoite"));
 
         pulse();
 
@@ -77,9 +77,9 @@ class ResonanceManagerTest {
     }
 
     @Test
-    void untaggedAmethystShardDoesNotCountAsCharoite() throws Exception {
+    void untaggedLapisLazuliDoesNotCountAsCharoite() throws Exception {
         Player player = playerNearSinger();
-        player.getInventory().setItem(0, new org.bukkit.inventory.ItemStack(Material.AMETHYST_SHARD));
+        player.getInventory().setItem(0, new org.bukkit.inventory.ItemStack(Material.LAPIS_LAZULI));
 
         pulse();
 

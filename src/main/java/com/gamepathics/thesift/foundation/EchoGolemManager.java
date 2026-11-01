@@ -446,9 +446,9 @@ public final class EchoGolemManager implements Listener {
                 for (int dz = -radius; dz <= radius; dz++) {
                     Block block = world.getBlockAt(
                             center.getBlockX() + dx, center.getBlockY() + dy, center.getBlockZ() + dz);
-                    // The Soul Block stand-in is soul sand; generated Soul Canyons are made of it.
+                    // The Soul Block stand-in is soul soil (mod parity); generated Soul Canyons are made of it.
                     // A provider may place a custom block instead — check via the block bridge.
-                    if (block.getType() == Material.SOUL_SAND
+                    if (block.getType() == Material.SOUL_SOIL
                             || blockBridge.isBlock("soul_block", block)) return block;
                 }
             }

@@ -224,7 +224,7 @@ final class AncientCityPortal implements Listener {
         boolean placed = blockBridge.place("sonorous_deepslate", block.getLocation());
         if (!placed) {
             if (plugin.getConfig().getBoolean("providers.strict", true)) return false;
-            block.setType(Material.DEEPSLATE, false);
+            block.setType(Material.REINFORCED_DEEPSLATE, false);
         }
         registry.mark(block);
         return true;

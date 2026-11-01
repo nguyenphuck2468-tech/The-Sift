@@ -3,7 +3,7 @@
   "items": [
     {
       "id": "charoite",
-      "material": "AMETHYST_SHARD",
+      "material": "LAPIS_LAZULI",
       "name": "Charoite",
       "model": null
     },
@@ -419,7 +419,7 @@
     },
     {
       "id": "charoite_ore",
-      "material": "AMETHYST_BLOCK",
+      "material": "DEEPSLATE_LAPIS_ORE",
       "name": "Charoite Ore",
       "model": "thesift:item/charoite_ore"
     },
@@ -455,13 +455,13 @@
     },
     {
       "id": "soul_block",
-      "material": "SOUL_SAND",
+      "material": "SOUL_SOIL",
       "name": "Soul Block",
       "model": "thesift:item/soul_block"
     },
     {
       "id": "sonorous_deepslate",
-      "material": "DEEPSLATE",
+      "material": "REINFORCED_DEEPSLATE",
       "name": "Sonorous Deepslate",
       "model": "thesift:item/siftslate"
     },
@@ -473,7 +473,7 @@
     },
     {
       "id": "sculkflower",
-      "material": "POPPY",
+      "material": "CACTUS_FLOWER",
       "name": "Sculkflower",
       "model": "thesift:item/sculkflower"
     },
@@ -497,13 +497,13 @@
     },
     {
       "id": "overgrown_willow_log",
-      "material": "CHERRY_LOG",
+      "material": "OAK_LOG",
       "name": "Overgrown Willow Log",
       "model": null
     },
     {
       "id": "overgrown_willow_wood",
-      "material": "CHERRY_WOOD",
+      "material": "OAK_WOOD",
       "name": "Overgrown Willow Wood",
       "model": null
     },
@@ -521,91 +521,91 @@
     },
     {
       "id": "overgrown_willow_planks",
-      "material": "CHERRY_PLANKS",
+      "material": "OAK_PLANKS",
       "name": "Overgrown Willow Planks",
       "model": null
     },
     {
       "id": "overgrown_willow_stairs",
-      "material": "CHERRY_STAIRS",
+      "material": "OAK_STAIRS",
       "name": "Overgrown Willow Stairs",
       "model": null
     },
     {
       "id": "overgrown_willow_slab",
-      "material": "CHERRY_SLAB",
+      "material": "OAK_SLAB",
       "name": "Overgrown Willow Slab",
       "model": null
     },
     {
       "id": "overgrown_willow_fence",
-      "material": "CHERRY_FENCE",
+      "material": "OAK_FENCE",
       "name": "Overgrown Willow Fence",
       "model": null
     },
     {
       "id": "overgrown_willow_fence_gate",
-      "material": "CHERRY_FENCE_GATE",
+      "material": "OAK_FENCE_GATE",
       "name": "Overgrown Willow Fence Gate",
       "model": null
     },
     {
       "id": "overgrown_willow_door",
-      "material": "CHERRY_DOOR",
+      "material": "OAK_DOOR",
       "name": "Overgrown Willow Door",
       "model": null
     },
     {
       "id": "overgrown_willow_trapdoor",
-      "material": "CHERRY_TRAPDOOR",
+      "material": "OAK_TRAPDOOR",
       "name": "Overgrown Willow Trapdoor",
       "model": null
     },
     {
       "id": "overgrown_willow_pressure_plate",
-      "material": "CHERRY_PRESSURE_PLATE",
+      "material": "OAK_PRESSURE_PLATE",
       "name": "Overgrown Willow Pressure Plate",
       "model": null
     },
     {
       "id": "overgrown_willow_button",
-      "material": "CHERRY_BUTTON",
+      "material": "OAK_BUTTON",
       "name": "Overgrown Willow Button",
       "model": null
     },
     {
       "id": "overgrown_willow_sign",
-      "material": "CHERRY_SIGN",
+      "material": "OAK_SIGN",
       "name": "Overgrown Willow Sign",
       "model": null
     },
     {
       "id": "overgrown_willow_hanging_sign",
-      "material": "CHERRY_HANGING_SIGN",
+      "material": "OAK_HANGING_SIGN",
       "name": "Overgrown Willow Hanging Sign",
       "model": null
     },
     {
       "id": "overgrown_willow_boat",
-      "material": "CHERRY_BOAT",
+      "material": "OAK_BOAT",
       "name": "Overgrown Willow Boat",
       "model": null
     },
     {
       "id": "overgrown_willow_chest_boat",
-      "material": "CHERRY_CHEST_BOAT",
+      "material": "OAK_CHEST_BOAT",
       "name": "Overgrown Willow Chest Boat",
       "model": null
     },
     {
       "id": "overgrown_willow_foliage",
-      "material": "CHERRY_LEAVES",
+      "material": "OAK_LEAVES",
       "name": "Overgrown Willow Foliage",
       "model": null
     },
     {
       "id": "overgrown_willow_sapling",
-      "material": "CHERRY_SAPLING",
+      "material": "OAK_SAPLING",
       "name": "Overgrown Willow Sapling",
       "model": null
     },
@@ -689,7 +689,7 @@
     },
     {
       "id": "overgrown_willow_shelf",
-      "material": "CHERRY_SHELF",
+      "material": "OAK_SHELF",
       "name": "Overgrown Willow Shelf",
       "model": null
     },
@@ -713,13 +713,13 @@
     },
     {
       "id": "raw_sifter_meat",
-      "material": "BEEF",
+      "material": "PORKCHOP",
       "name": "Raw Sifter Meat",
       "model": "minecraft:item/beef"
     },
     {
       "id": "cooked_sifter_meat",
-      "material": "COOKED_BEEF",
+      "material": "COOKED_PORKCHOP",
       "name": "Cooked Sifter Meat",
       "model": "minecraft:item/cooked_beef"
     },
@@ -930,12 +930,12 @@
   "blocks": [
     {
       "id": "charoite_ore",
-      "material": "PAPER",
+      "material": "DEEPSLATE_LAPIS_ORE",
       "model": "block/charoite_ore"
     },
     {
       "id": "siftite_ore",
-      "material": "PAPER",
+      "material": "DEEPSLATE_DIAMOND_ORE",
       "model": "block/siftite_ore"
     },
     {
@@ -970,7 +970,7 @@
     },
     {
       "id": "soul_block",
-      "material": "PAPER",
+      "material": "SOUL_SOIL",
       "model": "block/soul_block"
     },
     {
@@ -980,12 +980,12 @@
     },
     {
       "id": "sonorous_deepslate",
-      "material": "PAPER",
+      "material": "REINFORCED_DEEPSLATE",
       "model": "block/siftslate"
     },
     {
       "id": "sculkflower",
-      "material": "PAPER",
+      "material": "CACTUS_FLOWER",
       "model": "block/sculkflower"
     },
     {

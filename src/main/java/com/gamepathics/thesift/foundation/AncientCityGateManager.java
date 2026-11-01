@@ -215,7 +215,7 @@ final class AncientCityGateManager implements Listener {
     private boolean placeSonorous(Block block) {
         if (readiness.strict()) return blocks.place("sonorous_deepslate", block.getLocation());
         if (blocks.place("sonorous_deepslate", block.getLocation())) return true;
-        block.setType(Material.DEEPSLATE, false);
+        block.setType(Material.REINFORCED_DEEPSLATE, false);
         return true;
     }
 

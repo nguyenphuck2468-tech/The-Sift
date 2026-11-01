@@ -65,7 +65,7 @@ public final class SoulBlockListener implements Listener {
     public void onBreak(BlockBreakEvent event) {
         if (!plugin.getConfig().getBoolean("content.soul_block", true)) return;
         Block block = event.getBlock();
-        if (!isMarked(block) || block.getType() != Material.SOUL_SAND
+        if (!isMarked(block) || block.getType() != Material.SOUL_SOIL
                 && !blockBridge.isBlock(ID, block)) return;
         ItemStack drop = content.forId(ID);
         if (drop == null) {

@@ -779,7 +779,7 @@ public final class SiftEcologyManager implements Listener {
             Block ore = world.getBlockAt(x + random.nextInt(3) - 1,
                     y + random.nextInt(3) - 1, z + random.nextInt(3) - 1);
             if (!hostRocks.contains(ore.getType())) continue;
-            placeBlock(ore, "charoite_ore", Material.AMETHYST_BLOCK);
+            placeBlock(ore, "charoite_ore", Material.DEEPSLATE_LAPIS_ORE);
             SiftiteListener.markGeneratedOre(plugin, ore);
         }
     }
@@ -867,7 +867,7 @@ public final class SiftEcologyManager implements Listener {
                     y + random.nextInt(3) - 1, z + random.nextInt(3) - 1);
             if (ore.getType() != Material.STONE && ore.getType() != Material.DEEPSLATE
                     && ore.getType() != Material.TUFF) continue;
-            placeBlock(ore, "siftite_ore", Material.ANCIENT_DEBRIS);
+            placeBlock(ore, "siftite_ore", Material.DEEPSLATE_DIAMOND_ORE);
             SiftiteListener.markGeneratedSiftiteOre(plugin, ore);
         }
     }
@@ -896,7 +896,7 @@ public final class SiftEcologyManager implements Listener {
                 for (int dz = -1; dz <= 1; dz++) {
                     if (random.nextInt(4) == 0) continue;
                     Block soul = world.getBlockAt(soulX + dx, soulY, centerZ + dz);
-                    placeBlock(soul, "soul_block", Material.SOUL_SAND);
+                    placeBlock(soul, "soul_block", Material.SOUL_SOIL);
                     SoulBlockListener.markGenerated(plugin, soul);
                 }
             }
@@ -1259,7 +1259,7 @@ public final class SiftEcologyManager implements Listener {
         }
         // Reference-mod parity (Sifter): drops raw_sifter_meat, which smelts to cooked_sifter_meat.
         if ("sifter".equals(id)) {
-            ItemStack raw = content.item(Material.BEEF, "raw_sifter_meat", "Raw Sifter Meat");
+            ItemStack raw = content.item(Material.PORKCHOP, "raw_sifter_meat", "Raw Sifter Meat");
             if (raw != null) event.getDrops().add(raw);
         }
         // Blub tamed by the owner who killed it keeps nothing; wild/tamed Blub drops its own meat
@@ -1277,8 +1277,8 @@ public final class SiftEcologyManager implements Listener {
         // output; this listener is only the belt-and-braces path for strict-provider setups.
         if (plugin.getConfig().getBoolean("recipes.enabled", true)) return;
         ItemStack source = event.getSource();
-        if (source.getType() == Material.BEEF && content.is(source, "raw_sifter_meat")) {
-            ItemStack cooked = content.item(Material.COOKED_BEEF, "cooked_sifter_meat", "Cooked Sifter Meat");
+        if (source.getType() == Material.PORKCHOP && content.is(source, "raw_sifter_meat")) {
+            ItemStack cooked = content.item(Material.COOKED_PORKCHOP, "cooked_sifter_meat", "Cooked Sifter Meat");
             if (cooked != null) event.setResult(cooked);
         }
     }

@@ -104,7 +104,7 @@ public final class SiftiteListener implements Listener {
     @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
     public void onOreBreak(BlockBreakEvent event) {
         Block block = event.getBlock();
-        Material siftiteOreMaterial = Material.matchMaterial(plugin.getConfig().getString("siftite.ore-material", "ANCIENT_DEBRIS"));
+        Material siftiteOreMaterial = Material.matchMaterial(plugin.getConfig().getString("siftite.ore-material", "DEEPSLATE_DIAMOND_ORE"));
         if (plugin.getConfig().getBoolean("content.siftite", true)
                 && plugin.getConfig().getBoolean("content.siftite_ore", true)
                 && plugin.getConfig().getBoolean("content.siftite_nugget", true)

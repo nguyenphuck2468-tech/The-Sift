@@ -143,9 +143,9 @@ ichor:
 charoite:
   enabled: true
   world: thesift:the_sift
-  # Chưa triển khai: item Charoite hiện dùng vật liệu fallback cố định.
+  # Carrier mod-parity: Charoite = Lapis Lazuli, quặng = Deepslate Lapis Ore (mod dùng thuộc tính Deepslate Lapis Ore).
   material: LAPIS_LAZULI
-  ore-material: AMETHYST_BLOCK
+  ore-material: DEEPSLATE_LAPIS_ORE
   drop-min: 1
   drop-max: 2
 
@@ -153,7 +153,8 @@ siftite:
   enabled: true
   # Chưa triển khai: recipe đang dùng vật liệu vanilla cố định.
   ingot-material: NETHERITE_INGOT
-  ore-material: ANCIENT_DEBRIS
+  # Carrier mod-parity: quặng Siftite dùng thuộc tính Deepslate Diamond Ore (mod), không còn Ancient Debris.
+  ore-material: DEEPSLATE_DIAMOND_ORE
   # Chưa triển khai: recipe đang dùng vật liệu vanilla cố định.
   nugget-material: IRON_NUGGET
   # Chưa triển khai: recipe đang dùng vật liệu vanilla cố định.

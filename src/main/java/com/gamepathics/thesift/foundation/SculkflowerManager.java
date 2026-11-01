@@ -180,9 +180,9 @@ final class SculkflowerManager implements Listener {
     }
 
     private ItemStack flower() {
-        ItemStack stack = content.item(Material.POPPY, FLOWER_ID, "Sculkflower");
+        ItemStack stack = content.item(Material.CACTUS_FLOWER, FLOWER_ID, "Sculkflower");
         if (stack != null || plugin.getConfig().getBoolean("providers.strict", true)) return stack;
-        return new ItemStack(Material.POPPY);
+        return new ItemStack(Material.CACTUS_FLOWER);
     }
 
     private void drop(Block block, ItemStack stack) {
