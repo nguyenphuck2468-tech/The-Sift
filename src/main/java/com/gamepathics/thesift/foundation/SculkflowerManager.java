@@ -35,13 +35,15 @@ final class SculkflowerManager implements Listener {
     private final ExternalBlockBridge blocks;
     private final SiftiteContent content;
     private final NamespacedKey contentKey;
+    private final NamespacedKey cropsKey;
 
     SculkflowerManager(JavaPlugin plugin, SiftiteContent content) {
         this.plugin = plugin;
         this.blocks = new ExternalBlockBridge(plugin);
         this.content = content;
         this.contentKey = new NamespacedKey(plugin, "content");
-        Bukkit.getScheduler().runTaskTimer(plugin, this::tickGrowth, 40L, GROWTH_INTERVAL_TICKS);
+        this.cropsKey = new NamespacedKey(plugin, "sculkflower_crops");
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> tickGrowth(), 40L, GROWTH_INTERVAL_TICKS);
     }
 
     /** Register the reference Sculkflower -> Light Blue Dye recipe with provider-backed item matching. */
@@ -78,6 +80,7 @@ final class SculkflowerManager implements Listener {
         if (!target.getType().isAir()) return;
         if (!blocks.place(CROP_STAGE0, target.getLocation())) return;
 
+        registerCrop(target);
         event.setCancelled(true);
         if (player.getGameMode() != GameMode.CREATIVE) held.setAmount(held.getAmount() - 1);
         // Reference-mod parity (planting_the_dark): the advancement fires specifically when
@@ -110,6 +113,7 @@ final class SculkflowerManager implements Listener {
         int age = cropAge(event.getBlock());
         if (age < 0) {
             if (!blocks.isBlock(FLOWER_ID, event.getBlock())) return;
+            unregisterCrop(event.getBlock());
             event.setDropItems(false);
             // The mature plant is the final crop state in the reference mod;
             // breaking it drops the flower itself, not an extra seed.
@@ -117,42 +121,89 @@ final class SculkflowerManager implements Listener {
             return;
         }
 
+        unregisterCrop(event.getBlock());
         event.setDropItems(false);
         drop(event.getBlock(), seed());
     }
 
+    /**
+     * Grows registered crops. Review P2: the old sampling swept every loaded chunk's full
+     * world height eight times per tick to stumble over crop blocks. Crops are now recorded
+     * in their chunk's PDC when planted, so the tick reads one PDC array per chunk and only
+     * visits blocks that are actually crops; stale entries (crop removed by explosion or a
+     * piston) are culled when sampled.
+     */
     private void tickGrowth() {
         World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
         if (sift == null) return;
+        tickGrowth(sift);
+    }
+
+    /** Package-private overload so tests can drive a MockBukkit world (dimension keys are unmockable). */
+    void tickGrowth(World sift) {
         for (org.bukkit.Chunk chunk : sift.getLoadedChunks()) {
-            // Sample columns, not random Y coordinates: choosing a uniform Y across a
-            // modern world's full height almost never lands on a crop block.
+            long[] crops = chunk.getPersistentDataContainer().get(cropsKey, PersistentDataType.LONG_ARRAY);
+            if (crops == null || crops.length == 0) continue;
             for (int attempt = 0; attempt < 8; attempt++) {
-                int x = ThreadLocalRandom.current().nextInt(16);
-                int z = ThreadLocalRandom.current().nextInt(16);
-                Block crop = null;
-                int age = -1;
-                for (int y = sift.getMaxHeight() - 1; y >= sift.getMinHeight(); y--) {
-                    Block candidate = chunk.getBlock(x, y, z);
-                    int candidateAge = cropAge(candidate);
-                    if (candidateAge >= 0) {
-                        crop = candidate;
-                        age = candidateAge;
-                        break;
-                    }
+                long packed = crops[ThreadLocalRandom.current().nextInt(crops.length)];
+                Block crop = chunk.getBlock((int) ((packed >> 4) & 0xF), (int) (packed >> 8),
+                        (int) (packed & 0xF));
+                int age = cropAge(crop);
+                if (age < 0) {
+                    // The block is gone or no longer a crop: drop the stale entry.
+                    unregisterCrop(crop);
+                    continue;
                 }
-                if (crop == null || ThreadLocalRandom.current().nextInt(3) != 0) continue;
+                if (ThreadLocalRandom.current().nextInt(3) != 0) continue;
                 grow(crop, age + 1);
             }
         }
     }
 
-    private boolean grow(Block block, int nextAge) {
+    boolean grow(Block block, int nextAge) {
         String id = nextAge >= 2 ? FLOWER_ID : CROP_STAGE1;
-        return blocks.place(id, block.getLocation());
+        boolean placed = blocks.place(id, block.getLocation());
+        if (placed && nextAge >= 2) {
+            // The mature flower no longer grows: remove it from the crop registry.
+            unregisterCrop(block);
+        }
+        return placed;
     }
 
-    private int cropAge(Block block) {
+    /** Chunk-local crop registry entry: (y &lt;&lt; 8) | (localX &lt;&lt; 4) | localZ. */
+    private static long packCrop(Block block) {
+        return ((long) block.getY() << 8) | ((block.getX() & 0xF) << 4) | (block.getZ() & 0xF);
+    }
+
+    void registerCrop(Block block) {
+        org.bukkit.Chunk chunk = block.getChunk();
+        long packed = packCrop(block);
+        long[] crops = chunk.getPersistentDataContainer().get(cropsKey, PersistentDataType.LONG_ARRAY);
+        if (crops != null) {
+            for (long existing : crops) if (existing == packed) return;
+        }
+        long[] next = crops == null ? new long[]{packed}
+                : java.util.Arrays.copyOf(crops, crops.length + 1);
+        next[next.length - 1] = packed;
+        chunk.getPersistentDataContainer().set(cropsKey, PersistentDataType.LONG_ARRAY, next);
+    }
+
+    void unregisterCrop(Block block) {
+        org.bukkit.Chunk chunk = block.getChunk();
+        long[] crops = chunk.getPersistentDataContainer().get(cropsKey, PersistentDataType.LONG_ARRAY);
+        if (crops == null) return;
+        long packed = packCrop(block);
+        int index = -1;
+        for (int i = 0; i < crops.length; i++) if (crops[i] == packed) { index = i; break; }
+        if (index < 0) return;
+        long[] next = new long[crops.length - 1];
+        System.arraycopy(crops, 0, next, 0, index);
+        System.arraycopy(crops, index + 1, next, index, crops.length - index - 1);
+        if (next.length == 0) chunk.getPersistentDataContainer().remove(cropsKey);
+        else chunk.getPersistentDataContainer().set(cropsKey, PersistentDataType.LONG_ARRAY, next);
+    }
+
+    int cropAge(Block block) {
         if (block == null) return -1;
         if (blocks.isBlock(CROP_STAGE0, block)) return 0;
         if (blocks.isBlock(CROP_STAGE1, block)) return 1;
