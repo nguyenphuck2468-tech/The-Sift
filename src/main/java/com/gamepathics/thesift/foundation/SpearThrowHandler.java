@@ -12,40 +12,58 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.util.function.BiFunction;
+
 /**
- * Owns the Siftite Spear throw lifecycle so the durability economy is testable:
+ * Owns the Siftite Spear throw lifecycle so the durability economy is testable.
  *
- * <ul>
- *   <li>throwing costs exactly one durability point from the held spear (creative players keep
- *       their stack);</li>
- *   <li>the projectile carries the ALREADY-DAMAGED copy - cloning before the damage turned every
- *       throw into a free full-durability spear when the copy landed;</li>
- *   <li>the copy drops exactly once, whether the spear strikes an entity, a block, or simply
- *       despawns (a PDC flag guards against the double drop);</li>
- *   <li>a spear that breaks on throw drops nothing.</li>
- * </ul>
+ * <p>The projectile spawning is abstracted behind {@link ProjectileSpawner} so tests can
+ * verify durability, creative mode and drop logic without needing real entity spawning.
  */
 final class SpearThrowHandler {
     private final NamespacedKey spearTagKey;
     private final NamespacedKey thrownTagKey;
     private final NamespacedKey droppedKey;
     private final NamespacedKey lastThrowKey;
+    private final JavaPlugin plugin;
+
+    /** Creates the projectile entity; injectable for testing. */
+    interface ProjectileSpawner {
+        Snowball spawn(Location eye, ItemStack item, Player shooter, double speed, boolean broke);
+    }
+
+    private ProjectileSpawner spawner;
 
     SpearThrowHandler(JavaPlugin plugin) {
+        this.plugin = plugin;
         this.spearTagKey = new NamespacedKey(plugin, "content");
         this.thrownTagKey = new NamespacedKey(plugin, "sift_creature");
         this.droppedKey = new NamespacedKey(plugin, "spear_copy_dropped");
         this.lastThrowKey = new NamespacedKey(plugin, "spear_last_throw");
+        this.spawner = this::defaultSpawn;
     }
 
-    /** True when the held stack is a tagged Siftite Spear. */
+    void setSpawner(ProjectileSpawner spawner) {
+        this.spawner = spawner;
+    }
+
+    private Snowball defaultSpawn(Location eye, ItemStack item, Player shooter, double speed, boolean broke) {
+        return eye.getWorld().spawn(eye, Snowball.class, spawned -> {
+            spawned.setItem(item);
+            spawned.setShooter(shooter);
+            spawned.setVelocity(eye.getDirection().normalize().multiply(speed));
+            spawned.getPersistentDataContainer().set(thrownTagKey, PersistentDataType.STRING,
+                    "thrown_siftite_spear");
+            if (broke) spawned.getPersistentDataContainer().set(droppedKey, PersistentDataType.BYTE, (byte) 1);
+        });
+    }
+
     boolean isSpear(ItemStack item) {
         return item != null && !item.getType().isAir() && item.hasItemMeta()
                 && "siftite_spear".equals(item.getItemMeta().getPersistentDataContainer()
                         .get(spearTagKey, PersistentDataType.STRING));
     }
 
-    /** True when this player may throw again (simple 500 ms double-fire guard). */
     boolean offCooldown(Player player) {
         long now = System.currentTimeMillis();
         Long last = player.getPersistentDataContainer().get(lastThrowKey, PersistentDataType.LONG);
@@ -55,44 +73,43 @@ final class SpearThrowHandler {
     }
 
     /**
-     * Spawns the thrown spear and applies the throw cost. Returns the projectile or null when the
-     * throw must not happen.
+     * Computes the throw cost: returns the damaged item for the hand (null if broke) and
+     * the item for the projectile. Static and testable without entities.
      */
-    Snowball throwSpear(JavaPlugin plugin, Player player, ItemStack held, EquipmentSlot hand) {
-        if (!offCooldown(player)) return null;
-        Location eye = player.getEyeLocation();
-        boolean creative = player.getGameMode() == GameMode.CREATIVE;
-        // The projectile must carry the durability-damaged result of damage() - the API may
-        // return a different instance, so the return value is authoritative for both the
-        // projectile and the hand slot.
-        ItemStack projectileItem = held.clone();
-        ItemStack damaged = held.clone();
-        boolean broke = false;
-        if (!creative) {
-            damaged = held.damage(1, player);
-            broke = damaged == null || damaged.getType().isAir();
-            if (!broke) projectileItem = damaged.clone();
-            player.getInventory().setItem(hand, broke ? null : damaged);
+    static ItemStack[] computeThrowCost(ItemStack held, boolean creative) {
+        if (creative) return new ItemStack[]{held.clone(), held.clone()};
+        ItemStack handItem = held.clone();
+        var meta = handItem.getItemMeta();
+        if (meta instanceof org.bukkit.inventory.meta.Damageable damageable) {
+            int newDamage = damageable.getDamage() + 1;
+            if (newDamage >= held.getType().getMaxDurability()) {
+                return new ItemStack[]{null, null};
+            }
+            damageable.setDamage(newDamage);
+            handItem.setItemMeta(meta);
         }
-        final boolean brokeOnThrow = broke;
-        final ItemStack finalProjectileItem = projectileItem;
-        double reach = Math.max(1.0, plugin.getConfig().getDouble("siftite.spear-reach", 4.5));
-        double speed = Math.max(0.8, Math.min(2.0, reach / 2.5));
-        Snowball projectile = eye.getWorld().spawn(eye, Snowball.class, spawned -> {
-            spawned.setItem(finalProjectileItem);
-            spawned.setShooter(player);
-            spawned.setVelocity(eye.getDirection().normalize().multiply(speed));
-            spawned.getPersistentDataContainer().set(thrownTagKey, PersistentDataType.STRING,
-                    "thrown_siftite_spear");
-            if (brokeOnThrow) spawned.getPersistentDataContainer().set(droppedKey, PersistentDataType.BYTE, (byte) 1);
-        });
-        return projectile;
+        ItemStack projectileItem = handItem.clone();
+        return new ItemStack[]{handItem, projectileItem};
     }
 
-    /**
-     * Drops the thrown copy exactly once at the projectile's position. Returns true when a drop
-     * happened. A spear that broke on throw never drops.
-     */
+    Snowball throwSpear(JavaPlugin plugin, Player player, ItemStack held, EquipmentSlot hand) {
+        if (!offCooldown(player)) return null;
+        boolean creative = player.getGameMode() == GameMode.CREATIVE;
+        ItemStack[] cost = computeThrowCost(held, creative);
+        ItemStack handItem = cost[0];
+        ItemStack projectileItem = cost[1];
+        boolean broke = handItem == null;
+
+        if (!creative) {
+            player.getInventory().setItem(hand, handItem);
+        }
+
+        Location eye = player.getEyeLocation();
+        double reach = Math.max(1.0, plugin.getConfig().getDouble("siftite.spear-reach", 4.5));
+        double speed = Math.max(0.8, Math.min(2.0, reach / 2.5));
+        return spawner.spawn(eye, projectileItem, player, speed, broke);
+    }
+
     boolean dropThrownCopy(JavaPlugin plugin, Snowball projectile) {
         var pdc = projectile.getPersistentDataContainer();
         if (pdc.getOrDefault(droppedKey, PersistentDataType.BYTE, (byte) 0) == (byte) 1) return false;
@@ -103,7 +120,6 @@ final class SpearThrowHandler {
         return true;
     }
 
-    /** Applies the impact damage and returns true when damage was dealt. */
     boolean damageTarget(JavaPlugin plugin, LivingEntity target, Player shooter) {
         target.damage(plugin.getConfig().getDouble("siftite.spear-damage", 6.0), shooter);
         return true;
