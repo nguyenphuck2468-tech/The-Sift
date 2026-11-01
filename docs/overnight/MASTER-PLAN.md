@@ -5,7 +5,7 @@ Branch: `overnight/hardening` · Base: `main` @ `adc1fc0` · PR: #12 (Draft)
 ## E1 — SpearThrowHandler test SKIP resolution
 - ID: E1
 - Priority: P1
-- Status: OPEN
+- Status: FIXED
 - Cause: MockBukkit doesn't support `World.spawn(Snowball.class)` — 4/6 tests skip
 - Fix: Extract projectile spawning into injectable `ProjectileFactory` interface
 - Test: All 6 tests pass (0 skip)

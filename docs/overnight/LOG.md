@@ -30,3 +30,4 @@
 | P1 | EchoGolem creative + the_sifter classification | df037e5 | ./gradlew build | BUILD SUCCESSFUL |
 | P5.2 | gate+rift i18n | 5404024 | ./gradlew build | BUILD SUCCESSFUL |
 | P8.2 | SpearThrowHandlerTest (2 pass, 4 skip MockBukkit spawn) | f30771d | ./gradlew build | BUILD SUCCESSFUL |
+| E1 | SpearThrowHandler full coverage, 0 skip | 1167931 | ./gradlew build | 6/6 PASS |
