@@ -1,6 +1,6 @@
 # Đánh giá trung thực The Sift — dựa trên code, không dựa trên hy vọng
 
-Ngày: 2026-11-01 · Branch: `overnight/hardening` @ `025f03b` · So với mod `Arta48/Mielons-The-Sift` @ `cdd675e` (1.1.2)
+Ngày: 2026-11-01 · Branch: `overnight/hardening` (merged to main via PR #12; see git log for HEAD) · So với mod `Arta48/Mielons-The-Sift` @ `cdd675e` (1.1.2)
 
 ---
 
@@ -9,17 +9,37 @@ Ngày: 2026-11-01 · Branch: `overnight/hardening` @ `025f03b` · So với mod `
 | Chỉ số | Giá trị |
 |---|---|
 | File Java sản phẩm | 53 |
-| File test | 35 (145 @Test method) |
-| content-spec | 115 items, 14 blocks, 22 mobs (36 gắn fanmade) |
+| File test | 41 (184 @Test method) |
+| content-spec | 119 items, 14 blocks, 24 mobs (77 gắn fanmade) |
 | Advancement JSON | 22 (44 translate keys × 2 locale) |
 | Worldgen JSON | 26 feature, 32 placed, 3 carver, 15 noise, 21 density, 13 structure, 2 set, 2 pool |
 | Biome trong biome_source | 15 (10 mod + 5 fan-made) |
 | Recipe (Java-registered) | 47 (42 Siftite + 5 Ichor) |
 | PDC keys | 70 unique |
 | CI boot steps | 2 (fallback + strict) |
-| `Messages.send/get` calls | 23 (trong 8 files) |
-| Hardcode `sendMessage` còn lại | ~80 (trong 10 files, 51 ở Plugin.java) |
+| `Messages.send/get` calls | ~150 (vi/en catalog ~90 keys) |
+| Hardcode `sendMessage` còn lại | chỉ còn dump chẩn đoán của /sift doctor (cố ý tiếng Anh) |
 | `Reflect` cache call sites | 57 (trong 4 bridge files) |
+
+---
+
+## Addendum 2026-11-01 (vòng R4-R5, sau khi merge PR #12)
+
+Các điểm đã xử lý kể từ bản đánh giá trên:
+
+- **Dupe giáo** (lỗi thiết kế của chính dự án): ném giáo từng giữ bản copy trong tay
+  Đồng thời projectile rơi thành item — sửa theo cơ chế Trident, có test hồi quy.
+- **Strict worldgen** một luồng duy nhất: nhánh strict copy-paste đã xóa, mọi placement
+  đi qua placeBlock() provider-first; ores + landmarks không còn thiếu ở strict.
+- **Hiệu năng**: wildlife index chỉ track LivingEntity trong dimension Sift; ambient
+  wildlife despawn tự nhiên; Dark Sniffer combat tick 2 tick/lần + throttle scan 250ms;
+  ProviderAccessGuard kiểm tra world key trước khi quét provider.
+- **Provenance**: 36 content ID không có trong mod/port được gắn `fanmade` + ghi nguồn
+  trong NOTICE.md; asset MIT (texture + 24 OGG + shaders) import từ port 26.3, JAR tự
+  chứa pack (14.3 MB), PackAssetsIntegrityTest khoá tham chiếu.
+- **Bedrock**: level-2 vận hành (BedrockBridge, pack skip, sound fallback, doctor).
+- **i18n**: ~90 key vi/en; chỉ còn dump chẩn đoán doctor dùng tiếng Anh (cố ý).
+- **Lệnh**: /sift dispatch kiểu Brigadier, một executor mỗi subcommand.
 
 ---
 
