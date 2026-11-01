@@ -27,7 +27,7 @@ content:
   siftite_pickaxe: true
   siftite_shovel: true
   siftite_hoe: true
-  # Ngắn hạn: Spear là Netherite Sword stand-in; ném được (spear-reach) nhưng chưa có mô hình projectile riêng.
+  # Spear dùng vật liệu vanilla NETHERITE_SPEAR (26.3): jab cận chiến gốc + ném được (spear-reach); chưa có mô hình projectile riêng.
   siftite_spear: true
   siftite_helmet: true
   siftite_chestplate: true
@@ -255,3 +255,7 @@ ancient-city:
   row-distance: 6
   # When true, the melody only opens a portal at a frame (as in the mod).
   require-frame: true
+  # Gate unification (review P1): true = the structure-bounded Sift gate is the single owner of
+  # Ancient City portals; the mod-port frame flow defers inside discovered gate cities and only
+  # serves wild Deep Dark frames. false = legacy dual-flow (both consoles can appear in one city).
+  gate-mode: true

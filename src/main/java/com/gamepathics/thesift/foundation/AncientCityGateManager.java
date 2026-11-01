@@ -527,6 +527,15 @@ final class AncientCityGateManager implements Listener {
                 .filter(gate -> gate.center().distanceSquared(location) <= range * range).orElse(null);
     }
 
+    /**
+     * True when a gate exists (or can be generated) within {@code range} blocks. The legacy
+     * mod-port portal uses this to defer to this manager instead of building its own console
+     * row inside an Ancient City.
+     */
+    boolean hasGateNear(Location location, double range) {
+        return nearbyGate(location, range) != null;
+    }
+
     private Gate gateForSonorous(Block block) {
         if (block == null) return null;
         return knownGates.values().stream().filter(gate -> gate.world.equals(block.getWorld()))

@@ -77,13 +77,15 @@
       "id": "raw_loomer",
       "material": "RABBIT",
       "name": "Raw Loomer",
-      "model": "thesift:item/raw_loomer"
+      "model": "thesift:item/raw_loomer",
+      "fanmade": true
     },
     {
       "id": "cooked_loomer",
       "material": "COOKED_RABBIT",
       "name": "Cooked Loomer",
-      "model": "thesift:item/cooked_loomer"
+      "model": "thesift:item/cooked_loomer",
+      "fanmade": true
     },
     {
       "id": "bulb_glow",
@@ -708,6 +710,32 @@
       "material": "GRAVEL",
       "name": "Sift Rubble",
       "model": null
+    },
+    {
+      "id": "raw_sifter_meat",
+      "material": "BEEF",
+      "name": "Raw Sifter Meat",
+      "model": "minecraft:item/beef"
+    },
+    {
+      "id": "cooked_sifter_meat",
+      "material": "COOKED_BEEF",
+      "name": "Cooked Sifter Meat",
+      "model": "minecraft:item/cooked_beef"
+    },
+    {
+      "id": "blub_meat",
+      "material": "MUTTON",
+      "name": "Blub Meat",
+      "model": "minecraft:item/mutton",
+      "fanmade": true
+    },
+    {
+      "id": "cooked_blub_meat",
+      "material": "COOKED_MUTTON",
+      "name": "Cooked Blub Meat",
+      "model": "minecraft:item/cooked_mutton",
+      "fanmade": true
     }
   ],
   "mobs": [
@@ -721,7 +749,7 @@
     },
     {
       "id": "blub",
-      "type": "AXOLOTL",
+      "type": "RABBIT",
       "display": "&bBlub",
       "health": 20,
       "damage": 3
@@ -810,8 +838,8 @@
       "id": "dark_sniffer",
       "type": "SNIFFER",
       "display": "&5Dark Sniffer",
-      "health": 60,
-      "damage": 8
+      "health": 40,
+      "damage": 7
     },
     {
       "id": "prismite",
@@ -842,7 +870,8 @@
       "type": "RAVAGER",
       "display": "&5&lThe Sifter",
       "health": 220,
-      "damage": 24
+      "damage": 24,
+      "fanmade": true
     },
     {
       "id": "glowbell",
@@ -854,7 +883,7 @@
     },
     {
       "id": "sift_wastes_stalker",
-      "type": "HUSK",
+      "type": "WITCH",
       "display": "&5Sift Wastes Stalker",
       "health": 36,
       "damage": 6,
@@ -864,15 +893,15 @@
       "id": "singer",
       "type": "ALLAY",
       "display": "&5&lSinger",
-      "health": 40,
-      "damage": 2
+      "health": 20,
+      "damage": 0
     },
     {
       "id": "echo_golem",
       "type": "IRON_GOLEM",
       "display": "&b&lEcho Golem",
-      "health": 80,
-      "damage": 12
+      "health": 34,
+      "damage": 0
     },
     {
       "id": "rift_walker",
@@ -880,6 +909,21 @@
       "display": "&5Rift Walker",
       "health": 40,
       "damage": 7,
+      "fanmade": true
+    },
+    {
+      "id": "sifter",
+      "type": "RAVAGER",
+      "display": "&dSifter",
+      "health": 40,
+      "damage": 10
+    },
+    {
+      "id": "spire_tyrant",
+      "type": "RAVAGER",
+      "display": "&5&lSpire Tyrant",
+      "health": 220,
+      "damage": 24,
       "fanmade": true
     }
   ],

@@ -201,20 +201,40 @@ public final class RiftManager implements Listener {
         }
     }
 
-    /** Restores active rifts saved by a previous session; expired or unknown-world entries are skipped. */
+    /**
+     * Restores active rifts saved by a previous session. Entries whose worlds have not loaded
+     * yet (e.g. the Sift dimension is created later, or strict mode locked it) stay pending:
+     * the save file is kept and {@link #onWorldLoad} retries until every world exists. A rift
+     * is only restored once ALL of its worlds exist — restoring it without its gate arrival
+     * world would drop the gate metadata for good.
+     */
     void loadRifts() {
         java.nio.file.Path file = riftsFile();
-        if (!java.nio.file.Files.exists(file)) return;
+        if (!java.nio.file.Files.exists(file)) {
+            riftsLoaded = true;
+            return;
+        }
         try {
             RiftSaveEntry[] entries = new com.google.gson.Gson().fromJson(
                     java.nio.file.Files.readString(file), RiftSaveEntry[].class);
-            if (entries == null) return;
+            if (entries == null) {
+                riftsLoaded = true;
+                return;
+            }
             long now = System.currentTimeMillis();
             int restored = 0;
+            int skipped = 0;
             for (RiftSaveEntry entry : skipExpired(entries, now)) {
+                // Already active from an earlier partial pass — the file simply still holds it.
+                if (rifts.containsKey(UUID.fromString(entry.id))) continue;
                 World centerWorld = Bukkit.getWorld(entry.world);
                 World exitWorld = Bukkit.getWorld(entry.exitWorld);
-                if (centerWorld == null || exitWorld == null) continue;
+                World arrivalWorld = entry.gateArrivalWorld == null ? null : Bukkit.getWorld(entry.gateArrivalWorld);
+                if (centerWorld == null || exitWorld == null
+                        || (entry.gateArrivalWorld != null && arrivalWorld == null)) {
+                    skipped++;
+                    continue;
+                }
                 RiftInstance rift = new RiftInstance(UUID.fromString(entry.id),
                         new Location(centerWorld, entry.cx + 0.5, entry.cy, entry.cz + 0.5), null, entry.portal);
                 int durationTicks = (entry.portal
@@ -231,31 +251,25 @@ public final class RiftManager implements Listener {
                 rift.restoreActive(new Location(exitWorld, entry.ex + 0.5, entry.ey, entry.ez + 0.5),
                         remainingTicks);
                 if (entry.gateMinX != null && entry.gateArrivalWorld != null) {
-                    World arrivalWorld = Bukkit.getWorld(entry.gateArrivalWorld);
-                    if (arrivalWorld != null) {
-                        rift.setGate(
-                                new org.bukkit.util.BoundingBox(
-                                        entry.gateMinX, entry.gateMinY, entry.gateMinZ,
-                                        entry.gateMaxX, entry.gateMaxY, entry.gateMaxZ),
-                                new Location(arrivalWorld,
-                                        entry.gateArrivalX + 0.5, entry.gateArrivalY, entry.gateArrivalZ + 0.5));
-                    }
+                    rift.setGate(
+                            new org.bukkit.util.BoundingBox(
+                                    entry.gateMinX, entry.gateMinY, entry.gateMinZ,
+                                    entry.gateMaxX, entry.gateMaxY, entry.gateMaxZ),
+                            new Location(arrivalWorld,
+                                    entry.gateArrivalX + 0.5, entry.gateArrivalY, entry.gateArrivalZ + 0.5));
                 }
                 rifts.put(rift.id, rift);
                 restored++;
             }
-            riftsLoaded = true;
-            if (restored == entries.length) {
-                // All entries restored: the save file is consumed.
+            if (skipped == 0) {
+                // Every entry is restored (or was already active): the save file is consumed
+                // and no further world-load retries are needed.
+                riftsLoaded = true;
                 java.nio.file.Files.deleteIfExists(file);
                 if (restored > 0) plugin.getLogger().info("Restored " + restored + " rift(s) from rifts.json.");
-            } else if (restored > 0) {
-                // Some entries skipped (world not loaded yet): keep the file for a retry
-                // after the missing world loads. Only log what we could restore.
-                plugin.getLogger().warning("Restored " + restored + "/" + entries.length
-                        + " rift(s); " + (entries.length - restored) + " skipped (world not loaded), file preserved for retry.");
             } else {
-                plugin.getLogger().warning("No rifts restored from rifts.json (worlds not loaded); file preserved.");
+                plugin.getLogger().warning("Restored " + restored + " rift(s); " + skipped
+                        + " waiting for their world(s) to load — rifts.json kept for retry on world load.");
             }
         } catch (Exception exception) {
             plugin.getLogger().log(java.util.logging.Level.WARNING,
@@ -270,6 +284,19 @@ public final class RiftManager implements Listener {
             if (entry != null && (entry.expiresAt < 0 || entry.expiresAt > now)) result.add(entry);
         }
         return result;
+    }
+
+    /** Inspection accessors for persistence tests (package-private). */
+    int activeRiftCount() {
+        return rifts.size();
+    }
+
+    java.util.List<UUID> activeRiftIds() {
+        return new java.util.ArrayList<>(rifts.keySet());
+    }
+
+    RiftInstance activeRift(UUID id) {
+        return rifts.get(id);
     }
 
     private boolean riftsLoaded = false;

@@ -309,7 +309,11 @@ public final class EchoGolemManager implements Listener {
 
     @EventHandler
     public void onEchoGolemTarget(EntityTargetEvent event) {
-        if (isEchoGolem(event.getEntity()) && event.getTarget() instanceof Player) {
+        // Reference-mod parity: the Echo Golem is a neutral guardian with no attack behaviour
+        // of its own. The Iron Golem stand-in otherwise keeps vanilla hostility (hunting
+        // monsters, retaliating against anything that hit it), so every target acquisition
+        // is refused — not just player targets (review P1).
+        if (isEchoGolem(event.getEntity())) {
             event.setCancelled(true);
         }
     }
@@ -381,6 +385,13 @@ public final class EchoGolemManager implements Listener {
     private void pulseSoulDelivery() {
         for (UUID id : java.util.List.copyOf(trackedGolems)) {
             Entity entity = Bukkit.getEntity(id);
+            if (entity == null) {
+                // The entity is not accessible (unloaded chunk, or removed between add/remove
+                // events): drop it from tracking instead of NPE-ing the tick (review P1).
+                // EntityAddToWorldEvent re-seeds the set when the golem returns.
+                trackedGolems.remove(id);
+                continue;
+            }
             Entity golemEntity = entity;
             if (golemEntity.isDead() || !golemEntity.isValid()
                     || !isEchoGolem(golemEntity)) {
@@ -391,6 +402,9 @@ public final class EchoGolemManager implements Listener {
                 trackedGolems.remove(id);
                 continue;
             }
+            // Vanilla Iron Golem hostility can survive restarts (target set before this
+            // listener registered); drop any stray target every pulse (review P1).
+            if (golem.getTarget() != null) golem.setTarget(null);
             var pdc = golem.getPersistentDataContainer();
             if (pdc.get(ownerKey, PersistentDataType.STRING) == null) continue; // only bonded golems work
             if (pdc.has(cargoKey, PersistentDataType.BYTE)) {

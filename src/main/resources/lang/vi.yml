@@ -22,6 +22,8 @@ ichor:
   bottle-filled: "Nồi cauldron rót Ichor cộng hưởng vào lọ. (%level/%max)"
   refill: "Cauldron cộng hưởng cùng Ichor."
   bucket-filled: "Chiếc xô rút Ichor cộng hưởng từ cauldron."
+  poured: "Ichor dâng lên thành một cauldron cộng hưởng."
+  poured-blocked: "Không có chỗ trống để trút Ichor."
 doctor:
   perm: "Bạn không có quyền dùng lệnh The Sift này."
   new-config: "Cấu hình mới hơn bản build này; đã từ chối reload."
@@ -37,13 +39,14 @@ tide:
   flowing: "Thủy triều Sift đang chảy quanh bạn"
   ebbing: "Thủy triều Sift đang rút"
 
-disabled: "Cổng Ancient City đang bị tắt."
-  not-found: "Không tìm thấy cổng Ancient City nào trong 512 block."
 gate:
+  disabled: "Cổng Ancient City đang bị tắt."
+  not-found: "Không tìm thấy cổng Ancient City nào trong 512 block."
   no-landing: "Không tìm được chỗ hạ an toàn 1:1. Không dịch chuyển."
   silent: "Cổng còm lặng. Dùng Sừng Dê gần Sonorous Deepslate để gọi Singer."
   cannot-open: "Cổng chưa mở được: provider chưa đủ. Chạy /sift doctor."
   locked: "Cổng Ancient City bị khóa vì provider chưa đủ. Chạy /sift doctor."
+  gate-city: "Cổng Ancient City này thuộc về Sift Gate — hãy đánh thức bằng Sừng Dê tại Sonorous Deepslate."
 
 rift:
   dimension-unavailable: "The Sift không khả dụng. Chạy /sift doctor."

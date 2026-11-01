@@ -971,6 +971,11 @@ public final class SiftEcologyManager implements Listener {
             sniffer.setPersistent(true);
             sniffer.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING, "dark_sniffer");
             wildlifeIndexRefile(sniffer);
+            // Review P1: apply the same reference-mod statline as /sift summon — the natural
+            // cave spawn previously kept vanilla Sniffer stats while the summon path got 40 HP.
+            if (sniffer instanceof LivingEntity living) {
+                SiftMobFactory.applyAttributes(living, modMobStats("dark_sniffer"));
+            }
         }
     }
 
@@ -1049,7 +1054,11 @@ public final class SiftEcologyManager implements Listener {
             entity.setCustomNameVisible(random.nextInt(4) == 0);
             entity.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING, mobId);
             wildlifeIndexRefile(entity);
-            wildlifeIndexRefile(entity);
+            // Review P1: keep natural spawns on the same reference-mod statline as the summon
+            // path (Blub rabbit 3 HP vs 20 HP was the concrete drift).
+            if (entity instanceof LivingEntity living) {
+                SiftMobFactory.applyAttributes(living, modMobStats(mobId));
+            }
             if (entity instanceof LivingEntity living && (type == EntityType.ZOMBIE || type == EntityType.VEX
                     || type == EntityType.SILVERFISH || type == EntityType.ENDERMITE)) {
                 living.setRemoveWhenFarAway(false);
@@ -1096,8 +1105,6 @@ public final class SiftEcologyManager implements Listener {
         entity.setCustomName("§5§l" + name);
         entity.setCustomNameVisible(true);
         entity.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING, id);
-        wildlifeIndexRefile(entity);
-        wildlifeIndexRefile(entity);
         wildlifeIndexRefile(entity);
         if (entity instanceof LivingEntity living) {
             living.setRemoveWhenFarAway(false);

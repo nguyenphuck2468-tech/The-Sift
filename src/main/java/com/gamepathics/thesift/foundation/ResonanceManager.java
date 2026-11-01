@@ -211,6 +211,7 @@ public final class ResonanceManager implements Listener {
             singer.setInvulnerable(false);
             player.sendActionBar("\u00a75The Singer accepts the Soul Block \u2014 it can be harmed for "
                     + soulEventSeconds + "s.");
+            scheduleInvulnerabilityRestore(singer, soulEventSeconds);
         }
         if (player.getGameMode() != GameMode.CREATIVE) held.setAmount(held.getAmount() - 1);
         singer.getWorld().playSound(singer.getLocation(), Sound.ENTITY_ALLAY_ITEM_GIVEN, 1.0f, 1.0f);
@@ -234,6 +235,23 @@ public final class ResonanceManager implements Listener {
                     item.setVelocity(pushDirection.clone().multiply(0.3).setY(0.2)));
             SiftAdvancementGrant.grant(plugin, player, "pitch_perfect");
         }, 40L);
+    }
+
+    /**
+     * Restores the Singer's entity-level invulnerability when the soul-event window closes.
+     * Review P1: {@code setInvulnerable(false)} was never undone, so after the first soul
+     * event the flag stayed down forever and fire, lava, falls and explosions could hurt the
+     * Singer (the damage handler only covers {@link org.bukkit.event.entity.EntityDamageByEntityEvent}).
+     * Each barter schedules its own restore; a later barter that extended the window makes
+     * earlier restores no-ops via the {@link #inSoulEvent} guard.
+     */
+    private void scheduleInvulnerabilityRestore(Entity singer, int soulEventSeconds) {
+        long delayTicks = soulEventSeconds * 20L + 1L;
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!singer.isValid()) return;
+            if (inSoulEvent(singer.getUniqueId())) return; // window was extended by another barter
+            singer.setInvulnerable(plugin.getConfig().getBoolean("resonance.singer.invulnerable", true));
+        }, delayTicks);
     }
 
     @EventHandler

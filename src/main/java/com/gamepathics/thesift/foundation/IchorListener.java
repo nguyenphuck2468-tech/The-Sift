@@ -136,6 +136,62 @@ public final class IchorListener implements Listener {
                 player.getLocation().add(0, 1, 0), 8, 0.25, 0.35, 0.25, 0.01);
     }
 
+    /**
+     * Reference-mod parity (IchorBucketItem): pouring the Ichor Bucket must never fall through
+     * to vanilla water. Paper cannot register custom fluids, so the pour settles into the
+     * plugin's Ichor reservoir primitive — a WATER_CAULDRON with a full resonant charge —
+     * and the vanilla water placement is cancelled outright (review P1).
+     */
+    @EventHandler(ignoreCancelled = true, priority = org.bukkit.event.EventPriority.HIGHEST)
+    public void onIchorBucketPour(org.bukkit.event.player.PlayerBucketEmptyEvent event) {
+        // PlayerBucketEmptyEvent#getItemStack() returns the POST-event result (the empty
+        // bucket), so the held Ichor bucket must be read from the used hand instead.
+        Player player = event.getPlayer();
+        ItemStack used = event.getHand() != null
+                ? player.getInventory().getItem(event.getHand())
+                : player.getInventory().getItemInMainHand();
+        if (!content.isIchorEnabled() || !content.isContentEnabled(IchorContent.ICHOR_BUCKET_ID)
+                || used == null || !content.is(used, IchorContent.ICHOR_BUCKET_ID)) {
+            return;
+        }
+        event.setCancelled(true);
+        Block target = event.getBlockClicked().getRelative(event.getBlockFace());
+        if (!target.getType().isAir() && !target.isLiquid()) {
+            player.sendMessage("§d" + Messages.get("ichor.poured-blocked",
+                    "There is no open space to pour the Ichor."));
+            return;
+        }
+        int maxLevel = Math.max(1, plugin.getConfig().getInt("ichor.cauldron.max-level", 3));
+        target.setType(configuredCauldron(), false);
+        if (target.getBlockData() instanceof org.bukkit.block.data.Levelled cauldron) {
+            cauldron.setLevel(Math.min(maxLevel, cauldron.getMaximumLevel()));
+            target.setBlockData(cauldron, false);
+        }
+        state.setLevel(target.getLocation(), maxLevel);
+        // The cancelled vanilla event performs no bucket swap: exchange the Ichor bucket for
+        // an empty one explicitly, in the hand that held it.
+        java.util.function.Consumer<ItemStack> replaceHeld = replacement ->
+                player.getInventory().setItem(event.getHand() != null ? event.getHand()
+                        : org.bukkit.inventory.EquipmentSlot.HAND, replacement);
+        if (used.getAmount() <= 1) replaceHeld.accept(new ItemStack(Material.BUCKET));
+        else {
+            used.setAmount(used.getAmount() - 1);
+            replaceHeld.accept(used);
+        }
+        if (plugin.getConfig().getBoolean("ichor.cauldron.sounds", true)) {
+            player.playSound(player.getLocation(), "item.bucket.empty", 0.9f, 1.1f);
+        }
+        if (plugin.getConfig().getBoolean("ichor.cauldron.particles", true)) {
+            // clone(): MockBukkit caches Block#getLocation() so a plain add() would shift the
+            // block's apparent position for every later state read; Paper returns a fresh
+            // Location, but the clone keeps tests and callers honest either way.
+            target.getWorld().spawnParticle(org.bukkit.Particle.DRIPPING_OBSIDIAN_TEAR,
+                    target.getLocation().clone().add(0.5, 1.0, 0.5), 10, 0.25, 0.2, 0.25, 0.02);
+        }
+        player.sendMessage("§d" + Messages.get("ichor.poured",
+                "The poured Ichor settles into a resonant cauldron."));
+    }
+
     @EventHandler(ignoreCancelled = true, priority = org.bukkit.event.EventPriority.HIGHEST)
     public void onBlockPlace(BlockPlaceEvent event) {
         ItemStack item = event.getItemInHand();
@@ -151,6 +207,12 @@ public final class IchorListener implements Listener {
 
     @EventHandler(ignoreCancelled = true, priority = org.bukkit.event.EventPriority.HIGHEST)
     public void onBlockBreak(BlockBreakEvent event) {
+        // A poured Ichor cauldron that is broken loses its resonant charge (vanilla drops
+        // the cauldron itself); clear the stored level so the position cannot be resurrected.
+        if (event.getBlock().getType() == configuredCauldron()
+                && state.level(event.getBlock().getLocation()) > 0) {
+            state.setLevel(event.getBlock().getLocation(), 0);
+        }
         String id = state.block(event.getBlock().getLocation());
         if (id == null || !content.isContentEnabled(id)) {
             return;
