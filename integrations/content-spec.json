@@ -842,8 +842,7 @@
       "type": "RAVAGER",
       "display": "&5&lThe Sifter",
       "health": 220,
-      "damage": 24,
-      "fanmade": true
+      "damage": 24
     },
     {
       "id": "glowbell",

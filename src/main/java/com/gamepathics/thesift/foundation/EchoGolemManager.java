@@ -447,6 +447,7 @@ public final class EchoGolemManager implements Listener {
     }
 
     private void consumeOne(Player player) {
+        if (player.getGameMode() == GameMode.CREATIVE) return;
         ItemStack hand = player.getInventory().getItemInMainHand();
         if (hand.getAmount() <= 1) player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
         else hand.setAmount(hand.getAmount() - 1);
