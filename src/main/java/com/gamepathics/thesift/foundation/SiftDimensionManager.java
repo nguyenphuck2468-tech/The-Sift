@@ -42,7 +42,8 @@ public final class SiftDimensionManager {
     public boolean enter(Player player) {
         World world = getOrCreateWorld();
         if (world == null) {
-            player.sendMessage("The Sift dimension is unavailable. Run /sift doctor for provider readiness, then check TheSift/provided in /datapack list.");
+            player.sendMessage("§c" + Messages.get("dimension.unavailable",
+                    "The Sift dimension is unavailable. Run /sift doctor for provider readiness, then check TheSift/provided in /datapack list."));
             plugin.getLogger().warning("Could not load dimension " + DIMENSION_KEY
                     + ". Ensure the bundled TheSift/provided datapack is enabled.");
             return false;

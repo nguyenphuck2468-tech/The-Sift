@@ -112,7 +112,7 @@ final class AncientCityGateManager implements Listener {
         }
         Optional<Gate> gate = findNearest(player.getLocation(), 32);
         if (gate.isEmpty()) {
-            player.sendMessage("No generated Ancient City gate was found within 512 blocks.");
+            player.sendMessage("§7" + Messages.get("gate.not-found", "No generated Ancient City gate was found within 512 blocks."));
             return Optional.empty();
         }
         Location target = gate.orElseThrow().center();

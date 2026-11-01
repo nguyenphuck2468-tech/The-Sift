@@ -36,3 +36,6 @@ world:
 tide:
   flowing: "Thủy triều Sift đang chảy quanh bạn"
   ebbing: "Thủy triều Sift đang rút"
+
+disabled: "Cổng Ancient City đang bị tắt."
+  not-found: "Không tìm thấy cổng Ancient City nào trong 512 block."

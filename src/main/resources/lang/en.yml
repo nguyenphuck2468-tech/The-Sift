@@ -36,3 +36,6 @@ world:
 tide:
   flowing: "The Sift tide is flowing around you"
   ebbing: "The Sift tide is ebbing"
+
+disabled: "Ancient City gates are disabled."
+  not-found: "No generated Ancient City gate was found within 512 blocks."
