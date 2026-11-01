@@ -380,16 +380,10 @@ public final class SiftEcologyManager implements Listener {
         Biome biome = chunk.getBlock(8, surfaceY, 8).getBiome();
         String key = biome.getKey().toString().toLowerCase(Locale.ROOT);
 
-        // Strict mode prefers provider-owned content; the vanilla-safe landmarks below it
-        // run in both modes, and provider-mapped placements fail-and-retry until resolved.
-        if (plugin.getConfig().getBoolean("providers.strict", true)) {
-            decorateStrictProviderContent(chunk, key, random);
-            // Review R3: the strict branch skipped generateSiftResources, so strict worlds
-            // had no iron/copper/redstone/lapis/gold at all.
-            generateSiftResources(chunk, random);
-            return 1;
-        }
-
+        // One decoration path for both provider modes (review R3): every placement goes
+        // through placeBlock(), which is provider-first and strict-aware (fail-and-retry),
+        // so a separate strict branch only ever drifted from this one — it skipped the
+        // resource ores and several landmarks for strict worlds.
         decorateSurface(chunk, key, random);
         generationOperations += 28; // attempted surface decoration positions
         growBiomeLandmarks(chunk, key, random);
@@ -448,83 +442,8 @@ public final class SiftEcologyManager implements Listener {
         return generationOperations;
     }
 
-    private void decorateStrictProviderContent(Chunk chunk, String biome, Random random) {
-        decorateStrictSurface(chunk, biome, random);
-        growStrictProviderLandmark(chunk, biome, random);
-        generateCharoiteOre(chunk, random);
-        generateSiftiteOre(chunk, random);
-        // Landmarks the fallback branch generates were missing entirely under strict mode.
-        // These are vanilla-safe (deepslate/tuff/soul sand structures) except the Ichor
-        // spring and portal-ruin chest, whose provider-aware placements fail-and-retry by
-        // design until a provider resolves - the same behaviour as any strict decoration.
-        if ((biome.contains("overgrown") || biome.endsWith("carapace") || biome.endsWith("sift_wastes"))
-                && random.nextInt(24) == 0) generateIchorSpring(chunk, random);
-        if (biome.contains("overgrown") && random.nextInt(18) == 0) generateAbandonedPortal(chunk, random);
-        if (random.nextInt(32) == 0) {
-            if (biome.contains("deep_dark")) generateSnifferCave(chunk, random);
-            else if (biome.contains("siftslate") || biome.contains("wastes")) generateSoulCanyon(chunk, random);
-            else if (biome.contains("overgrown_peaks") || biome.contains("ichor_snowy_peaks")) {
-                generateCliffArch(chunk, random);
-            } else if (biome.contains("overgrown")) generateMonolith(chunk, random);
-        }
-        if (random.nextInt(48) == 0) generateFossil(chunk, random);
-        spawnSiftWildlife(chunk, biome, random);
-        if ((biome.endsWith("pink_meadows") || biome.endsWith("overgrown_clearing")) && random.nextInt(22) == 0) summonSinger(chunk, random);
-        else if ((biome.endsWith("crystal_spires") || biome.endsWith("siftslate_slopes")) && random.nextInt(55) == 0) summonEchoGolem(chunk, random);
-        if ((biome.endsWith("shattered_peaks") || biome.endsWith("siftslate_peaks")) && plugin.getConfig().getBoolean("content.rift-events", true)
-                && random.nextInt(120) == 0) openNaturalRift(chunk);
-        if (plugin.getConfig().getBoolean("content.prism_warden", false)
-                && (biome.endsWith("bulb_forest") || biome.endsWith("overgrown_forest")) && random.nextInt(160) == 0)
-            spawnBoss(chunk, EntityType.WARDEN, "Prism Warden", "prism_warden", 180.0, 28.0);
-        else if ((biome.endsWith("shattered_peaks") || biome.endsWith("siftslate_peaks")) && random.nextInt(120) == 0) {
-            boolean tyrant = plugin.getConfig().getBoolean("content.spire_tyrant", false)
-                    && random.nextBoolean();
-            spawnBoss(chunk, EntityType.RAVAGER,
-                    tyrant ? "Spire Tyrant" : "The Sifter",
-                    tyrant ? "spire_tyrant" : "the_sifter", 220.0, 24.0);
-        }
-    }
 
-    private void decorateStrictSurface(Chunk chunk, String biome, Random random) {
-        if (!((biome.endsWith("pink_meadows") || biome.endsWith("overgrown_clearing")) || (biome.endsWith("bulb_forest") || biome.endsWith("overgrown_forest"))
-                || biome.contains("overgrown"))) return;
-        World world = chunk.getWorld();
-        for (int i = 0; i < 28; i++) {
-            int x = chunk.getX() * 16 + 1 + random.nextInt(14);
-            int z = chunk.getZ() * 16 + 1 + random.nextInt(14);
-            int y = world.getHighestBlockYAt(x, z);
-            if (y <= world.getMinHeight() || y >= world.getMaxHeight() - 4) continue;
-            Block ground = world.getBlockAt(x, y, z);
-            if (ground.getType() == Material.GRASS_BLOCK)
-                placeBlock(ground, "sift_grass", Material.MOSS_BLOCK);
-        }
-    }
 
-    private void growStrictProviderLandmark(Chunk chunk, String biome, Random random) {
-        if (random.nextInt(5) != 0) return;
-        World world = chunk.getWorld();
-        int x = chunk.getX() * 16 + 3 + random.nextInt(10);
-        int z = chunk.getZ() * 16 + 3 + random.nextInt(10);
-        int y = world.getHighestBlockYAt(x, z) + 1;
-        if (y <= world.getMinHeight() || y >= world.getMaxHeight() - 12) return;
-        boolean forest = (biome.endsWith("bulb_forest") || biome.endsWith("overgrown_forest")) || (biome.endsWith("pink_meadows") || biome.endsWith("overgrown_clearing"))
-                || biome.contains("overgrown_forest") || biome.contains("overgrown_clearing");
-        if (forest) {
-            int height = 4 + random.nextInt(4);
-            for (int dy = 0; dy < height; dy++)
-                placeBlock(world.getBlockAt(x, y + dy, z), "sift_log", Material.CHERRY_LOG);
-            for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++)
-                if (Math.abs(dx) + Math.abs(dz) < 4)
-                    placeBlock(world.getBlockAt(x + dx, y + height - 1, z + dz),
-                            "sift_leaves", Material.CHERRY_LEAVES);
-        } else {
-            int radius = 2 + random.nextInt(3);
-            for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++)
-                if (random.nextInt(3) == 0)
-                    placeBlock(world.getBlockAt(x + dx, y + random.nextInt(3), z + dz),
-                            "siftstone", Material.TUFF);
-        }
-    }
 
     private void decorateSurface(Chunk chunk, String biome, Random random) {
         World world = chunk.getWorld();
