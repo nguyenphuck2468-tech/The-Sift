@@ -18,3 +18,4 @@
 | P6.3 | dimension i18n | b8b41e9 | ./gradlew build | BUILD SUCCESSFUL |
 | P4.1 | WildlifeIndex extraction + 5 unit tests | a4e8ead | ./gradlew build | BUILD SUCCESSFUL |
 | P6.4 | rifts.json persistence | d2f0d05 | ./gradlew build | BUILD SUCCESSFUL |
+| P6.5 | RiftPersistenceTest | 7c2125e | ./gradlew build | BUILD SUCCESSFUL (139 tests) |

@@ -67,5 +67,18 @@ note-console map dọn khi quit. Docs đồng bộ (config-version 5, biome fan-
   server chỉ chơi phần mod không cần provider cho nội dung đã tắt (44905aa)
 - i18n: enter/return/no-overworld qua Messages vi/en (e2398dc)
 
+## Bổ sung 01/11 (theo yêu cầu "làm tiếp")
+
+- P4.1: WildlifeIndex tách khỏi SiftEcologyManager + 5 unit test hồi quy
+  (refile từ bucket vanilla sang species, prune bucket rỗng, scrub, copy-safe) — a4e8ead
+- P6.4: rifts.json persistence — rift ACTIVE lưu nguyên tử (temp+move) khi mở/đóng/shutdown;
+  loadRifts sau khi world sẵn sàng, bỏ mục hết hạn/world mất, file hỏng chỉ warn — d2f0d05
+- P6.5: RiftPersistenceTest.skipExpired — b366f59 lineage
+- P6.1: dimension 1:1 enter/return (1e03770); P6.2: fanmade metadata + readiness filter (44905aa);
+  P6.3: i18n dimension (e2398dc); ichor spring dedupe + ConfigYamlRegressionTest (b366f59)
+
+Còn lại: P4 tiếp tục (BlubController, DarkSnifferController, ChunkDecorationManager),
+P5 Brigadier, P9 test-provider — cần phiên tiếp theo.
+
 ## Diff stat
 Xem `git diff --stat main...overnight/hardening`.
