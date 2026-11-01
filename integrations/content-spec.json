@@ -429,7 +429,7 @@
     },
     {
       "id": "siftite_spear",
-      "material": "NETHERITE_SWORD",
+      "material": "NETHERITE_SPEAR",
       "name": "Siftite Spear",
       "model": "thesift:item/siftite_spear"
     },

@@ -123,7 +123,7 @@ public final class SiftiteContent implements Listener {
                 ownedRecipeKeys.add(nuggetsKey);
 
                 if (plugin.getConfig().getBoolean("content.siftite_spear", true)) {
-                    ItemStack spear = item(Material.NETHERITE_SWORD, "siftite_spear", "Siftite Spear");
+                    ItemStack spear = item(Material.NETHERITE_SPEAR, "siftite_spear", "Siftite Spear");
                     if (spear != null) {
                         NamespacedKey spearKey = new NamespacedKey(plugin, "siftite_spear_craft");
                         plugin.getServer().removeRecipe(spearKey);
@@ -339,7 +339,7 @@ public final class SiftiteContent implements Listener {
             case "siftite_pickaxe" -> item(Material.NETHERITE_PICKAXE, id, "Siftite Pickaxe");
             case "siftite_shovel" -> item(Material.NETHERITE_SHOVEL, id, "Siftite Shovel");
             case "siftite_hoe" -> item(Material.NETHERITE_HOE, id, "Siftite Hoe");
-            case "siftite_spear" -> item(Material.NETHERITE_SWORD, id, "Siftite Spear");
+            case "siftite_spear" -> item(Material.NETHERITE_SPEAR, id, "Siftite Spear");
             case "siftite_helmet" -> item(Material.NETHERITE_HELMET, id, "Siftite Helmet");
             case "siftite_chestplate" -> item(Material.NETHERITE_CHESTPLATE, id, "Siftite Chestplate");
             case "siftite_leggings" -> item(Material.NETHERITE_LEGGINGS, id, "Siftite Leggings");
