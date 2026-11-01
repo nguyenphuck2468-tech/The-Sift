@@ -23,3 +23,4 @@
 | P5.1 | i18n sweep for remaining player-facing strings | 950dcd7 | ./gradlew build | BUILD SUCCESSFUL |
 | P9 | test-provider skeleton | 6030e8b | (standalone Maven build) | skeleton created |
 | P1.2 | 4 verified review-round-2 bugs | c3bec62 | ./gradlew build | BUILD SUCCESSFUL |
+| P1.3 | All remaining P1/P2 from deep-dive review | 779907b | ./gradlew build | BUILD SUCCESSFUL |
