@@ -214,7 +214,7 @@ public final class SiftEcologyManager implements Listener {
     // creature tag (or entity type for untagged stand-ins) to UUIDs, maintained by Paper's
     // add/remove-to-world events, so ticks resolve a handful of Bukkit.getEntity lookups.
 
-    private final java.util.Map<String, java.util.Set<UUID>> wildlifeIndex = new java.util.concurrent.ConcurrentHashMap<>();
+    private final WildlifeIndex wildlifeIndex = new WildlifeIndex();
     private final java.util.Set<UUID> indexedWorlds = java.util.concurrent.ConcurrentHashMap.newKeySet();
 
     private String wildlifeKey(Entity entity) {
@@ -225,9 +225,7 @@ public final class SiftEcologyManager implements Listener {
 
     @EventHandler
     public void onEntityAddToWorld(com.destroystokyo.paper.event.entity.EntityAddToWorldEvent event) {
-        String key = wildlifeKey(event.getEntity());
-        if (key != null) wildlifeIndex.computeIfAbsent(key, k -> java.util.concurrent.ConcurrentHashMap.newKeySet())
-                .add(event.getEntity().getUniqueId());
+        wildlifeIndex.index(wildlifeKey(event.getEntity()), event.getEntity().getUniqueId());
     }
 
     @EventHandler
@@ -239,18 +237,14 @@ public final class SiftEcologyManager implements Listener {
 
     @EventHandler
     public void onEntityRemoveFromWorld(com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent event) {
-        String key = wildlifeKey(event.getEntity());
-        if (key != null) wildlifeIndex.computeIfAbsent(key, k -> java.util.concurrent.ConcurrentHashMap.newKeySet())
-                .remove(event.getEntity().getUniqueId());
+        wildlifeIndex.unindex(wildlifeKey(event.getEntity()), event.getEntity().getUniqueId());
     }
 
     /** One-time seed per world: entities loaded before this listener registered are not indexed. */
     private void ensureIndexed(World sift) {
         if (!indexedWorlds.add(sift.getUID())) return;
         for (Entity entity : sift.getEntities()) {
-            String key = wildlifeKey(entity);
-            if (key != null) wildlifeIndex.computeIfAbsent(key, k -> java.util.concurrent.ConcurrentHashMap.newKeySet())
-                    .add(entity.getUniqueId());
+            wildlifeIndex.index(wildlifeKey(entity), entity.getUniqueId());
         }
     }
 
@@ -261,10 +255,7 @@ public final class SiftEcologyManager implements Listener {
      * Dark Sniffer worked only because its ticks also query the vanilla bucket).
      */
     private void wildlifeIndexRefile(Entity entity) {
-        String key = wildlifeKey(entity);
-        if (key == null) return;
-        wildlifeIndex.computeIfAbsent(key, k -> java.util.concurrent.ConcurrentHashMap.newKeySet())
-                .add(entity.getUniqueId());
+        wildlifeIndex.index(wildlifeKey(entity), entity.getUniqueId());
     }
 
     /** Live tagged creatures of one species in the world, without a full entity scan. */
@@ -273,15 +264,11 @@ public final class SiftEcologyManager implements Listener {
         java.util.List<Entity> result = new java.util.ArrayList<>();
         java.util.Set<UUID> seen = new java.util.HashSet<>();
         for (String key : keys) {
-            for (UUID uuid : java.util.List.copyOf(wildlifeIndex.getOrDefault(key, java.util.Set.of()))) {
+            for (UUID uuid : wildlifeIndex.bucket(key)) {
                 Entity entity = Bukkit.getEntity(uuid);
                 if (entity == null || entity.isDead() || !entity.isValid()
                         || entity.getWorld() != sift) {
-                    java.util.Set<UUID> bucket = wildlifeIndex.get(key);
-                    if (bucket != null) {
-                        bucket.remove(uuid);
-                        if (bucket.isEmpty()) wildlifeIndex.remove(key);
-                    }
+                    wildlifeIndex.unindex(key, uuid);
                     continue;
                 }
                 String current = wildlifeKey(entity);
@@ -290,11 +277,7 @@ public final class SiftEcologyManager implements Listener {
                     // add-to-world event indexed the fresh mob under its vanilla type.
                     // Re-file the UUID under the tag it carries now - the add event does
                     // not fire twice, so without this the species ticks never see it.
-                    wildlifeIndex.getOrDefault(key, java.util.Set.of()).remove(uuid);
-                    if (current != null && !current.startsWith("type:")) {
-                        wildlifeIndex.computeIfAbsent(current,
-                                k -> java.util.concurrent.ConcurrentHashMap.newKeySet()).add(uuid);
-                    }
+                    wildlifeIndex.refile(key, current, uuid);
                     continue;
                 }
                 if (seen.add(uuid)) result.add(entity);
