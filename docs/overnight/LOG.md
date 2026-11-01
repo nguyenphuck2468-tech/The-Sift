@@ -21,3 +21,4 @@
 | P6.5 | RiftPersistenceTest | 7c2125e | ./gradlew build | BUILD SUCCESSFUL (139 tests) |
 | P4.2 | BlubController extraction | b65811b | ./gradlew build | BUILD SUCCESSFUL |
 | P5.1 | i18n sweep for remaining player-facing strings | 950dcd7 | ./gradlew build | BUILD SUCCESSFUL |
+| P9 | test-provider skeleton | 6030e8b | (standalone Maven build) | skeleton created |
