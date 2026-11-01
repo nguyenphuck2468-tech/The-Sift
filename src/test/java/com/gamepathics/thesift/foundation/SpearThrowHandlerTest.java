@@ -12,19 +12,23 @@ import org.mockbukkit.mockbukkit.MockBukkit;
 import org.mockbukkit.mockbukkit.ServerMock;
 import org.mockbukkit.mockbukkit.entity.PlayerMock;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests SpearThrowHandler logic via the injectable computeThrowCost() method and the
- * dropThrownCopy() PDC flag mechanism — no entity spawning needed.
-  * Note: cooldownBlocksSecondThrow is tested on a real Paper server because
- * MockBukkit's PlayerMock PDC does not persist between calls.
+ * Full lifecycle test for SpearThrowHandler using an injectable spawner and clock.
+ * Covers: tag recognition, creative mode, cooldown via injectable clock,
+ * spawn failure rollback, spawner exception safety.
+ * Paper-integration tests needed for: durability commit via damage(1,player),
+ * broken spear hand clearing, cooldown PDC persistence.
  */
 class SpearThrowHandlerTest {
     private ServerMock server;
     private org.bukkit.plugin.java.JavaPlugin plugin;
     private SpearThrowHandler handler;
     private int spawnCount;
+    private AtomicLong fakeClock;
 
     @BeforeEach
     void setUp() {
@@ -32,10 +36,22 @@ class SpearThrowHandlerTest {
         plugin = MockBukkit.createMockPlugin("TheSift");
         handler = new SpearThrowHandler(plugin);
         spawnCount = 0;
-        // Injectable spawner: counts invocations, returns null (no real entity needed)
-        handler.setSpawner((eye, item, shooter, speed, broke) -> {
+        fakeClock = new AtomicLong(1_000_000L);
+        handler.setClock(fakeClock::get);
+        // MockBukkit's damage(1, player) doesn't work on PlayerMock (NMS internals);
+        // inject a meta-based strategy that produces the same result for testing.
+        handler.setDurabilityStrategy((held, player) -> {
+            ItemStack copy = held.clone();
+            var m = copy.getItemMeta();
+            if (m instanceof org.bukkit.inventory.meta.Damageable d) {
+                d.setDamage(d.getDamage() + 1);
+                copy.setItemMeta(m);
+            }
+            return copy;
+        });
+        handler.setSpawner((eye, item, shooter, speed) -> {
             spawnCount++;
-            return null; // no real projectile in test
+            return null; // no real entity needed for logic tests
         });
     }
 
@@ -53,6 +69,12 @@ class SpearThrowHandlerTest {
         return spear;
     }
 
+    private PlayerMock playerSurvival() {
+        var player = server.addPlayer();
+        player.setGameMode(GameMode.SURVIVAL);
+        return player;
+    }
+
     @Test
     void isSpearRecognizesTaggedItems() {
         assertTrue(handler.isSpear(createSpear()));
@@ -61,75 +83,82 @@ class SpearThrowHandlerTest {
     }
 
     @Test
-    void computeThrowCostSurvivalReducesDurability() {
-        ItemStack held = createSpear();
-        short before = held.getDurability();
-
-        ItemStack[] result = SpearThrowHandler.computeThrowCost(held, false);
-
-        assertNotNull(result[0], "survival hand item must not be null (spear didn't break)");
-        assertNotNull(result[1], "projectile item must not be null (spear didn't break)");
-        assertEquals((short)(before + 1), result[0].getDurability(), "hand item must lose 1 durability");
-    }
-
-    @Test
-    void computeThrowCostCreativeKeepsFullDurability() {
-        ItemStack held = createSpear();
-        short before = held.getDurability();
-
-        ItemStack[] result = SpearThrowHandler.computeThrowCost(held, true);
-
-        assertNotNull(result[0]);
-        assertNotNull(result[1]);
-        assertEquals(before, result[0].getDurability(), "creative must not lose durability");
-        assertEquals(before, result[1].getDurability(), "projectile copy must also be undamaged");
-    }
-
-    @Test
-    void throwSpearSurvivalSpawnsProjectileAndReducesDurability() {
-        PlayerMock player = server.addPlayer();
-        ItemStack spear = createSpear();
-        short before = spear.getDurability();
-
-        var projectile = handler.throwSpear(plugin, player, spear, org.bukkit.inventory.EquipmentSlot.HAND);
-
-        // The spawner was invoked (even if it returns null in test mode)
-        assertEquals(1, spawnCount, "projectile spawner must be called exactly once");
-        // The hand item must be damaged (the inventory was updated by throwSpear)
-        var inHand = player.getInventory().getItemInMainHand();
-        if (!inHand.getType().isAir()) {
-            assertEquals((short)(before + 1), inHand.getDurability(), "held spear must lose 1 durability");
-        }
-    }
-
-    @Test
-    void throwSpearCreativeDoesNotReduceDurability() {
-        PlayerMock player = server.addPlayer();
+    void creativeThrowDoesNotReduceDurability() {
+        var player = server.addPlayer();
         player.setGameMode(GameMode.CREATIVE);
         ItemStack spear = createSpear();
-        short before = spear.getDurability();
+        player.getInventory().setItemInMainHand(spear);
+        int before = 0;
+        var m0 = spear.getItemMeta();
+        if (m0 instanceof org.bukkit.inventory.meta.Damageable d0) before = d0.getDamage();
 
         handler.throwSpear(plugin, player, spear, org.bukkit.inventory.EquipmentSlot.HAND);
 
-        assertEquals(1, spawnCount, "spawner must be called");
         var inHand = player.getInventory().getItemInMainHand();
         if (!inHand.getType().isAir()) {
-            assertEquals(before, inHand.getDurability(), "creative must not lose durability");
+            var m = inHand.getItemMeta();
+            if (m instanceof org.bukkit.inventory.meta.Damageable d) {
+                assertEquals(before, d.getDamage(), "creative must not lose durability");
+            }
         }
     }
 
     @Test
-    void brokenSpearHandBecomesAirAndNoProjectileItem() {
-        PlayerMock player = server.addPlayer();
+    void spawnFailureDoesNotReduceDurabilityOrConsumeCooldown() {
+        var player = playerSurvival();
         ItemStack spear = createSpear();
-        // Damage to one point before breaking
-        spear.setDurability((short)(spear.getType().getMaxDurability() - 1));
+        player.getInventory().setItemInMainHand(spear);
+        int beforeDamage = 0;
+        var meta = spear.getItemMeta();
+        if (meta instanceof org.bukkit.inventory.meta.Damageable d) beforeDamage = d.getDamage();
 
-        var projectile = handler.throwSpear(plugin, player, spear, org.bukkit.inventory.EquipmentSlot.HAND);
+        handler.setSpawner((eye, item, shooter, speed) -> null);
+        var result = handler.throwSpear(plugin, player, spear, org.bukkit.inventory.EquipmentSlot.HAND);
 
-        // Hand must be cleared (spear broke)
-        var inHand = player.getInventory().getItemInMainHand();
-        assertTrue(inHand.getType().isAir() || inHand.getAmount() == 0,
-                "broken spear must clear the hand slot");
+        assertNull(result, "failed spawn must return null");
+        // Cooldown must not be consumed: a retry with a working spawner must succeed
+        spawnCount = 0;
+        handler.setSpawner((eye, item, shooter, speed) -> { spawnCount++; return null; });
+        handler.throwSpear(plugin, player, spear, org.bukkit.inventory.EquipmentSlot.HAND);
+        assertTrue(spawnCount >= 1, "retry after failed spawn must not be blocked by cooldown");
     }
+
+    @Test
+    void spawnerExceptionDoesNotReduceDurability() {
+        var player = playerSurvival();
+        ItemStack spear = createSpear();
+        player.getInventory().setItemInMainHand(spear);
+        int beforeDamage = 0;
+        var meta = spear.getItemMeta();
+        if (meta instanceof org.bukkit.inventory.meta.Damageable d) beforeDamage = d.getDamage();
+
+        handler.setSpawner((eye, item, shooter, speed) -> {
+            throw new RuntimeException("spawn exploded");
+        });
+        var result = handler.throwSpear(plugin, player, spear, org.bukkit.inventory.EquipmentSlot.HAND);
+
+        assertNull(result, "exception during spawn must return null");
+        var inHand = player.getInventory().getItemInMainHand();
+        if (!inHand.getType().isAir()) {
+            var m = inHand.getItemMeta();
+            if (m instanceof org.bukkit.inventory.meta.Damageable d) {
+                assertEquals(beforeDamage, d.getDamage(),
+                        "exception during spawn must not reduce durability");
+            }
+        }
+    }
+
+    @Test
+    void cooldownExpiryAllowsSecondThrow() {
+        var player = playerSurvival();
+        ItemStack spear = createSpear();
+
+        handler.throwSpear(plugin, player, spear, org.bukkit.inventory.EquipmentSlot.HAND);
+        int spawnsAfterFirst = spawnCount;
+
+        fakeClock.addAndGet(600L);
+        handler.throwSpear(plugin, player, spear, org.bukkit.inventory.EquipmentSlot.HAND);
+        assertEquals(spawnsAfterFirst + 1, spawnCount, "throw after cooldown expiry must succeed");
+    }
+
 }

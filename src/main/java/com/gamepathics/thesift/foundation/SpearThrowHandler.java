@@ -2,7 +2,6 @@ package com.gamepathics.thesift.foundation;
 
 import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -12,13 +11,18 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.function.BiFunction;
+import java.util.function.LongSupplier;
 
 /**
- * Owns the Siftite Spear throw lifecycle so the durability economy is testable.
+ * Owns the Siftite Spear throw lifecycle as a transactional operation.
  *
- * <p>The projectile spawning is abstracted behind {@link ProjectileSpawner} so tests can
- * verify durability, creative mode and drop logic without needing real entity spawning.
+ * <p>The projectile spawns FIRST; only after a successful spawn is the durability cost
+ * committed to the held item and the cooldown consumed. If the spawner returns null or
+ * throws, the player's inventory and cooldown state are untouched.
+ *
+ * <p>Durability uses an injectable {@link DurabilityStrategy} that defaults to
+ * {@code ItemStack.damage(1, player)} which honours Unbreaking and Paper's pipeline.
+ * Creative players keep their stack. Cooldown uses an injectable clock.
  */
 final class SpearThrowHandler {
     private final NamespacedKey spearTagKey;
@@ -26,13 +30,18 @@ final class SpearThrowHandler {
     private final NamespacedKey droppedKey;
     private final NamespacedKey lastThrowKey;
     private final JavaPlugin plugin;
+    private LongSupplier clock = System::currentTimeMillis;
 
-    /** Creates the projectile entity; injectable for testing. */
     interface ProjectileSpawner {
-        Snowball spawn(Location eye, ItemStack item, Player shooter, double speed, boolean broke);
+        Snowball spawn(Location eye, ItemStack item, Player shooter, double speed);
+    }
+
+    interface DurabilityStrategy {
+        ItemStack apply(ItemStack held, Player player);
     }
 
     private ProjectileSpawner spawner;
+    private DurabilityStrategy durabilityStrategy = (held, player) -> held.damage(1, player);
 
     SpearThrowHandler(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -43,18 +52,17 @@ final class SpearThrowHandler {
         this.spawner = this::defaultSpawn;
     }
 
-    void setSpawner(ProjectileSpawner spawner) {
-        this.spawner = spawner;
-    }
+    void setSpawner(ProjectileSpawner spawner) { this.spawner = spawner; }
+    void setDurabilityStrategy(DurabilityStrategy s) { this.durabilityStrategy = s; }
+    void setClock(LongSupplier clock) { this.clock = clock; }
 
-    private Snowball defaultSpawn(Location eye, ItemStack item, Player shooter, double speed, boolean broke) {
+    private Snowball defaultSpawn(Location eye, ItemStack item, Player shooter, double speed) {
         return eye.getWorld().spawn(eye, Snowball.class, spawned -> {
             spawned.setItem(item);
             spawned.setShooter(shooter);
             spawned.setVelocity(eye.getDirection().normalize().multiply(speed));
             spawned.getPersistentDataContainer().set(thrownTagKey, PersistentDataType.STRING,
                     "thrown_siftite_spear");
-            if (broke) spawned.getPersistentDataContainer().set(droppedKey, PersistentDataType.BYTE, (byte) 1);
         });
     }
 
@@ -64,50 +72,43 @@ final class SpearThrowHandler {
                         .get(spearTagKey, PersistentDataType.STRING));
     }
 
-    boolean offCooldown(Player player) {
-        long now = System.currentTimeMillis();
-        Long last = player.getPersistentDataContainer().get(lastThrowKey, PersistentDataType.LONG);
-        if (last != null && now - last < 500L) return false;
-        player.getPersistentDataContainer().set(lastThrowKey, PersistentDataType.LONG, now);
-        return true;
-    }
-
-    /**
-     * Computes the throw cost: returns the damaged item for the hand (null if broke) and
-     * the item for the projectile. Static and testable without entities.
-     */
-    static ItemStack[] computeThrowCost(ItemStack held, boolean creative) {
-        if (creative) return new ItemStack[]{held.clone(), held.clone()};
-        ItemStack handItem = held.clone();
-        var meta = handItem.getItemMeta();
-        if (meta instanceof org.bukkit.inventory.meta.Damageable damageable) {
-            int newDamage = damageable.getDamage() + 1;
-            if (newDamage >= held.getType().getMaxDurability()) {
-                return new ItemStack[]{null, null};
-            }
-            damageable.setDamage(newDamage);
-            handItem.setItemMeta(meta);
-        }
-        ItemStack projectileItem = handItem.clone();
-        return new ItemStack[]{handItem, projectileItem};
-    }
-
     Snowball throwSpear(JavaPlugin plugin, Player player, ItemStack held, EquipmentSlot hand) {
-        if (!offCooldown(player)) return null;
+        long now = clock.getAsLong();
+        Long last = player.getPersistentDataContainer().get(lastThrowKey, PersistentDataType.LONG);
+        if (last != null && now - last < 500L) return null;
         boolean creative = player.getGameMode() == GameMode.CREATIVE;
-        ItemStack[] cost = computeThrowCost(held, creative);
-        ItemStack handItem = cost[0];
-        ItemStack projectileItem = cost[1];
-        boolean broke = handItem == null;
 
-        if (!creative) {
-            player.getInventory().setItem(hand, handItem);
+        ItemStack projectileItem;
+        if (creative) {
+            projectileItem = held.clone();
+        } else {
+            projectileItem = held.clone();
+            var meta = projectileItem.getItemMeta();
+            if (meta instanceof org.bukkit.inventory.meta.Damageable d) {
+                d.setDamage(d.getDamage() + 1);
+                projectileItem.setItemMeta(meta);
+            }
         }
 
         Location eye = player.getEyeLocation();
         double reach = Math.max(1.0, plugin.getConfig().getDouble("siftite.spear-reach", 4.5));
         double speed = Math.max(0.8, Math.min(2.0, reach / 2.5));
-        return spawner.spawn(eye, projectileItem, player, speed, broke);
+        Snowball projectile;
+        try {
+            projectile = spawner.spawn(eye, projectileItem, player, speed);
+        } catch (RuntimeException exception) {
+            plugin.getLogger().warning("Spear projectile spawn failed: " + exception.getMessage());
+            return null;
+        }
+        if (projectile == null) return null;
+
+        if (!creative) {
+            ItemStack damaged = durabilityStrategy.apply(held, player);
+            player.getInventory().setItem(hand,
+                    damaged == null || damaged.getType().isAir() ? null : damaged);
+        }
+        player.getPersistentDataContainer().set(lastThrowKey, PersistentDataType.LONG, now);
+        return projectile;
     }
 
     boolean dropThrownCopy(JavaPlugin plugin, Snowball projectile) {
