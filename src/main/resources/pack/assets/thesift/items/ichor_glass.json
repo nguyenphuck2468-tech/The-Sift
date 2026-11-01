@@ -1,6 +1,6 @@
 {
   "model": {
-    "model": "thesift:item/ichor_glass",
-    "type": "minecraft:model"
+    "type": "minecraft:model",
+    "model": "thesift:block/ichor_glass"
   }
 }

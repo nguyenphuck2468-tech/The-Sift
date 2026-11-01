@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "thesift:block/overgrown_willow_planks"
+  }
+}

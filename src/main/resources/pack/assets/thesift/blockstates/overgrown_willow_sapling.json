@@ -1,0 +1,22 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "thesift:block/overgrown_willow_sapling",
+        "y": 0
+      },
+      {
+        "model": "thesift:block/overgrown_willow_sapling",
+        "y": 90
+      },
+      {
+        "model": "thesift:block/overgrown_willow_sapling",
+        "y": 180
+      },
+      {
+        "model": "thesift:block/overgrown_willow_sapling",
+        "y": 270
+      }
+    ]
+  }
+}

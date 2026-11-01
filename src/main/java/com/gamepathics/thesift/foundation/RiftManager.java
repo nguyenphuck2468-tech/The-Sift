@@ -559,8 +559,9 @@ public final class RiftManager implements Listener {
         event.setCancelled(true);
         Player player = event.getPlayer();
         int played = noteBlock.getNote().getId() + 1;
-        player.playSound(block.getLocation(), "minecraft:block.note_block.harp", 0.8f,
-                (float) Math.pow(2.0, (played - 1) / 12.0));
+        // Reference-mod parity: the mod's Sonorous Deepslate recordings (pack-bundled).
+        player.playSound(block.getLocation(),
+                "thesift:block.sonorous_deepslate.sound_" + Math.min(8, Math.max(1, played)), 0.8f, 1.0f);
         block.getWorld().spawnParticle(Particle.NOTE, block.getLocation().add(0.5, 1.2, 0.5), 1,
                 0, 0, 0, (played - 1) / 24.0);
         // findConsole walks connected note blocks; cap repeat lookups to 4 ticks per player.
@@ -783,7 +784,8 @@ public final class RiftManager implements Listener {
             state = RiftState.OPENING;
             stateTimer = 0;
             phase = 0;
-            center.getWorld().playSound(center, Sound.BLOCK_PORTAL_AMBIENT, 1.0f, 0.5f);
+            // Reference-mod parity: the Sift portal trigger sting (pack-bundled OGG).
+            center.getWorld().playSound(center, "thesift:block.sift_portal.trigger", 1.0f, 0.9f);
             center.getWorld().spawnParticle(Particle.PORTAL, center.clone().add(0, 1, 0), 50, 2, 2, 2, 0.1);
             notifyOpener(Messages.get("rift.tearing-open", "§5The rift begins to tear open..."));
             

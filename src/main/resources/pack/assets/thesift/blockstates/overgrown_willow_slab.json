@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "thesift:block/overgrown_willow_slab"
+    },
+    "type=double": {
+      "model": "thesift:block/overgrown_willow_planks"
+    },
+    "type=top": {
+      "model": "thesift:block/overgrown_willow_slab_top"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/button",
+  "textures": {
+    "texture": "thesift:block/overgrown_willow_planks"
+  }
+}

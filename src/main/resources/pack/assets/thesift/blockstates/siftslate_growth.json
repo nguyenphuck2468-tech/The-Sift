@@ -1,0 +1,53 @@
+{
+  "variants": {
+    "snowy=false": [
+      {
+        "model": "thesift:block/siftslate_growth"
+      },
+      {
+        "model": "thesift:block/siftslate_growth",
+        "y": 90
+      },
+      {
+        "model": "thesift:block/siftslate_growth",
+        "y": 180
+      },
+      {
+        "model": "thesift:block/siftslate_growth",
+        "y": 270
+      },
+      {
+        "model": "thesift:block/siftslate_growth_mirrored"
+      },
+      {
+        "model": "thesift:block/siftslate_growth_mirrored",
+        "y": 90
+      },
+      {
+        "model": "thesift:block/siftslate_growth_mirrored",
+        "y": 180
+      },
+      {
+        "model": "thesift:block/siftslate_growth_mirrored",
+        "y": 270
+      }
+    ],
+    "snowy=true": [
+      {
+        "model": "thesift:block/siftslate_growth_ichor_snowy"
+      },
+      {
+        "model": "thesift:block/siftslate_growth_ichor_snowy",
+        "y": 90
+      },
+      {
+        "model": "thesift:block/siftslate_growth_ichor_snowy",
+        "y": 180
+      },
+      {
+        "model": "thesift:block/siftslate_growth_ichor_snowy",
+        "y": 270
+      }
+    ]
+  }
+}

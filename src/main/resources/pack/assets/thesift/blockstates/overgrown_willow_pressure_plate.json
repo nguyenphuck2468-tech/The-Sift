@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "powered=false": {
+      "model": "thesift:block/overgrown_willow_pressure_plate"
+    },
+    "powered=true": {
+      "model": "thesift:block/overgrown_willow_pressure_plate_down"
+    }
+  }
+}

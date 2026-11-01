@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/inner_stairs",
+  "textures": {
+    "bottom": "thesift:block/siftslate_bricks",
+    "top": "thesift:block/siftslate_bricks",
+    "side": "thesift:block/siftslate_bricks"
+  }
+}

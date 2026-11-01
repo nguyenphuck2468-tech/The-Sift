@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "axis=x": {
+      "model": "thesift:block/overgrown_willow_wood",
+      "x": 90,
+      "y": 90
+    },
+    "axis=y": {
+      "model": "thesift:block/overgrown_willow_wood"
+    },
+    "axis=z": {
+      "model": "thesift:block/overgrown_willow_wood",
+      "x": 90
+    }
+  }
+}

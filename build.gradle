@@ -36,7 +36,9 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 processResources {
-    exclude("**/*.png")
+    // Pack PNGs/OGGs stay in the jar (MIT assets from the reference mod — see
+    // THIRD_PARTY_LICENSES/CREDITS.md) so ResourcePackBridge can materialise the
+    // distributable zip from jar resources without an extra build step.
     filesMatching(["plugin.yml", "paper-plugin.yml"]) {
         expand(version: project.version)
     }

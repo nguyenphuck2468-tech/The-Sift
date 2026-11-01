@@ -1,0 +1,12 @@
+{
+  "variants": {
+    "": [
+      {
+        "model": "thesift:block/siftslate"
+      },
+      {
+        "model": "thesift:block/siftslate_mirrored"
+      }
+    ]
+  }
+}

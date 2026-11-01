@@ -472,8 +472,10 @@ final class AncientCityGateManager implements Listener {
         event.getPlayer().getWorld().spawnParticle(Particle.DUST,
                 noteBlock.getLocation().add(0.5, 1.1, 0.5), 8, 0.35, 0.15, 0.35,
                 new Particle.DustOptions(Color.fromRGB(SonorousPalette.noteRgb(played)), 1.1f));
-        event.getPlayer().playSound(noteBlock.getLocation(), Sound.BLOCK_NOTE_BLOCK_HARP, 0.8f,
-                (float) Math.pow(2.0, (played - 1) / 12.0));
+        // Reference-mod parity: each note plays its own Sonorous Deepslate recording
+        // (thesift:block.sonorous_deepslate.sound_1..8, bundled with the resource pack).
+        event.getPlayer().playSound(noteBlock.getLocation(),
+                "thesift:block.sonorous_deepslate.sound_" + Math.min(8, Math.max(1, played)), 0.8f, 1.0f);
         spawnSonorousBeam(base, played);
         if (result == AncientCityMelodyTracker.Result.WRONG) {
             event.getPlayer().playSound(noteBlock.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.8f, 0.6f);
