@@ -20,3 +20,4 @@
 | P6.4 | rifts.json persistence | d2f0d05 | ./gradlew build | BUILD SUCCESSFUL |
 | P6.5 | RiftPersistenceTest | 7c2125e | ./gradlew build | BUILD SUCCESSFUL (139 tests) |
 | P4.2 | BlubController extraction | b65811b | ./gradlew build | BUILD SUCCESSFUL |
+| P5.1 | i18n sweep for remaining player-facing strings | 950dcd7 | ./gradlew build | BUILD SUCCESSFUL |
