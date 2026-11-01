@@ -25,3 +25,4 @@
 | P1.2 | 4 verified review-round-2 bugs | c3bec62 | ./gradlew build | BUILD SUCCESSFUL |
 | P1.3 | All remaining P1/P2 from deep-dive review | 779907b | ./gradlew build | BUILD SUCCESSFUL |
 | P1.4 | bridge canDeliver + report sync | df07200 | ./gradlew build | BUILD SUCCESSFUL |
+| P0 | Singer/EchoGolem/RiftPersistence | 7657ad9 | ./gradlew build | BUILD SUCCESSFUL |
