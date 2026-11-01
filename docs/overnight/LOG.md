@@ -14,3 +14,4 @@
 | P8 | jacoco report-only + FanMadeGateTest | 7d19862 | ./gradlew build jacocoTestReport | BUILD SUCCESSFUL; report generated |
 | P1.1 | 4 verified review bugs + doc sync | 8663630 | ./gradlew build | BUILD SUCCESSFUL |
 | P6.1 | Dimension 1:1 enter/return | 1e03770 | ./gradlew build | BUILD SUCCESSFUL |
+| P6.2 | spec fanmade metadata + readiness filter | ef68411 | ./gradlew build | BUILD SUCCESSFUL |
