@@ -706,7 +706,6 @@ public final class SiftEcologyManager implements Listener {
         // before the weather fix, an infinite regeneration source). The mod's Ichor never
         // creates infinite sources.
         placeBlock(world.getBlockAt(x, y + 1, z), "ichor_water", Material.WATER);
-        placeBlock(world.getBlockAt(x, y + 1, z), "ichor_water", Material.WATER);
         world.spawnParticle(Particle.DRIPPING_OBSIDIAN_TEAR, new Location(world, x + .5, y + 1, z + .5),
                 12, 1, .2, 1, .02);
     }
