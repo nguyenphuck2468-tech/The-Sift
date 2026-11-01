@@ -52,7 +52,7 @@ import java.util.function.BooleanSupplier;
 
 /** Early vanilla-backed approximation of The Sift's world generation and living content. */
 public final class SiftEcologyManager implements Listener {
-    private static final String DIMENSION = "thesift:the_sift";
+    static final String DIMENSION = "thesift:the_sift";
     private static final byte CHUNK_DECORATION_IN_PROGRESS = 1;
     private static final byte CHUNK_DECORATION_COMPLETE = 2;
 
@@ -67,6 +67,7 @@ public final class SiftEcologyManager implements Listener {
     private final NamespacedKey blubOwnerKey;
     private final NamespacedKey blubStayKey;
     private final SpearThrowHandler spearThrowHandler;
+    private final BlubController blubController;
     private final NamespacedKey ichorSnowballAtKey;
     private final NamespacedKey ichorContentKey;
     private final NamespacedKey snifferCorruptionStartKey;
@@ -137,6 +138,8 @@ public final class SiftEcologyManager implements Listener {
         this.blubOwnerKey = new NamespacedKey(plugin, "blub_owner");
         this.blubStayKey = new NamespacedKey(plugin, "blub_stay");
         this.spearThrowHandler = new SpearThrowHandler(plugin);
+        this.blubController = new BlubController(plugin, sharedContent, this);
+        plugin.getServer().getPluginManager().registerEvents(this.blubController, plugin);
         this.ichorSnowballAtKey = new NamespacedKey(plugin, "ichor_snowball_last_throw");
         // Same namespace:name pair IchorContent uses for its content tag, so the snowball
         // handlers can read IchorContent-tagged items without an IchorContent reference.
@@ -180,7 +183,7 @@ public final class SiftEcologyManager implements Listener {
             if (plugin.getConfig().getBoolean("content.sift_tide", false)) tickTide();
             tickIchorWeather();
             tickDarkSniffers();
-            tickBlubs();
+            blubController.tick();
             tickSifterHerds();
             tickIchorCauldrons();
         }, 100L, 100L);
@@ -259,7 +262,7 @@ public final class SiftEcologyManager implements Listener {
     }
 
     /** Live tagged creatures of one species in the world, without a full entity scan. */
-    private java.util.List<Entity> indexedMobs(World sift, String... keys) {
+    java.util.List<Entity> indexedMobs(World sift, String... keys) {
         ensureIndexed(sift);
         java.util.List<Entity> result = new java.util.ArrayList<>();
         java.util.Set<UUID> seen = new java.util.HashSet<>();
@@ -2122,63 +2125,6 @@ public final class SiftEcologyManager implements Listener {
     }
 
     /**
-     * Reference-mod parity (Blub): right-clicking a wild Blub with a Soul Block tames it.
-     * The tamed Blub follows its owner and defends them against hostile mobs. Sitting is not
-     * implemented because a Rabbit has no leash/sit path without an item in hand; the mod's
-     * "sit" state is a GeckoLib animation we cannot mirror on a vanilla stand-in.
-     */
-    @EventHandler(ignoreCancelled = true, priority = EventPriority.HIGHEST)
-    public void onBlubInteract(PlayerInteractEntityEvent event) {
-        if (event.getHand() != EquipmentSlot.HAND) return;
-        Entity target = event.getRightClicked();
-        if (!"blub".equals(target.getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING))) {
-            return;
-        }
-        Player player = event.getPlayer();
-        var pdc = target.getPersistentDataContainer();
-        String ownerId = pdc.get(blubOwnerKey, PersistentDataType.STRING);
-        ItemStack hand = player.getInventory().getItemInMainHand();
-        if (ownerId == null && content.is(hand, "soul_block")) {
-            if (!plugin.getConfig().getBoolean("content.blub", true)) return;
-            // Reference-mod parity: the Soul Block is always consumed and tames the Blub on
-            // a 1-in-3 roll (mobs.blub.tame-chance), not on every attempt.
-            consumeOne(player, hand);
-            event.setCancelled(true);
-            if (ThreadLocalRandom.current().nextDouble() >= plugin.getConfig().getDouble("mobs.blub.tame-chance", 1.0 / 3.0)) {
-                Messages.send(player, "blub.failed", "The Blub sniffs the Soul Block and wanders off. Try again.");
-                return;
-            }
-            pdc.set(blubOwnerKey, PersistentDataType.STRING, player.getUniqueId().toString());
-            if (target instanceof LivingEntity living) living.setRemoveWhenFarAway(false);
-            Messages.send(player, "blub.tamed", "The Blub accepts your Soul Block and follows you.");
-            SiftAdvancementGrant.grant(plugin, player, "blub");
-        } else if (ownerId != null && ownerId.equals(player.getUniqueId().toString())) {
-            event.setCancelled(true);
-            // Reference-mod parity (Blub): right-clicking your Blub with an empty hand
-            // toggles stay/follow (a Rabbit cannot play the mod's sit animation, so staying
-            // freezes the mob in place with its AI paused).
-            if (hand.getType().isAir()) {
-                boolean staying = pdc.has(blubStayKey, PersistentDataType.BYTE);
-                if (staying) {
-                    pdc.remove(blubStayKey);
-                    if (target instanceof Mob mob) mob.setAI(true);
-                    Messages.send(player, "blub.follow", "The Blub trots after you again.");
-                } else {
-                    pdc.set(blubStayKey, PersistentDataType.BYTE, (byte) 1);
-                    if (target instanceof Mob mob) {
-                        mob.setAI(false);
-                        mob.getPathfinder().stopPathfinding();
-                    }
-                    Messages.send(player, "blub.stay", "The Blub settles down and stays.");
-                }
-                return;
-            }
-            // Already yours: a small heart response, mirroring the mod's bond feedback.
-            target.getWorld().spawnParticle(Particle.HEART, target.getLocation().add(0, 0.6, 0), 3);
-        }
-    }
-
-    /**
      * Mod-parity spawn eggs: right-clicking a block with a tagged Sift spawn egg summons the
      * matching creature through the normal {@link #summonCreature} path (provider-first spawn,
      * config stats, PDC tagging). Vanilla stand-in eggs carry our content id in their PDC, so
@@ -2220,70 +2166,6 @@ public final class SiftEcologyManager implements Listener {
         } else {
             player.sendMessage("§c" + Messages.get("spawn-eggs.unknown",
                     "Unknown Sift creature: %species%").replace("%species%", species));
-        }
-    }
-
-    /** Follow + defend tick for tamed Blubs, batched per world instead of per player. */
-    private void tickBlubs() {
-        World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
-        if (sift == null) return;
-        for (Entity entity : indexedMobs(sift, "blub")) {
-            if (!(entity instanceof Mob blub)) continue;
-            var pdc = blub.getPersistentDataContainer();
-            if (!"blub".equals(pdc.get(creatureKey, PersistentDataType.STRING))) continue;
-            String ownerId = pdc.get(blubOwnerKey, PersistentDataType.STRING);
-            if (pdc.has(blubStayKey, PersistentDataType.BYTE)) continue; // staying put
-            if (ownerId == null) {
-                // Reference-mod parity (Blub): wild Blubs are drawn to a nearby player holding
-                // a Soul Block - the same item that tames them.
-                if (blub.getTarget() == null) {
-                    for (Entity holder : blub.getNearbyEntities(10, 6, 10)) {
-                        if (!(holder instanceof Player nearby)
-                                || nearby.getGameMode() == GameMode.SPECTATOR) continue;
-                        if (content.is(nearby.getInventory().getItemInMainHand(), "soul_block")
-                                || content.is(nearby.getInventory().getItemInOffHand(), "soul_block")) {
-                            blub.getPathfinder().moveTo(nearby.getLocation());
-                            break;
-                        }
-                    }
-                }
-                continue;
-            }
-            Player owner;
-            try {
-                owner = Bukkit.getPlayer(UUID.fromString(ownerId));
-            } catch (IllegalArgumentException ignored) {
-                continue;
-            }
-            if (owner == null || !owner.isOnline() || owner.getWorld() != sift) continue;
-            // Defend: target the most recent hostile attacker of the owner within range,
-            // otherwise follow (teleport-lead like the mod's seated/following behaviour).
-            boolean defending = false;
-            if (blub.getTarget() == null) {
-                for (Entity holder : sift.getNearbyEntities(owner.getLocation(), 8, 4, 8)) {
-                    if (!(holder instanceof Mob hostile)) continue;
-                    if (hostile.getTarget() == owner && hostile.getLocation()
-                            .distanceSquared(blub.getLocation()) < 64) {
-                        blub.setTarget(hostile);
-                        defending = true;
-                        break;
-                    }
-                }
-            } else if (blub.getTarget() instanceof Mob hostile && hostile.getTarget() == owner) {
-                defending = true;
-            }
-            double distance = blub.getLocation().distanceSquared(owner.getLocation());
-            if (!defending && distance > 25) {
-                if (distance > 900) {
-                    Location anchor = owner.getLocation().add(0, 0.2, 0);
-                    if (blub.teleport(anchor)) {
-                        sift.spawnParticle(Particle.POOF, anchor, 4, 0.2, 0.2, 0.2, 0);
-                    }
-                } else {
-                    // Walk toward the owner using Paper's Pathfinder API (no NMS needed).
-                    blub.getPathfinder().moveTo(owner.getLocation());
-                }
-            }
         }
     }
 
