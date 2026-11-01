@@ -140,6 +140,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new SiftResourcePackListener(this, resourcePackBridge), this);
         // Keep a delayed initial refresh as a fallback for providers without a load event.
         getServer().getScheduler().runTaskLater(this, () -> {
+            if (riftManager != null) riftManager.loadRifts();
             datapackBridge.stageBundledPacks();
             resourcePackBridge.prepare();
             refreshContentRecipes();

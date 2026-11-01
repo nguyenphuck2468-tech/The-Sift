@@ -30,6 +30,7 @@ import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.HashSet;
@@ -115,8 +116,113 @@ public final class RiftManager implements Listener {
         if (updateTask == null) updateTask = Bukkit.getScheduler().runTaskTimer(plugin, this::updateRifts, 20L, 20L);
     }
 
+    // ---- persistence: plugins/TheSift/rifts.json (atomic write, expired entries skipped) ----
+
+    /** One persisted rift. Portal rifts keep expiresAt = -1 (they close via their gate). */
+    static final class RiftSaveEntry {
+        String id;
+        boolean portal;
+        String world;
+        int cx, cy, cz;
+        String exitWorld;
+        int ex, ey, ez;
+        long expiresAt;
+    }
+
+    private java.nio.file.Path riftsFile() {
+        return plugin.getDataFolder().toPath().resolve("rifts.json");
+    }
+
+    /** Writes every active rift with an exit; survives restarts via an atomic temp-file move. */
+    void saveRifts() {
+        try {
+            java.nio.file.Path file = riftsFile();
+            java.nio.file.Files.createDirectories(file.getParent());
+            List<RiftSaveEntry> entries = new java.util.ArrayList<>();
+            long now = System.currentTimeMillis();
+            for (RiftInstance rift : rifts.values()) {
+                if (rift.state != RiftState.ACTIVE || rift.exitCenter == null
+                        || rift.center.getWorld() == null || rift.exitCenter.getWorld() == null) continue;
+                RiftSaveEntry entry = new RiftSaveEntry();
+                entry.id = rift.id.toString();
+                entry.portal = rift.portal;
+                entry.world = rift.center.getWorld().getName();
+                entry.cx = rift.center.getBlockX();
+                entry.cy = rift.center.getBlockY();
+                entry.cz = rift.center.getBlockZ();
+                entry.exitWorld = rift.exitCenter.getWorld().getName();
+                entry.ex = rift.exitCenter.getBlockX();
+                entry.ey = rift.exitCenter.getBlockY();
+                entry.ez = rift.exitCenter.getBlockZ();
+                int durationTicks = (rift.portal
+                        ? Math.max(1, plugin.getConfig().getInt("rift.portal-active-seconds", 900))
+                        : Math.max(1, plugin.getConfig().getInt("rift.active-duration-seconds", 300))) * 20;
+                int remainingTicks = Math.max(0, durationTicks - rift.stateTimer);
+                entry.expiresAt = now + remainingTicks * 50L;
+                entries.add(entry);
+            }
+            String json = new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(entries);
+            java.nio.file.Path temp = java.nio.file.Files.createTempFile(file.getParent(), "rifts", ".tmp");
+            java.nio.file.Files.writeString(temp, json);
+            try {
+                java.nio.file.Files.move(temp, file, java.nio.file.StandardCopyOption.REPLACE_EXISTING,
+                        java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+            } catch (java.nio.file.AtomicMoveNotSupportedException exception) {
+                java.nio.file.Files.move(temp, file, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            } finally {
+                java.nio.file.Files.deleteIfExists(temp);
+            }
+        } catch (Exception exception) {
+            plugin.getLogger().log(java.util.logging.Level.WARNING, "Could not save rifts.json", exception);
+        }
+    }
+
+    /** Restores active rifts saved by a previous session; expired or unknown-world entries are skipped. */
+    void loadRifts() {
+        java.nio.file.Path file = riftsFile();
+        if (!java.nio.file.Files.exists(file)) return;
+        try {
+            RiftSaveEntry[] entries = new com.google.gson.Gson().fromJson(
+                    java.nio.file.Files.readString(file), RiftSaveEntry[].class);
+            if (entries == null) return;
+            long now = System.currentTimeMillis();
+            int restored = 0;
+            for (RiftSaveEntry entry : skipExpired(entries, now)) {
+                World centerWorld = Bukkit.getWorld(entry.world);
+                World exitWorld = Bukkit.getWorld(entry.exitWorld);
+                if (centerWorld == null || exitWorld == null) continue;
+                RiftInstance rift = new RiftInstance(UUID.fromString(entry.id),
+                        new Location(centerWorld, entry.cx + 0.5, entry.cy, entry.cz + 0.5), null, entry.portal);
+                int durationTicks = (entry.portal
+                        ? Math.max(1, plugin.getConfig().getInt("rift.portal-active-seconds", 900))
+                        : Math.max(1, plugin.getConfig().getInt("rift.active-duration-seconds", 300))) * 20;
+                int remainingTicks = Math.max(0, (int) Math.min(durationTicks,
+                        (entry.expiresAt - now) / 50L));
+                rift.restoreActive(new Location(exitWorld, entry.ex + 0.5, entry.ey, entry.ez + 0.5),
+                        remainingTicks);
+                rifts.put(rift.id, rift);
+                restored++;
+            }
+            java.nio.file.Files.deleteIfExists(file);
+            if (restored > 0) plugin.getLogger().info("Restored " + restored + " rift(s) from rifts.json.");
+        } catch (Exception exception) {
+            plugin.getLogger().log(java.util.logging.Level.WARNING,
+                    "Could not load rifts.json; starting with no persisted rifts.", exception);
+        }
+    }
+
+    /** Drops entries whose expiry has passed (static for tests). */
+    static List<RiftSaveEntry> skipExpired(RiftSaveEntry[] entries, long now) {
+        List<RiftSaveEntry> result = new java.util.ArrayList<>();
+        for (RiftSaveEntry entry : entries) {
+            if (entry != null && (entry.expiresAt < 0 || entry.expiresAt > now)) result.add(entry);
+        }
+        return result;
+    }
+
     public void shutdown() {
         if (updateTask != null) updateTask.cancel();
+        saveRifts();
         rifts.values().forEach(RiftInstance::discard);
         rifts.clear();
         travelling.clear();
@@ -170,6 +276,7 @@ public final class RiftManager implements Listener {
         rifts.put(id, rift);
         lastOpened = rift;
         rift.beginOpening();
+        saveRifts();
         return true;
     }
 
@@ -549,6 +656,20 @@ public final class RiftManager implements Listener {
             this.portal = portal;
         }
 
+        /** Rebuilds an ACTIVE rift from a saved session without replaying effects. */
+        void restoreActive(Location exit, int remainingTicks) {
+            this.exitCenter = exit;
+            this.state = RiftState.ACTIVE;
+            this.phase = 1;
+            this.stateTimer = Math.max(0, durationTicksTotal() - remainingTicks);
+        }
+
+        private int durationTicksTotal() {
+            return (portal
+                    ? Math.max(1, plugin.getConfig().getInt("rift.portal-active-seconds", 900))
+                    : Math.max(1, plugin.getConfig().getInt("rift.active-duration-seconds", 300))) * 20;
+        }
+
         void setGate(org.bukkit.util.BoundingBox gate, Location arrival) {
             this.gate = gate;
             this.gateArrival = arrival;
@@ -660,6 +781,7 @@ public final class RiftManager implements Listener {
                 exitCenter.getWorld().spawnParticle(Particle.SMOKE, exitCenter, 30, 1, 1, 1, 0.03);
                 exitCenter.getWorld().playSound(exitCenter, Sound.BLOCK_PORTAL_AMBIENT, 0.5f, 0.5f);
             }
+            RiftManager.this.saveRifts();
         }
 
         private void dropRewards() {
