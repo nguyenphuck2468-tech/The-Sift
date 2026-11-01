@@ -39,3 +39,11 @@ tide:
 
 disabled: "Ancient City gates are disabled."
   not-found: "No generated Ancient City gate was found within 512 blocks."
+gate:
+  no-landing: "The portal could not find a safe 1:1 landing. No teleport was performed."
+  silent: "This gate is silent. Play a Goat Horn near its Sonorous Deepslate to summon a Singer."
+  cannot-open: "This gate cannot open yet: required content and mob providers are unresolved. Run /sift doctor."
+  locked: "Ancient City gates are locked because required providers are unresolved. Run /sift doctor."
+
+rift:
+  dimension-unavailable: "The Sift dimension is unavailable. Run /sift doctor."

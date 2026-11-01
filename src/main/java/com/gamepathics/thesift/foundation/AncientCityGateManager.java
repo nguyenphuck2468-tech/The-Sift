@@ -107,7 +107,7 @@ final class AncientCityGateManager implements Listener {
 
     Optional<Location> locate(Player player) {
         if (readiness.strict() && !readiness.dimensionAllowed()) {
-            player.sendMessage("Ancient City gates are locked because required providers are unresolved. Run /sift doctor.");
+            player.sendMessage("§c" + Messages.get("gate.locked", "Ancient City gates are locked because required providers are unresolved. Run /sift doctor."));
             return Optional.empty();
         }
         Optional<Gate> gate = findNearest(player.getLocation(), 32);
@@ -490,9 +490,9 @@ final class AncientCityGateManager implements Listener {
         if (gate == null || gate.open) return;
         Player player = event.getPlayer();
         if (readiness.strict() && !readiness.dimensionAllowed()) {
-            player.sendMessage("This gate cannot open yet: required content and mob providers are unresolved. Run /sift doctor.");
+            player.sendMessage("§c" + Messages.get("gate.cannot-open", "This gate cannot open yet: required content and mob providers are unresolved. Run /sift doctor."));
         } else if (!gate.awakened) {
-            player.sendMessage("This gate is silent. Play a Goat Horn near its Sonorous Deepslate to summon a Singer.");
+            player.sendMessage("§7" + Messages.get("gate.silent", "This gate is silent. Play a Goat Horn near its Sonorous Deepslate to summon a Singer."));
         } else {
             List<AncientCityFrame.BlockPos> missing = gate.frame.sonorousPositions(gate.side).stream()
                     .filter(position -> gate.world.getBlockAt(position.x(), position.y() + 1, position.z()).getType()
@@ -685,7 +685,7 @@ final class AncientCityGateManager implements Listener {
 
     private void travel(Player player, Gate source) {
         if (readiness.strict() && !readiness.dimensionAllowed()) {
-            player.sendMessage("This gate is locked because required providers are unresolved. Run /sift doctor.");
+            player.sendMessage("§c" + Messages.get("gate.locked", "This gate is locked because required providers are unresolved. Run /sift doctor."));
             plugin.getLogger().severe("Blocked gate travel because strict provider requirements are unresolved; saves were preserved.");
             return;
         }
@@ -716,7 +716,7 @@ final class AncientCityGateManager implements Listener {
         }
         if (destination == null) {
             travelling.remove(player.getUniqueId());
-            player.sendMessage("The portal could not find a safe 1:1 landing. No teleport was performed.");
+            player.sendMessage("§c" + Messages.get("gate.no-landing", "The portal could not find a safe 1:1 landing. No teleport was performed."));
             return;
         }
         if (!player.teleport(destination, org.bukkit.event.player.PlayerTeleportEvent.TeleportCause.PLUGIN)) {

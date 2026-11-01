@@ -39,3 +39,11 @@ tide:
 
 disabled: "Cổng Ancient City đang bị tắt."
   not-found: "Không tìm thấy cổng Ancient City nào trong 512 block."
+gate:
+  no-landing: "Không tìm được chỗ hạ an toàn 1:1. Không dịch chuyển."
+  silent: "Cổng còm lặng. Dùng Sừng Dê gần Sonorous Deepslate để gọi Singer."
+  cannot-open: "Cổng chưa mở được: provider chưa đủ. Chạy /sift doctor."
+  locked: "Cổng Ancient City bị khóa vì provider chưa đủ. Chạy /sift doctor."
+
+rift:
+  dimension-unavailable: "The Sift không khả dụng. Chạy /sift doctor."
