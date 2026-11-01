@@ -27,3 +27,4 @@
 | P1.4 | bridge canDeliver + report sync | df07200 | ./gradlew build | BUILD SUCCESSFUL |
 | P0 | Singer/EchoGolem/RiftPersistence | 7657ad9 | ./gradlew build | BUILD SUCCESSFUL |
 | P0.1 | Singer soul event invuln toggle | 5e97876 | ./gradlew build | BUILD SUCCESSFUL |
+| P1 | EchoGolem creative + the_sifter classification | df037e5 | ./gradlew build | BUILD SUCCESSFUL |
