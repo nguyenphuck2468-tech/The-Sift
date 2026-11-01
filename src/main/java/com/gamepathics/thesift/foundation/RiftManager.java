@@ -218,11 +218,15 @@ public final class RiftManager implements Listener {
             if (restored == entries.length) {
                 // All entries restored: the save file is consumed.
                 java.nio.file.Files.deleteIfExists(file);
+                if (restored > 0) plugin.getLogger().info("Restored " + restored + " rift(s) from rifts.json.");
             } else if (restored > 0) {
-                // Some entries skipped (world not loaded yet etc.); rewrite the survivors.
-                saveRifts();
+                // Some entries skipped (world not loaded yet): keep the file for a retry
+                // after the missing world loads. Only log what we could restore.
+                plugin.getLogger().warning("Restored " + restored + "/" + entries.length
+                        + " rift(s); " + (entries.length - restored) + " skipped (world not loaded), file preserved for retry.");
+            } else {
+                plugin.getLogger().warning("No rifts restored from rifts.json (worlds not loaded); file preserved.");
             }
-            if (restored > 0) plugin.getLogger().info("Restored " + restored + "/" + entries.length + " rift(s) from rifts.json.");
         } catch (Exception exception) {
             plugin.getLogger().log(java.util.logging.Level.WARNING,
                     "Could not load rifts.json; starting with no persisted rifts.", exception);

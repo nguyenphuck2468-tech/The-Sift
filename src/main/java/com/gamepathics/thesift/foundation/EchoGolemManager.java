@@ -42,6 +42,7 @@ public final class EchoGolemManager implements Listener {
     private final NamespacedKey entityKey;
     private final NamespacedKey ownerKey;
     private final NamespacedKey cargoKey;
+    private final ExternalBlockBridge blockBridge;
     private final java.util.Set<UUID> trackedGolems = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private java.util.function.Predicate<Entity> singerTest;
     private SiftMobFactory mobFactory;
@@ -75,6 +76,7 @@ public final class EchoGolemManager implements Listener {
         this.entityKey = new NamespacedKey(plugin, "echo_golem_entity");
         this.ownerKey = new NamespacedKey(plugin, "echo_golem_owner");
         this.cargoKey = new NamespacedKey(plugin, "echo_golem_soul_block");
+        this.blockBridge = new ExternalBlockBridge(plugin);
     }
 
     EchoGolemManager(JavaPlugin plugin, SiftiteContent content) {
@@ -94,6 +96,8 @@ public final class EchoGolemManager implements Listener {
     SiftMobFactory mobFactory() {
         return sharedMobFactory();
     }
+
+    private boolean golemsSeeded = false;
 
     public void start() {
         long interval = 20L;
@@ -148,6 +152,20 @@ public final class EchoGolemManager implements Listener {
     }
 
     private void pulse() {
+        if (!golemsSeeded) {
+            golemsSeeded = true;
+            // Entities loaded from disk (server restart) don't fire EntityAddToWorldEvent
+            // for our listener, so seed the tracking set from all loaded golems.
+            for (World world : Bukkit.getWorlds()) {
+                for (Entity entity : world.getEntities()) {
+                    if (entity.getPersistentDataContainer().has(entityKey, PersistentDataType.STRING)
+                            && ECHO_GOLEM_ID.equals(entity.getPersistentDataContainer()
+                                    .get(entityKey, PersistentDataType.STRING))) {
+                        trackedGolems.add(entity.getUniqueId());
+                    }
+                }
+            }
+        }
         if (plugin.getConfig().getBoolean("echo-golem.auto-delivery", true)) pulseSoulDelivery();
         if (!plugin.getConfig().getBoolean("echo-golem.enabled", true)
                 || !plugin.getConfig().getBoolean("content.echo_golem", true)) {
@@ -352,7 +370,13 @@ public final class EchoGolemManager implements Listener {
     private void pulseSoulDelivery() {
         for (UUID id : java.util.List.copyOf(trackedGolems)) {
             Entity entity = Bukkit.getEntity(id);
-            if (!(entity instanceof IronGolem golem) || golem.isDead() || !golem.isValid()) {
+            Entity golemEntity = entity;
+            if (golemEntity.isDead() || !golemEntity.isValid()
+                    || !isEchoGolem(golemEntity)) {
+                trackedGolems.remove(id);
+                continue;
+            }
+            if (!(golemEntity instanceof Mob golem)) {
                 trackedGolems.remove(id);
                 continue;
             }
@@ -398,7 +422,9 @@ public final class EchoGolemManager implements Listener {
                     Block block = world.getBlockAt(
                             center.getBlockX() + dx, center.getBlockY() + dy, center.getBlockZ() + dz);
                     // The Soul Block stand-in is soul sand; generated Soul Canyons are made of it.
-                    if (block.getType() == Material.SOUL_SAND) return block;
+                    // A provider may place a custom block instead — check via the block bridge.
+                    if (block.getType() == Material.SOUL_SAND
+                            || blockBridge.isBlock("soul_block", block)) return block;
                 }
             }
         }
