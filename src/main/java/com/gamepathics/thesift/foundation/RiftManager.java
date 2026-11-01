@@ -127,6 +127,10 @@ public final class RiftManager implements Listener {
         String exitWorld;
         int ex, ey, ez;
         long expiresAt;
+        // Gate metadata (null when not a gate rift)
+        Double gateMinX, gateMinY, gateMinZ, gateMaxX, gateMaxY, gateMaxZ;
+        String gateArrivalWorld;
+        Integer gateArrivalX, gateArrivalY, gateArrivalZ;
     }
 
     private java.nio.file.Path riftsFile() {
@@ -165,7 +169,21 @@ public final class RiftManager implements Listener {
                     int remainingTicks = Math.max(0, durationTicks - rift.stateTimer);
                     entry.expiresAt = now + remainingTicks * 50L;
                 }
-                entries.add(entry);
+                
+                if (rift.gate != null && rift.center.getWorld() != null) {
+                    entry.gateMinX = rift.gate.getMinX();
+                    entry.gateMinY = rift.gate.getMinY();
+                    entry.gateMinZ = rift.gate.getMinZ();
+                    entry.gateMaxX = rift.gate.getMaxX();
+                    entry.gateMaxY = rift.gate.getMaxY();
+                    entry.gateMaxZ = rift.gate.getMaxZ();
+                    if (rift.gateArrival != null && rift.gateArrival.getWorld() != null) {
+                        entry.gateArrivalWorld = rift.gateArrival.getWorld().getName();
+                        entry.gateArrivalX = rift.gateArrival.getBlockX();
+                        entry.gateArrivalY = rift.gateArrival.getBlockY();
+                        entry.gateArrivalZ = rift.gateArrival.getBlockZ();
+                    }
+                }entries.add(entry);
             }
             String json = new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(entries);
             java.nio.file.Path temp = java.nio.file.Files.createTempFile(file.getParent(), "rifts", ".tmp");
@@ -212,9 +230,21 @@ public final class RiftManager implements Listener {
                 }
                 rift.restoreActive(new Location(exitWorld, entry.ex + 0.5, entry.ey, entry.ez + 0.5),
                         remainingTicks);
+                if (entry.gateMinX != null && entry.gateArrivalWorld != null) {
+                    World arrivalWorld = Bukkit.getWorld(entry.gateArrivalWorld);
+                    if (arrivalWorld != null) {
+                        rift.setGate(
+                                new org.bukkit.util.BoundingBox(
+                                        entry.gateMinX, entry.gateMinY, entry.gateMinZ,
+                                        entry.gateMaxX, entry.gateMaxY, entry.gateMaxZ),
+                                new Location(arrivalWorld,
+                                        entry.gateArrivalX + 0.5, entry.gateArrivalY, entry.gateArrivalZ + 0.5));
+                    }
+                }
                 rifts.put(rift.id, rift);
                 restored++;
             }
+            riftsLoaded = true;
             if (restored == entries.length) {
                 // All entries restored: the save file is consumed.
                 java.nio.file.Files.deleteIfExists(file);
@@ -240,6 +270,23 @@ public final class RiftManager implements Listener {
             if (entry != null && (entry.expiresAt < 0 || entry.expiresAt > now)) result.add(entry);
         }
         return result;
+    }
+
+    private boolean riftsLoaded = false;
+
+    /** Retries loadRifts() when a world loads and the save file still has unrestored entries. */
+    @EventHandler
+    public void onWorldLoad(org.bukkit.event.world.WorldLoadEvent event) {
+        if (riftsLoaded || !java.nio.file.Files.exists(riftsFile())) return;
+        // Only retry when the loading world matches one of the saved rift worlds.
+        try {
+            String content = java.nio.file.Files.readString(riftsFile());
+            if (content.contains("\"" + event.getWorld().getName() + "\"")) {
+                plugin.getLogger().info("World '" + event.getWorld().getName()
+                        + "' loaded; retrying rift restoration.");
+                loadRifts();
+            }
+        } catch (Exception ignored) { }
     }
 
     public void shutdown() {
