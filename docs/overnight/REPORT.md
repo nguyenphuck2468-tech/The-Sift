@@ -55,5 +55,17 @@ Kèm: SpearHandler dùng kết quả damage() làm chuẩn, creative mode đúng
 spear-reach giờ điều chỉnh vận tốc, giáo despawn không va chạm vẫn drop đúng một lần,
 note-console map dọn khi quit. Docs đồng bộ (config-version 5, biome fan-made vẫn sinh).
 
+## Vòng review 06:37 (2026-11-01) — các mục đã xử lý thêm
+
+- Ichor spring double placeBlock: XÁC NHẬN CÒN SÓT (dòng 708-709 giống hệt) → đã xóa (b366f59)
+- Test hồi quy YAML: ConfigYamlRegressionTest đọc config.yml SHIP thật qua YamlConfiguration,
+  khẳng định 0/0.0 + cooldown + 5 cờ fan-made + locale vi (b366f59)
+- Dimension 1:1 enter/return: /sift dimension vào đúng X/Z của người chơi (thay vì 0,0),
+  lưu điểm Overworld vào PDC, /sift return về đúng chỗ đó, fallback surface nếu bị chắn (1e03770)
+- content-spec metadata: 36 entry được gắn cờ fanmade; generator emit FANMADE_IDS;
+  ProviderReadiness.mandatory() bỏ các ID fan-made khi content.sift_standin_mobs=false —
+  server chỉ chơi phần mod không cần provider cho nội dung đã tắt (44905aa)
+- i18n: enter/return/no-overworld qua Messages vi/en (e2398dc)
+
 ## Diff stat
 Xem `git diff --stat main...overnight/hardening`.
