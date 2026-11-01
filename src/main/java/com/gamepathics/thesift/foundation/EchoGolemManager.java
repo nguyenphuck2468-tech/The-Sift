@@ -245,7 +245,18 @@ public final class EchoGolemManager implements Listener {
 
     @EventHandler
     public void onEntityAddedToWorld(EntityAddToWorldEvent event) {
-        if (event.getEntity() instanceof LivingEntity living && isEchoGolem(living)) ensureBar(living);
+        if (event.getEntity() instanceof LivingEntity living && isEchoGolem(living)) {
+            ensureBar(living);
+            // Re-seed tracking for entities loaded from disk (restart/chunk reload).
+            trackedGolems.add(living.getUniqueId());
+        }
+    }
+
+    @EventHandler
+    public void onEntityRemovedFromWorld(com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent event) {
+        if (event.getEntity() instanceof LivingEntity living && isEchoGolem(living)) {
+            trackedGolems.remove(living.getUniqueId());
+        }
     }
 
     int trackedBossBarCount() {
