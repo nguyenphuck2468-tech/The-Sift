@@ -22,3 +22,4 @@
 | P4.2 | BlubController extraction | b65811b | ./gradlew build | BUILD SUCCESSFUL |
 | P5.1 | i18n sweep for remaining player-facing strings | 950dcd7 | ./gradlew build | BUILD SUCCESSFUL |
 | P9 | test-provider skeleton | 6030e8b | (standalone Maven build) | skeleton created |
+| P1.2 | 4 verified review-round-2 bugs | c3bec62 | ./gradlew build | BUILD SUCCESSFUL |
