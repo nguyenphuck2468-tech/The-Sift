@@ -76,7 +76,7 @@ final class BlubController implements Listener {
             } catch (IllegalArgumentException ignored) {
                 return;
             }
-            if (owner == null || !owner.isOnline() || owner.getWorld() != sift) return;
+            if (owner == null || !owner.isOnline() || owner.getWorld() != sift) continue;
             // Defend: target the most recent hostile attacker of the owner within range,
             // otherwise follow (teleport-lead like the mod's seated/following behaviour).
             boolean defending = false;

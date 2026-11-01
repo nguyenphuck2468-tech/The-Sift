@@ -75,7 +75,7 @@ public final class DatapackManagerBridge {
             // The hazard only exists when the dimension pack is actually ENABLED right now.
             // Checking mere discovery (findPack != null) refused to disable the pack even when
             // it was already switched off, making the toggle unusable.
-            Datapack dimensionPack = findPack(guardManager.getPacks(), "sift_dimension_datapack");
+            Datapack dimensionPack = findPack(guardManager.getPacks(), "dimension");
             boolean dimensionActive = dimensionPack != null && dimensionPack.isEnabled();
             if (dimensionActive) {
                 plugin.getLogger().warning("Refusing to disable the dimension datapack ('" + name

@@ -154,11 +154,17 @@ public final class RiftManager implements Listener {
                 entry.ex = rift.exitCenter.getBlockX();
                 entry.ey = rift.exitCenter.getBlockY();
                 entry.ez = rift.exitCenter.getBlockZ();
-                int durationTicks = (rift.portal
-                        ? Math.max(1, plugin.getConfig().getInt("rift.portal-active-seconds", 900))
-                        : Math.max(1, plugin.getConfig().getInt("rift.active-duration-seconds", 300))) * 20;
-                int remainingTicks = Math.max(0, durationTicks - rift.stateTimer);
-                entry.expiresAt = now + remainingTicks * 50L;
+                if (rift.portal) {
+                    // Portal rifts with a gate never auto-close; -1 means "never expires"
+                    // in skipExpired(). Without a gate they close via active-duration.
+                    entry.expiresAt = rift.gate != null ? -1L
+                            : now + Math.max(0, plugin.getConfig().getInt("rift.portal-active-seconds", 900)) * 20L * 50L
+                              - rift.stateTimer * 50L;
+                } else {
+                    int durationTicks = Math.max(1, plugin.getConfig().getInt("rift.active-duration-seconds", 300)) * 20;
+                    int remainingTicks = Math.max(0, durationTicks - rift.stateTimer);
+                    entry.expiresAt = now + remainingTicks * 50L;
+                }
                 entries.add(entry);
             }
             String json = new com.google.gson.GsonBuilder().setPrettyPrinting().create().toJson(entries);
@@ -203,8 +209,14 @@ public final class RiftManager implements Listener {
                 rifts.put(rift.id, rift);
                 restored++;
             }
-            java.nio.file.Files.deleteIfExists(file);
-            if (restored > 0) plugin.getLogger().info("Restored " + restored + " rift(s) from rifts.json.");
+            if (restored == entries.length) {
+                // All entries restored: the save file is consumed.
+                java.nio.file.Files.deleteIfExists(file);
+            } else if (restored > 0) {
+                // Some entries skipped (world not loaded yet etc.); rewrite the survivors.
+                saveRifts();
+            }
+            if (restored > 0) plugin.getLogger().info("Restored " + restored + "/" + entries.length + " rift(s) from rifts.json.");
         } catch (Exception exception) {
             plugin.getLogger().log(java.util.logging.Level.WARNING,
                     "Could not load rifts.json; starting with no persisted rifts.", exception);

@@ -258,7 +258,13 @@ public final class SiftEcologyManager implements Listener {
      * Dark Sniffer worked only because its ticks also query the vanilla bucket).
      */
     private void wildlifeIndexRefile(Entity entity) {
-        wildlifeIndex.index(wildlifeKey(entity), entity.getUniqueId());
+        // index() alone would leave the stale vanilla-type bucket (type:RABBIT etc.) holding
+        // the UUID forever - scrub() removes it from every bucket before the species key is
+        // indexed, matching the add-to-world event's original (wrong) registration.
+        String key = wildlifeKey(entity);
+        if (key == null) return;
+        wildlifeIndex.scrub(entity.getUniqueId());
+        wildlifeIndex.index(key, entity.getUniqueId());
     }
 
     /** Live tagged creatures of one species in the world, without a full entity scan. */
