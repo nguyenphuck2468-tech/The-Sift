@@ -22,7 +22,7 @@ Branch: `overnight/hardening` · Base: `main` @ `adc1fc0` · PR: #12 (Draft)
 ## E3 — Rift persistence completeness
 - ID: E3
 - Priority: P1
-- Status: OPEN
+- Status: FIXED
 - Cause: Gate bbox/gateArrival not persisted; loadRifts deletes file when worlds missing
 - Fix: Partial fix in a8720ee (preserve file); need gate metadata in DTO
 - Files: `RiftManager.java`

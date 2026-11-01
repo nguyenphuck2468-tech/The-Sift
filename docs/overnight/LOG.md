@@ -32,3 +32,4 @@
 | P8.2 | SpearThrowHandlerTest (2 pass, 4 skip MockBukkit spawn) | f30771d | ./gradlew build | BUILD SUCCESSFUL |
 | E1 | SpearThrowHandler full coverage, 0 skip | 1167931 | ./gradlew build | 6/6 PASS |
 | E2 | EchoGolem entity-load tracking | f26b703 | ./gradlew build | BUILD SUCCESSFUL |
+| E3 | gate metadata + world retry | 085eb37 | ./gradlew build | BUILD SUCCESSFUL |
