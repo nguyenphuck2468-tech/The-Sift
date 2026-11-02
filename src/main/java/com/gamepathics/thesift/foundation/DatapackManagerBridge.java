@@ -8,6 +8,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 /**
@@ -49,20 +51,63 @@ public final class DatapackManagerBridge {
 
     /** Extracts the bundled pack resources into the world datapack staging area. Idempotent. */
     public void stageBundledPacks() {
+        Path pluginJar = pluginJarPath();
         for (String name : BUNDLED_PACKS) {
-            Path root = resourceRoot(name);
-            if (root == null) {
-                plugin.getLogger().warning("Bundled datapack '" + name + "' not found in the plugin jar.");
-                continue;
-            }
             Path target = stageRoot.resolve(name + ".zip");
             try {
                 Files.createDirectories(stageRoot);
+                if (pluginJar != null) {
+                    zipJarDirectory(pluginJar, name, target);
+                    continue;
+                }
+                Path root = resourceRoot(name);
+                if (root == null) {
+                    plugin.getLogger().warning("Bundled datapack '" + name + "' not found in the plugin jar.");
+                    continue;
+                }
                 zipDirectory(root, target);
             } catch (IOException exception) {
                 plugin.getLogger().warning("Could not stage datapack '" + name + "': " + exception.getMessage());
             }
         }
+    }
+
+    private Path pluginJarPath() {
+        try {
+            Method getFile = JavaPlugin.class.getDeclaredMethod("getFile");
+            getFile.setAccessible(true);
+            Object file = getFile.invoke(plugin);
+            return file instanceof java.io.File jar ? jar.toPath() : null;
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError exception) {
+            return null;
+        }
+    }
+
+    private static void zipJarDirectory(Path jarPath, String folder, Path output) throws IOException {
+        String prefix = folder + "/";
+        Path temp = output.resolveSibling(output.getFileName() + ".tmp");
+        try (ZipFile jar = new ZipFile(jarPath.toFile());
+             ZipOutputStream zip = new ZipOutputStream(Files.newOutputStream(temp))) {
+            boolean found = false;
+            var entries = jar.entries();
+            while (entries.hasMoreElements()) {
+                ZipEntry source = entries.nextElement();
+                if (!source.isDirectory() && source.getName().startsWith(prefix)) {
+                    found = true;
+                    ZipEntry target = new ZipEntry(source.getName().substring(prefix.length()));
+                    zip.putNextEntry(target);
+                    try (InputStream stream = jar.getInputStream(source)) {
+                        stream.transferTo(zip);
+                    }
+                    zip.closeEntry();
+                }
+            }
+            if (!found) {
+                Files.deleteIfExists(temp);
+                throw new IOException("Bundled datapack '" + folder + "' not found in the plugin jar");
+            }
+        }
+        Files.move(temp, output, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
     }
 
     /** Enables/disables a staged or discovered pack by name and refreshes the datapack manager. */
