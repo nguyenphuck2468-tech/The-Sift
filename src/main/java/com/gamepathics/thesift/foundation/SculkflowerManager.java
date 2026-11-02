@@ -226,13 +226,13 @@ final class SculkflowerManager implements Listener {
 
     private ItemStack seed() {
         ItemStack stack = content.item(Material.TORCHFLOWER_SEEDS, SEED_ID, "Sculkflower Seeds");
-        if (stack != null || plugin.getConfig().getBoolean("providers.strict", true)) return stack;
+        if (stack != null || plugin.getConfig().getBoolean("providers.strict", false)) return stack;
         return new ItemStack(Material.TORCHFLOWER_SEEDS);
     }
 
     private ItemStack flower() {
         ItemStack stack = content.item(Material.CACTUS_FLOWER, FLOWER_ID, "Sculkflower");
-        if (stack != null || plugin.getConfig().getBoolean("providers.strict", true)) return stack;
+        if (stack != null || plugin.getConfig().getBoolean("providers.strict", false)) return stack;
         return new ItemStack(Material.CACTUS_FLOWER);
     }
 

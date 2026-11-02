@@ -34,7 +34,7 @@ final class ProviderReadiness {
         blocks = new ExternalBlockBridge(plugin);
     }
 
-    boolean strict() { return plugin.getConfig().getBoolean("providers.strict", true); }
+    boolean strict() { return plugin.getConfig().getBoolean("providers.strict", false); }
 
     void invalidate() { cacheExpiresAt = 0L; }
 

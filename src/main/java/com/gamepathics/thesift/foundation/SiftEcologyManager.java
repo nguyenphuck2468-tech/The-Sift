@@ -382,7 +382,7 @@ public final class SiftEcologyManager implements Listener {
 
         // Strict mode prefers provider-owned content; the vanilla-safe landmarks below it
         // run in both modes, and provider-mapped placements fail-and-retry until resolved.
-        if (plugin.getConfig().getBoolean("providers.strict", true)) {
+        if (plugin.getConfig().getBoolean("providers.strict", false)) {
             decorateStrictProviderContent(chunk, key, random);
             // Review R3: the strict branch skipped generateSiftResources, so strict worlds
             // had no iron/copper/redstone/lapis/gold at all.
@@ -715,7 +715,7 @@ public final class SiftEcologyManager implements Listener {
     }
 
     private boolean placeBlock(Block block, String contentId, Material fallback) {
-        boolean strict = plugin.getConfig().getBoolean("providers.strict", true);
+        boolean strict = plugin.getConfig().getBoolean("providers.strict", false);
         return placeBlock(block, contentId, fallback, strict,
                 () -> strict && blockBridge.isBlock(contentId, block),
                 () -> blockBridge.place(contentId, block.getLocation()), failure -> {

@@ -70,7 +70,11 @@ Useful smoke commands: `/sift give soul_block <player>`, `/sift summon singer <p
 
 With `providers.strict: true`, readiness requires at least one selected backend resolving **every** mandatory item ID, at least one selected backend resolving **every** mandatory block ID, and at least one selected mob backend resolving **every** mandatory mob ID. The canonical lists are in `integrations/content-spec.json`; Gradle generates the runtime lists in `ProviderContentIds`. ItemsAdder custom entity readiness uses the documented registry probe, while EliteMobs has no verified side-effect-free registry probe and remains unresolved. The dimension and its existing save remain untouched when readiness fails.
 
-`providers.strict: true` (the default) blocks dimension access until readiness passes and makes provider-mapped chunk decoration fail-and-retry until providers resolve; `false` is the documented development/CI mode where block placements fall back to vanilla stand-ins (the CI boot gate runs the server in this mode). A `requirements` section in `config.yml` (defaults: ModelEngine required; one plugin each for items, blocks, mobs) is checked on the first server tick and warns loudly (or self-disables with `requirements.hard-stop: true`) when a rule fails. Bedrock support is optional and controlled by `providers.bedrock-enabled`.
+`providers.strict: false` is the default install-and-play mode: missing providers use tagged vanilla
+stand-ins and the dimension remains available. Setting it to `true` blocks dimension access until
+readiness passes and makes provider-mapped chunk decoration fail-and-retry until providers resolve.
+The `requirements` section remains advisory unless `requirements.hard-stop: true` is explicitly
+enabled. Bedrock support is optional and controlled by `providers.bedrock-enabled`.
 
 ## Public references used
 
@@ -85,18 +89,19 @@ With `providers.strict: true`, readiness requires at least one selected backend 
 - Floodgate installation and auth use: [Floodgate setup](https://geysermc.org/wiki/floodgate/setup/).
 - Plugin names and public evidence notes: [`docs/provider-sources.md`](provider-sources.md). Bukkit softdepend names are in `src/main/resources/plugin.yml`; Paper's optional load order is in `src/main/resources/paper-plugin.yml`.
 
-## Strict-mode parity gaps confirmed by static audit
+## Remaining parity gaps
 
-The 15 bundled biome definitions currently have empty `features` and `carvers`; Paper chunk generation has not been run. The strict Java decoration path also does not generate the following mod-referenced content:
+The 15 bundled biome definitions have wired feature/carver references and are covered by
+datapack-integrity tests. The following differences remain because Paper is server-side only or
+because the reference mod uses client/mod-loader APIs:
 
 | Content | Source label | Strict-mode status |
 |---|---|---|
-| Abandoned portals and their loot chests | [mod] | Not generated; provider-backed structure and loot definition are missing. |
-| Sculk formations and Soul Canyon where Echo Golems find Soul Blocks | [mod] | Not generated; required structure/feature and provider identities are missing. |
-| Ichor springs/lakes | [mod] | Not generated in strict mode. `ichor_water` is a non-strict simulated block, not a flowing custom fluid: **STAND-IN**. |
-| Biome carvers/features | [mod] | All 15 biome JSON arrays are empty; terrain carve and placed-feature parity is not implemented. |
-
-This is a static repository audit, not a generated-chunk observation. No worldgen definitions were added in Stage 0.
+| Ichor springs/lakes | [mod] | Simulated through tagged blocks and Java decoration; custom flowing-fluid physics remain a **STAND-IN**. |
+| Mob models and animations | [mod] | Vanilla entity stand-ins unless ModelEngine or another provider supplies visuals. |
+| Animated sky and client weather | [mod] | Not expressible through Paper alone; requires client resource-pack/mod support. |
+| Bedrock custom mapping | [mod] | Runtime guards and sound fallbacks exist; generated `.mcpack` and item/block mappings remain missing. |
+| Provider live compatibility | plugin integrations | Generator/bridge/unit tests exist, but no provider has a **Live checked** result in this repository. |
 
 ## Progression-pack worldgen removal (Paper 26.3 boot repair)
 

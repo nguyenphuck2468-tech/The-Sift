@@ -17,7 +17,7 @@ All integrations are optional soft dependencies. Install only the backends you i
 - **ModelEngine**: optional render attachment only. It does not provide mob AI/spawning.
 - **ResourcePackManager**: current integration detects the plugin/version in doctor only. Its [public Java API](https://wiki.nightbreak.io/ResourcePackManager/api/) supports pack registration; The Sift API integration is deferred. No telemetry is used.
 
-Set `providers.strict: true` for production. The default is `true`: The Sift dimension is blocked until one item backend, one block backend, and one mob backend each resolve every mandatory ID. `/sift doctor` prints missing IDs and setup hints. Existing dimension save data is preserved while locked. `/sift return` remains available as an emergency exit. Set `providers.strict: false` only for development/CI; startup logs that vanilla fallback is active.
+The default is `providers.strict: false`: install the jar, restart Paper, and The Sift runs with tagged vanilla stand-ins even when no optional provider is installed. `/sift doctor` reports which providers can upgrade visuals and entities. Set `providers.strict: true` only for servers that intentionally want to lock dimension access until one item backend, one block backend, and one mob backend resolve every mandatory ID. Existing dimension save data is preserved while locked.
 
 ## Bedrock (detection level only; checked 2026-10-24)
 
@@ -27,7 +27,7 @@ On a disposable Paper 26.3 server, test once with the current official `Geyser-S
 
 Official references: [Geyser setup](https://geysermc.org/wiki/geyser/setup/), [supported versions](https://geysermc.org/wiki/geyser/supported-versions/), [downloads](https://geysermc.org/download), [Floodgate setup](https://geysermc.org/wiki/floodgate/setup/). Conflicting product reference: [Skilleed The Sift documentation](https://www.spigotmc.org/resources/the-sift-new-minecrafts-dimension.139206/field?field=documentation).
 
-`providers.bedrock-enabled` defaults to `false`. Turn it on if the server intends to offer Bedrock access; `/sift doctor` then warns when Geyser, Floodgate, or ViaVersion is absent. These warnings never block dimension creation. Bedrock resource pack generation, custom item/block translation, and Geyser mappings are not implemented yet.
+`providers.bedrock-enabled` defaults to `false`. Turn it on if the server intends to offer Bedrock access; `/sift doctor` then warns when Geyser, Floodgate, or ViaVersion is absent. These warnings never block dimension creation. Bedrock runtime guards and vanilla sound fallbacks are implemented; a generated `.mcpack` and custom item/block mappings are not.
 
 ## Repeatable local checks
 
@@ -76,9 +76,9 @@ Disabling The Sift while players are in its world attempts to teleport them to t
 
 Do not publish a resource-pack ZIP yet: the repository contains PNG assets of unresolved provenance. The previously embedded `TheSiftGeyser.jar.embedded` was removed from the repository for unresolved provenance.
 
-The note melody currently opens the temporary Rift feature, not the mod-style
-Ancient City dimension portal. Successful melodies share the configured
-no server-wide cooldown (the reference mod has none between songs);
+The note melody opens the temporary Rift feature in the standalone Paper implementation;
+it does not replace the mod's client-side dimension portal rendering. Successful melodies share the configured
+server-wide cooldown;
 unfinished melodies expire after `rift.portal-song-timeout-seconds` (default
 60) and are also cleared when a player quits. The cooldown is runtime-only and
 resets on a full server restart. With strict providers unresolved, an Overworld

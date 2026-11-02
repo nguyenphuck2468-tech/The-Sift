@@ -1,4 +1,4 @@
-config-version: 4
+config-version: 5
 
 # Ngôn ngữ thông điệp trong game: vi (mặc định) hoặc en. Ghi đè từng câu
 # bằng tệp plugins/TheSift/messages.yml.
@@ -173,10 +173,10 @@ requirements:
     mobs: [MythicMobs, ItemsAdder, EliteMobs, "service:mob"]
 
 providers:
-  # true (default): dimension access is denied until every mandatory ID resolves through a
-  # provider backend. false: development/CI mode with vanilla fallback placement (logged as a
-  # warning at startup). Honouring this flag matches README/docs/TESTING.md.
-  strict: true
+  # false (default): install-and-play mode. The plugin uses tagged vanilla stand-ins when
+  # optional content providers are absent. Set true only when the server must refuse entry
+  # until every mandatory ID is resolved by a provider backend.
+  strict: false
   bedrock-enabled: false
 
 resource-pack:

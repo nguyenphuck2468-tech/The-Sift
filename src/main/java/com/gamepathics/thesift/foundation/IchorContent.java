@@ -66,7 +66,7 @@ public final class IchorContent {
         server.removeRecipe(snowballRecipeKey);
         if (!isIchorEnabled()) return;
         if (!plugin.getConfig().getBoolean("recipes.enabled", true)) return;
-        if (plugin.getConfig().getBoolean("providers.strict", true)
+        if (plugin.getConfig().getBoolean("providers.strict", false)
                 && !new ProviderReadiness(plugin).itemsReady()) return;
 
         Material glass = configuredMaterial("ichor.glass-material", Material.GLASS);
@@ -159,7 +159,7 @@ public final class IchorContent {
     public ItemStack create(Material material, String id, String name) {
         ItemStack item = externalItems.create(id);
         boolean providerItem = item != null;
-        if (item == null && plugin.getConfig().getBoolean("providers.strict", true)) {
+        if (item == null && plugin.getConfig().getBoolean("providers.strict", false)) {
             if (MISSING_ITEM_WARNINGS.add(id)) plugin.getLogger().warning(
                     "Strict provider mode refused vanilla fallback for item ID '" + id
                             + "'. Run /sift doctor and install a provider definition.");

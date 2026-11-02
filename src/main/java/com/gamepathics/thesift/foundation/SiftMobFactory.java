@@ -28,7 +28,7 @@ public final class SiftMobFactory {
     LivingEntity spawn(String id, Location location, EntityType fallbackType) {
         Entity entity = providers.spawn(id, location);
         if (!(entity instanceof LivingEntity)) {
-            if (plugin.getConfig().getBoolean("providers.strict", true)) {
+            if (plugin.getConfig().getBoolean("providers.strict", false)) {
                 plugin.getLogger().warning("No configured mob provider resolved '" + id + "'; strict mode skipped spawn.");
                 return null;
             }
@@ -93,4 +93,3 @@ public final class SiftMobFactory {
         Bukkit.getScheduler().runTask(owner, task);
     }
 }
-

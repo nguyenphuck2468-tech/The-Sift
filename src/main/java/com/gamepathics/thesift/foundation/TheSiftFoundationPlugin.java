@@ -180,12 +180,11 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
     }
 
     private void enforceDependencyMode() {
-        // providers.strict is honoured as configured: false enables the documented vanilla
-        // fallback for development/CI (see README and docs/TESTING.md). The mode only affects
-        // content resolution, never plugin lifecycle.
-        if (!getConfig().getBoolean("providers.strict", true)) {
-            getLogger().warning("providers.strict: false - vanilla fallback placement is active"
-                    + " (development mode; not recommended for production).");
+        // providers.strict is opt-in. The default is standalone install-and-play mode, where
+        // missing providers are replaced with tagged vanilla stand-ins.
+        if (!getConfig().getBoolean("providers.strict", false)) {
+            getLogger().info("providers.strict: false - standalone install-and-play mode is active;"
+                    + " missing provider content uses tagged vanilla stand-ins.");
         }
     }
 

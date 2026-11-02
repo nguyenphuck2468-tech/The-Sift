@@ -93,7 +93,7 @@ final class DarkSnifferDiggingGiftListener implements Listener {
             if (providerItem != null) return providerItem;
         }
 
-        if (plugin.getConfig().getBoolean("providers.strict", true)) return null;
+        if (plugin.getConfig().getBoolean("providers.strict", false)) return null;
 
         // Development-only fallback while testing without a content provider.
         ItemStack fallback = new ItemStack(Material.TORCHFLOWER_SEEDS);

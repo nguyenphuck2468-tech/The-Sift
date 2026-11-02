@@ -71,7 +71,7 @@ public final class SiftiteContent implements Listener {
         for (String key : java.util.List.of("siftite_sword", "siftite_axe", "siftite_pickaxe",
                 "siftite_shovel", "siftite_hoe", "siftite_helmet", "siftite_chestplate",
                 "siftite_leggings", "siftite_boots")) server.removeRecipe(new NamespacedKey(plugin, key));
-        if (plugin.getConfig().getBoolean("providers.strict", true)
+        if (plugin.getConfig().getBoolean("providers.strict", false)
                 && !new ProviderReadiness(plugin).itemsReady()) {
             return;
         }
@@ -259,7 +259,7 @@ public final class SiftiteContent implements Listener {
     public ItemStack item(Material material, String id, String name) {
         ItemStack result = externalItems.create(id);
         boolean providerItem = result != null;
-        if (result == null && plugin.getConfig().getBoolean("providers.strict", true)) {
+        if (result == null && plugin.getConfig().getBoolean("providers.strict", false)) {
             if (MISSING_ITEM_WARNINGS.add(id)) plugin.getLogger().warning(
                     "Strict provider mode refused vanilla fallback for item ID '" + id
                             + "'. Run /sift doctor and install a provider definition.");

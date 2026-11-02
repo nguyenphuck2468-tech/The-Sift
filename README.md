@@ -6,6 +6,18 @@ không liên kết với Mojang hay Microsoft. Các provider nội dung cung c�
 những chỗ Paper API không có sẵn khái niệm tương ứng. Trạng thái triển khai và các phần thay thế
 (stand-in) được theo dõi trong [`docs/parity-matrix.md`](docs/parity-matrix.md).
 
+## Cài nhanh kiểu standalone
+
+1. Tải một file `TheSift-*.jar` vào thư mục `plugins/` của Paper 26.3.
+2. Khởi động lại server một lần; không cần Fabric, Forge, resource-pack bắt buộc hay plugin phụ.
+3. Vào game chạy `/sift doctor`, sau đó `/sift dimension`.
+
+Bản mặc định là **install-and-play**: khi không có Nexo, ItemsAdder, Oraxen, MythicMobs,
+EliteMobs hoặc ModelEngine, plugin dùng vanilla stand-in có tag nhưng vẫn giữ dimension,
+mob behavior, progression, recipes, Rift và advancement. Cài thêm provider sau này không
+đòi hỏi cài lại The Sift; chạy `/sift reload` hoặc restart rồi kiểm tra `/sift doctor`.
+Provider chỉ nâng cấp model/item/block/entity, không phải dependency bắt buộc.
+
 ## Biên dịch
 
 ```bash
@@ -70,16 +82,17 @@ mod gốc:
 
 | Plugin | Vai trò | Bắt buộc? |
 |---|---|---|
-| **Nexo / ItemsAdder / Oraxen** (chọn 1) | Cung cấp item + block custom thật | Không — nhưng `providers.strict: true` mặc định sẽ chặn vào dimension nếu chưa có một backend item, block và mob |
+| **Nexo / ItemsAdder / Oraxen** (chọn 1) | Nâng cấp item + block custom thật | Không — plugin vẫn chạy bằng vanilla stand-in khi thiếu |
 | **MythicMobs** | Định nghĩa mob chỉnh được chỉ số/stats cho sinh vật The Sift | Không |
 | **EliteMobs** | Thay boss spawn bằng custom boss | Không |
-| **ModelEngine** | Gắn model render cho mob (chỉ render, không điều khiển hành vi) | Không — nhưng `requirements.all-of` mặc định liệt kê nó, thiếu chỉ cảnh báo |
+| **ModelEngine** | Gắn model render cho mob (chỉ render, không điều khiển hành vi) | Không |
 | **ResourcePackManager** | Phát resource pack cho người chơi | Không (hiện chỉ được dò tìm trong `/sift doctor`) |
 
-Cấu hình mặc định trong `config.yml` (`requirements`) chỉ **cảnh báo** khi thiếu plugin; cài ít
-nhất một backend item/block/mob (hoặc plugin nào đó đăng ký SPI `SiftItemProvider` /
-`SiftBlockProvider` / `SiftMobProvider`) để mở khóa vào dimension khi `providers.strict: true`.
-Chạy `/sift doctor` để xem còn thiếu gì.
+Cấu hình mặc định là **standalone/install-and-play**: thiếu provider không khóa dimension,
+plugin dùng vanilla stand-in có tag và vẫn giữ gameplay/progression. Cài Nexo, ItemsAdder,
+Oraxen, MythicMobs, EliteMobs, ModelEngine hoặc adapter SPI chỉ để nâng cấp hình ảnh/entity.
+Chỉ bật `providers.strict: true` khi muốn biến provider thành điều kiện bắt buộc. Chạy
+`/sift doctor` để xem backend nào đang được nhận diện và ID nào còn dùng stand-in.
 
 ## Geyser và người chơi Bedrock (không bắt buộc)
 
@@ -92,10 +105,10 @@ Chạy `/sift doctor` để xem còn thiếu gì.
 
 ## Provider nội dung custom
 
-`providers.strict` mặc định `true`: việc tạo/vào dimension bị chặn cho đến khi một backend
-item/block/mob resolve đủ mọi ID bắt buộc. `false` là chế độ dev/CI (fallback vanilla stand-in);
-gate boot của CI chạy server ở chế độ này. `/sift doctor` báo backend đã cài, provider đã chọn,
-ID thiếu và gợi ý cài đặt.
+`providers.strict` mặc định `false`: cài jar là vào dimension được ngay, với vanilla stand-in
+cho phần Paper không thể đăng ký custom content. Khi bật `true`, việc tạo/vào dimension bị
+chặn cho đến khi backend item/block/mob resolve đủ mọi ID bắt buộc. `/sift doctor` báo backend
+đã cài, provider đã chọn, ID thiếu và gợi ý cài đặt.
 
 Định nghĩa chuẩn: `integrations/content-spec.json`. Sinh cấu hình provider bằng
 `./gradlew generateProviderDefinitions`; kết quả nằm ở `build/generated/provider-definitions/`.

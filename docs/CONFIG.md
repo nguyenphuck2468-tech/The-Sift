@@ -5,7 +5,7 @@ Key quan trọng (mặc định trong `src/main/resources/config.yml`, mô tả 
 | Key | Mặc định | Ý nghĩa |
 |---|---|---|
 | `locale` | `vi` | Ngôn ngữ thông điệp trong game (`en` cho tiếng Anh); override từng câu bằng `plugins/TheSift/messages.yml` |
-| `providers.strict` | `true` | Production: chặn dimension đến khi provider đủ ID; `false` = dev/CI fallback vanilla |
+| `providers.strict` | `false` | Mặc định cài là chạy: dùng vanilla stand-in có tag khi thiếu provider; bật `true` nếu muốn khóa dimension cho đến khi provider đủ ID |
 | `requirements.*` | soft | Chỉ cảnh báo khi thiếu plugin; `hard-stop: true` để tự tắt plugin |
 | `rift.reward-drops` | `0` | Số item thưởng khi rift đóng (hardening: mặc định 0) |
 | `rift.rift-key-chance` | `0.0` | Tỉ lệ rơi Rift Key (hardening: mặc định 0) |
