@@ -50,7 +50,7 @@ public final class DatapackManagerBridge {
     /** Extracts the bundled pack resources into the world datapack staging area. Idempotent. */
     public void stageBundledPacks() {
         for (String name : BUNDLED_PACKS) {
-            URI root = resourceRoot(name);
+            Path root = resourceRoot(name);
             if (root == null) {
                 plugin.getLogger().warning("Bundled datapack '" + name + "' not found in the plugin jar.");
                 continue;
@@ -58,7 +58,7 @@ public final class DatapackManagerBridge {
             Path target = stageRoot.resolve(name + ".zip");
             try {
                 Files.createDirectories(stageRoot);
-                zipDirectory(Path.of(root), target);
+                zipDirectory(root, target);
             } catch (IOException exception) {
                 plugin.getLogger().warning("Could not stage datapack '" + name + "': " + exception.getMessage());
             }
@@ -155,7 +155,7 @@ public final class DatapackManagerBridge {
         return null;
     }
 
-    private URI resourceRoot(String folder) {
+    private Path resourceRoot(String folder) {
         String marker = "/" + folder + "/pack.mcmeta";
         var url = DatapackManagerBridge.class.getResource(marker);
         if (url == null) return null;
@@ -186,9 +186,9 @@ public final class DatapackManagerBridge {
                     }
                 });
                 Path path = entryPath.isEmpty() ? fs.getPath("/") : fs.getPath(entryPath);
-                return path.toUri();
+                return path;
             }
-            return new URI(rootPart);
+            return Path.of(new URI(rootPart));
         } catch (Exception exception) {
             return null;
         }

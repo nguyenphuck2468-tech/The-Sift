@@ -16,6 +16,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -43,6 +45,8 @@ public final class ResourcePackBridge {
     private final HttpClient httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build();
     private volatile String cachedSha1;
     private volatile boolean detectedLogged;
+    private static final java.util.Map<URI, FileSystem> jarFilesystems =
+            new java.util.concurrent.ConcurrentHashMap<>();
 
     public ResourcePackBridge(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -356,8 +360,17 @@ public final class ResourcePackBridge {
         if (external.startsWith("jar:")) {
             // Running from a jar: copy every entry under pack/ out of the plugin jar itself.
             String jarPath = external.substring(0, external.indexOf("!/"));
-            try (var zipSource = java.nio.file.FileSystems.newFileSystem(java.net.URI.create(jarPath), java.util.Map.of());
-                 var zipStream = new java.util.zip.ZipOutputStream(Files.newOutputStream(localZip))) {
+            URI jarUri = URI.create(jarPath);
+            FileSystem zipSource = jarFilesystems.computeIfAbsent(jarUri, uri -> {
+                try {
+                    return FileSystems.newFileSystem(uri, java.util.Map.of());
+                } catch (java.nio.file.FileSystemAlreadyExistsException alreadyOpen) {
+                    return FileSystems.getFileSystem(uri);
+                } catch (IOException exception) {
+                    throw new java.io.UncheckedIOException(exception);
+                }
+            });
+            try (var zipStream = new java.util.zip.ZipOutputStream(Files.newOutputStream(localZip))) {
                 Path packRoot = zipSource.getPath("pack");
                 try (var walk = Files.walk(packRoot)) {
                     for (Path entry : walk.filter(Files::isRegularFile).toList()) {
