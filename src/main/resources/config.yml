@@ -27,7 +27,7 @@ content:
   siftite_pickaxe: true
   siftite_shovel: true
   siftite_hoe: true
-  # Dùng NETHERITE_SPEAR khi server có vật liệu này; fallback TRIDENT cho Paper 26.1/26.2.
+  # Spear dùng vật liệu vanilla NETHERITE_SPEAR (26.3): jab cận chiến gốc + ném được (spear-reach); chưa có mô hình projectile riêng.
   siftite_spear: true
   siftite_helmet: true
   siftite_chestplate: true
@@ -153,8 +153,8 @@ siftite:
   mini-rift-recovery: true
 
 compatibility:
-  # Deprecated legacy key; supported targets are Paper 26.1, 26.1.1, 26.1.2, 26.2 and 26.3.
-  minecraft-target: "26.1"
+  # Deprecated legacy key; runtime target is Paper 26.3. Kept for existing configs.
+  minecraft-target: "26.3"
 
 requirements:
   # The Sift depends on provider plugins for real content, but they are SOFT dependencies

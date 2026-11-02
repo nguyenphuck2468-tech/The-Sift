@@ -1,15 +1,14 @@
 # The Sift — plugin Paper làm bởi người hâm mộ
 
 The Sift là bản triển khai của người hâm mộ lấy cảm hứng từ chiều không gian được công bố tại
-Minecraft Live 2026. Hỗ trợ **Paper 26.1, 26.1.1, 26.1.2, 26.2 và 26.3**, Java 25
-và Paper API 26.x;
+Minecraft Live 2026. Nhắm tới **Paper 26.3**, Java 25 và Paper API `26.3.build.218-stable`;
 không liên kết với Mojang hay Microsoft. Các provider nội dung cung cấp item, block và mob ở
 những chỗ Paper API không có sẵn khái niệm tương ứng. Trạng thái triển khai và các phần thay thế
 (stand-in) được theo dõi trong [`docs/parity-matrix.md`](docs/parity-matrix.md).
 
 ## Cài nhanh kiểu standalone
 
-1. Tải một file `TheSift-*.jar` vào thư mục `plugins/` của Paper 26.1 trở lên.
+1. Tải một file `TheSift-*.jar` vào thư mục `plugins/` của Paper 26.3.
 2. Khởi động lại server một lần; không cần Fabric, Forge, resource-pack bắt buộc hay plugin phụ.
 3. Vào game chạy `/sift doctor`, sau đó `/sift dimension`.
 
@@ -28,11 +27,10 @@ Provider chỉ nâng cấp model/item/block/entity, không phải dependency b�
 Tác vụ `siftResourcePack` đóng gói các file PNG chưa được xác minh nguồn gốc. Không phát hành hay
 phân phối lại `TheSift-resource-pack.zip` cho đến khi nguồn gốc asset được xác nhận.
 
-Thư viện biên dịch mặc định là Paper API `26.3.build.218-stable` để giữ baseline 26.x.
-Ghi đè API và phiên bản server khi kiểm chứng bản khác:
-`./gradlew build -PpaperApiVersion=<api> -PminecraftVersion=<minecraft-version>`.
+Thư viện biên dịch mặc định là Paper API `26.3.build.218-stable`. Ghi đè khi kiểm chứng phiên
+khác: `gradle build -PpaperApiVersion=<phiên-bản>`.
 
-Plugin đăng ký dimension datapack qua lifecycle datapack-discovery của Paper; cần Paper 26.1 trở
+Plugin đăng ký dimension datapack qua lifecycle datapack-discovery của Paper; cần Paper 26.3 trở
 lên. Chiều không gian gồm 15 biome (10 của mod tham chiếu cộng 5 biome tự viết) trên noise router
 port từ mod, với cả ba carver đã được nối vào mọi biome. Custom block dùng vanilla stand-in ở
 những chỗ chưa có provider.

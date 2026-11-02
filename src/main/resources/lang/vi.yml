@@ -76,7 +76,7 @@ sift:
   resourcepack-no-provider: "Không phát hiện plugin provider resource pack và resource-pack.server-url đang trống; hãy đặt URL http(s) hoặc cài provider rồi phát sóng lại."
   resourcepack-broadcast: "Đã gửi resource pack The Sift cho %count% người chơi qua %provider%."
   version: "The Sift foundation: %version%"
-  runtime-target: "Máy chủ runtime: %version% (hỗ trợ Paper 26.1–26.3)"
+  runtime-target: "Máy chủ runtime: %version%"
   dimension-disabled: "The Sift dimension đang bị tắt."
   dimension-locked: "The Sift dimension bị khóa vì thiếu provider ID bắt buộc. Chạy /sift doctor; xem integrations/README.md để cài đặt."
   dimension-ready: "The Sift dimension đã sẵn sàng. Người chơi vào bằng /sift dimension."
