@@ -247,8 +247,8 @@ public final class SiftEcologyManager implements Listener {
     @EventHandler
     public void onEntityRemoveFromWorld(com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent event) {
         Entity entity = event.getEntity();
-        if (!(entity instanceof LivingEntity) || !isSift(entity.getWorld())) return;
-        wildlifeIndex.unindex(wildlifeKey(entity), entity.getUniqueId());
+        if (!isSift(entity.getWorld())) return;
+        wildlifeIndex.scrub(entity.getUniqueId());
     }
 
     /** One-time seed per world: entities loaded before this listener registered are not indexed. */
@@ -1179,6 +1179,7 @@ public final class SiftEcologyManager implements Listener {
     /** Reference-mod item (ichor_snowball): a throwable that chills whatever it strikes. */
     @EventHandler
     public void onIchorSnowballThrow(PlayerInteractEvent event) {
+        if (event.isCancelled()) return;
         if (event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_AIR
                 && event.getAction() != org.bukkit.event.block.Action.RIGHT_CLICK_BLOCK) return;
         var hand = event.getHand();
@@ -1532,7 +1533,8 @@ public final class SiftEcologyManager implements Listener {
         if (state == null) return;
         int maxLevel = Math.max(1, plugin.getConfig().getInt("ichor.cauldron.max-level", 3));
         for (Location at : state.cauldronLocations()) {
-            if (!at.getChunk().isLoaded()) continue;
+            World world = at.getWorld();
+            if (world == null || !world.isChunkLoaded(at.getBlockX() >> 4, at.getBlockZ() >> 4)) continue;
             if (state.level(at) >= maxLevel) continue;
             Block above = at.clone().add(0, 1, 0).getBlock();
             if (above.getType() != org.bukkit.Material.POINTED_DRIPSTONE) continue;

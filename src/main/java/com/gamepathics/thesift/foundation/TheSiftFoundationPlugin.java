@@ -262,6 +262,9 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (riftManager != null) {
+            riftManager.shutdown();
+        }
         var dimension = getServer().getWorld(SiftDimensionManager.DIMENSION_KEY);
         if (dimension != null) {
             var safeWorld = getServer().getWorlds().stream()
@@ -290,9 +293,6 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         }
         if (echoGolemManager != null) {
             echoGolemManager.shutdown();
-        }
-        if (riftManager != null) {
-            riftManager.shutdown();
         }
         if (siftEcologyManager != null) {
             siftEcologyManager.shutdown();

@@ -327,7 +327,10 @@ public final class EchoGolemManager implements Listener {
         var pdc = golem.getPersistentDataContainer();
         String owner = pdc.get(ownerKey, PersistentDataType.STRING);
         ItemStack hand = player.getInventory().getItemInMainHand();
-        if (hand.getType() == Material.ECHO_SHARD && (owner == null || owner.equals(player.getUniqueId().toString()))) {
+        if (sharedContent().is(hand, "heart_of_the_sift")) return;
+        if (hand.getType() == Material.ECHO_SHARD
+                && !sharedContent().is(hand, "heart_of_the_sift")
+                && (owner == null || owner.equals(player.getUniqueId().toString()))) {
             if (hand.getAmount() == 1) player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
             else hand.setAmount(hand.getAmount() - 1);
             pdc.set(ownerKey, PersistentDataType.STRING, player.getUniqueId().toString());
@@ -448,8 +451,9 @@ public final class EchoGolemManager implements Listener {
                             center.getBlockX() + dx, center.getBlockY() + dy, center.getBlockZ() + dz);
                     // The Soul Block stand-in is soul soil (mod parity); generated Soul Canyons are made of it.
                     // A provider may place a custom block instead — check via the block bridge.
-                    if (block.getType() == Material.SOUL_SOIL
-                            || blockBridge.isBlock("soul_block", block)) return block;
+                    if (SoulBlockListener.isMarked(plugin, block)
+                            && (block.getType() == Material.SOUL_SOIL
+                            || blockBridge.isBlock("soul_block", block))) return block;
                 }
             }
         }

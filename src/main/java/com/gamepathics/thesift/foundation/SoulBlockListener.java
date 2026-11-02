@@ -120,7 +120,12 @@ public final class SoulBlockListener implements Listener {
     }
 
     boolean isMarked(Block block) {
-        String value = block.getChunk().getPersistentDataContainer().get(positionsKey, PersistentDataType.STRING);
+        return isMarked(plugin, block);
+    }
+
+    static boolean isMarked(JavaPlugin plugin, Block block) {
+        NamespacedKey key = new NamespacedKey(plugin, "soul_block_positions");
+        String value = block.getChunk().getPersistentDataContainer().get(key, PersistentDataType.STRING);
         return value != null && Arrays.asList(value.split(";")).contains(key(block));
     }
 
@@ -146,7 +151,7 @@ public final class SoulBlockListener implements Listener {
         else pdc.set(positionsKey, PersistentDataType.STRING, remaining);
     }
 
-    private String key(Block block) {
+    private static String key(Block block) {
         return key(block.getX(), block.getY(), block.getZ());
     }
 

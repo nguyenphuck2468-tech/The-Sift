@@ -110,9 +110,8 @@ public final class SiftiteListener implements Listener {
                 && plugin.getConfig().getBoolean("content.siftite_nugget", true)
                 && ((isMarked(block, siftiteOreMarker) && block.getType() == siftiteOreMaterial)
                 || blockBridge.isBlock("siftite_ore", block)
-                // Data-driven ores from the dimension datapack carry no chunk marker;
-                // an ore stand-in embedded in the ported deepslate/tuff host rock is an ore.
-                || (block.getType() == siftiteOreMaterial && isEmbeddedInHostRock(block)))) {
+                || (block.getType() == siftiteOreMaterial
+                    && isMarked(block, siftiteOreMarker)))) {
             Player player = event.getPlayer();
             String tool = player.getInventory().getItemInMainHand().getType().name();
             if (!(tool.startsWith("DIAMOND_") || tool.startsWith("NETHERITE_")) || !tool.endsWith("_PICKAXE")) return;

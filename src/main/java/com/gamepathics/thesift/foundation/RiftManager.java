@@ -167,12 +167,12 @@ public final class RiftManager implements Listener {
                     // Portal rifts with a gate never auto-close; -1 means "never expires"
                     // in skipExpired(). Without a gate they close via active-duration.
                     entry.expiresAt = rift.gate != null ? -1L
-                            : now + Math.max(0, plugin.getConfig().getInt("rift.portal-active-seconds", 900)) * 20L * 50L
-                              - rift.stateTimer * 50L;
+                            : now + Math.max(0, plugin.getConfig().getInt("rift.portal-active-seconds", 900)) * 1000L
+                              - rift.stateTimer * 1000L;
                 } else {
-                    int durationTicks = Math.max(1, plugin.getConfig().getInt("rift.active-duration-seconds", 300)) * 20;
-                    int remainingTicks = Math.max(0, durationTicks - rift.stateTimer);
-                    entry.expiresAt = now + remainingTicks * 50L;
+                    int durationSeconds = Math.max(1, plugin.getConfig().getInt("rift.active-duration-seconds", 300));
+                    int remainingSeconds = Math.max(0, durationSeconds - rift.stateTimer);
+                    entry.expiresAt = now + remainingSeconds * 1000L;
                 }
                 
                 if (rift.gate != null && rift.center.getWorld() != null) {
@@ -242,19 +242,19 @@ public final class RiftManager implements Listener {
                 }
                 RiftInstance rift = new RiftInstance(UUID.fromString(entry.id),
                         new Location(centerWorld, entry.cx + 0.5, entry.cy, entry.cz + 0.5), null, entry.portal);
-                int durationTicks = (entry.portal
+                int durationSeconds = entry.portal
                         ? Math.max(1, plugin.getConfig().getInt("rift.portal-active-seconds", 900))
-                        : Math.max(1, plugin.getConfig().getInt("rift.active-duration-seconds", 300))) * 20;
-                int remainingTicks;
+                        : Math.max(1, plugin.getConfig().getInt("rift.active-duration-seconds", 300));
+                int remainingSeconds;
                 if (entry.expiresAt < 0) {
                     // Portal rift with gate: never expires on its own; restore with full duration.
-                    remainingTicks = durationTicks;
+                    remainingSeconds = durationSeconds;
                 } else {
-                    remainingTicks = Math.max(0, (int) Math.min(durationTicks,
-                            (entry.expiresAt - now) / 50L));
+                    remainingSeconds = Math.max(0, (int) Math.min(durationSeconds,
+                            (entry.expiresAt - now) / 1000L));
                 }
                 rift.restoreActive(new Location(exitWorld, entry.ex + 0.5, entry.ey, entry.ez + 0.5),
-                        remainingTicks);
+                        remainingSeconds);
                 if (entry.gateMinX != null && entry.gateArrivalWorld != null) {
                     rift.setGate(
                             new org.bukkit.util.BoundingBox(
@@ -764,17 +764,17 @@ public final class RiftManager implements Listener {
         }
 
         /** Rebuilds an ACTIVE rift from a saved session without replaying effects. */
-        void restoreActive(Location exit, int remainingTicks) {
+        void restoreActive(Location exit, int remainingSeconds) {
             this.exitCenter = exit;
             this.state = RiftState.ACTIVE;
             this.phase = 1;
-            this.stateTimer = Math.max(0, durationTicksTotal() - remainingTicks);
+            this.stateTimer = Math.max(0, durationSecondsTotal() - remainingSeconds);
         }
 
-        private int durationTicksTotal() {
-            return (portal
+        private int durationSecondsTotal() {
+            return portal
                     ? Math.max(1, plugin.getConfig().getInt("rift.portal-active-seconds", 900))
-                    : Math.max(1, plugin.getConfig().getInt("rift.active-duration-seconds", 300))) * 20;
+                    : Math.max(1, plugin.getConfig().getInt("rift.active-duration-seconds", 300));
         }
 
         void setGate(org.bukkit.util.BoundingBox gate, Location arrival) {

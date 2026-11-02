@@ -269,7 +269,11 @@ public final class SiftiteContent implements Listener {
         ItemMeta meta = result.getItemMeta();
         if (!providerItem) meta.setDisplayName("§d" + name);
         meta.getPersistentDataContainer().set(idKey, PersistentDataType.STRING, id);
-        if (!providerItem && hasItemModel(id)) meta.setItemModel(NamespacedKey.fromString("thesift:" + id));
+        if (!providerItem && hasItemModel(id)
+                && plugin.getConfig().getBoolean("resource-pack.auto-send", false)
+                && !plugin.getConfig().getString("resource-pack.server-url", "").isBlank()) {
+            meta.setItemModel(NamespacedKey.fromString("thesift:" + id));
+        }
         if (id.startsWith("siftite_") && !id.equals("siftite_upgrade_smithing_template")) {
             addAttributes(meta, id);
             applyDurabilityMultiplier(result, meta, id);
