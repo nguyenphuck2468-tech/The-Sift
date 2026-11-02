@@ -154,7 +154,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         }, 200L);
         // Runs on the first tick, after every plugin (including ones that depend on The Sift) has enabled.
         getServer().getScheduler().runTask(this, this::verifyRequiredPlugins);
-        getLogger().info("The Sift fan-made Paper 26.3+ plugin enabled; not affiliated with Mojang or Microsoft.");
+        getLogger().info("The Sift fan-made Paper 26.1+ plugin enabled; not affiliated with Mojang or Microsoft.");
     }
 
     /** Lazily creates and returns the single shared {@link SiftiteContent} used by all managers. */

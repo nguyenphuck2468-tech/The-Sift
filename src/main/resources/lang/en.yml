@@ -76,7 +76,7 @@ sift:
   resourcepack-no-provider: "No resource-pack provider plugin detected and resource-pack.server-url is empty; set an http(s) download URL or install a provider before broadcasting."
   resourcepack-broadcast: "The Sift resource pack sent to %count% player(s) via %provider%."
   version: "The Sift foundation: %version%"
-  runtime-target: "Runtime server: %version%"
+  runtime-target: "Runtime server: %version% (supported: Paper 26.1–26.3)"
   dimension-disabled: "The Sift dimension is disabled."
   dimension-locked: "The Sift dimension is locked because required provider IDs are missing. Run /sift doctor; see integrations/README.md for setup instructions."
   dimension-ready: "The Sift dimension is ready. Players can enter with /sift dimension."

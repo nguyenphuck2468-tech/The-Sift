@@ -1,7 +1,7 @@
 # The Sift — plugin Paper làm bởi người hâm mộ
 
 The Sift là bản triển khai của người hâm mộ lấy cảm hứng từ chiều không gian được công bố tại
-Minecraft Live 2026. Hỗ trợ **Paper 26.3 trở lên** (bao gồm các bản 26.x mới hơn), Java 25
+Minecraft Live 2026. Hỗ trợ **Paper 26.1, 26.1.1, 26.1.2, 26.2 và 26.3**, Java 25
 và Paper API 26.x;
 không liên kết với Mojang hay Microsoft. Các provider nội dung cung cấp item, block và mob ở
 những chỗ Paper API không có sẵn khái niệm tương ứng. Trạng thái triển khai và các phần thay thế
@@ -9,7 +9,7 @@ những chỗ Paper API không có sẵn khái niệm tương ứng. Trạng th�
 
 ## Cài nhanh kiểu standalone
 
-1. Tải một file `TheSift-*.jar` vào thư mục `plugins/` của Paper 26.3 trở lên.
+1. Tải một file `TheSift-*.jar` vào thư mục `plugins/` của Paper 26.1 trở lên.
 2. Khởi động lại server một lần; không cần Fabric, Forge, resource-pack bắt buộc hay plugin phụ.
 3. Vào game chạy `/sift doctor`, sau đó `/sift dimension`.
 
@@ -32,7 +32,7 @@ Thư viện biên dịch mặc định là Paper API `26.3.build.218-stable` đ�
 Ghi đè API và phiên bản server khi kiểm chứng bản khác:
 `./gradlew build -PpaperApiVersion=<api> -PminecraftVersion=<minecraft-version>`.
 
-Plugin đăng ký dimension datapack qua lifecycle datapack-discovery của Paper; cần Paper 26.3 trở
+Plugin đăng ký dimension datapack qua lifecycle datapack-discovery của Paper; cần Paper 26.1 trở
 lên. Chiều không gian gồm 15 biome (10 của mod tham chiếu cộng 5 biome tự viết) trên noise router
 port từ mod, với cả ba carver đã được nối vào mọi biome. Custom block dùng vanilla stand-in ở
 những chỗ chưa có provider.
