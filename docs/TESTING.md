@@ -37,8 +37,10 @@ Official references: [Geyser setup](https://geysermc.org/wiki/geyser/setup/), [s
 .\gradlew.bat runServer --console=plain
 ```
 
-`runServer` is configured by run-paper 3.1.0 for Minecraft/Paper 26.3 and uses
-`run/paper-26.3`. Paper 26.3 build 222 has reached `Done` locally and accepted
+`runServer` is configured by run-paper 3.1.0 for Minecraft/Paper 26.x and uses
+`run/paper-<minecraft-version>` (default: `run/paper-26.3`). Override the target with
+`-PminecraftVersion=<minecraft-version>` and `-PpaperApiVersion=<paper-api-version>`.
+Paper 26.3 build 222 has reached `Done` locally and accepted
 `/datapack list enabled` plus `/sift doctor`; third-party providers and a
 Bedrock client have not been tested. Do not accept the Minecraft server EULA
 automatically. The CI boot script is gated by the repository Actions variable

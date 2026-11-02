@@ -15,6 +15,8 @@ java {
 
 def paperApiVersion = providers.gradleProperty("paperApiVersion")
         .orElse("26.3.build.218-stable")
+def targetMinecraftVersion = providers.gradleProperty("minecraftVersion")
+        .orElse("26.3")
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:${paperApiVersion.get()}")
@@ -163,8 +165,8 @@ tasks.register("generateProviderDefinitions") {
 tasks.named("compileJava").configure { dependsOn("generateProviderDefinitions") }
 
 runServer {
-    minecraftVersion("26.3")
-    runDirectory = file("run/paper-26.3")
+    minecraftVersion(targetMinecraftVersion.get())
+    runDirectory = file("run/paper-${targetMinecraftVersion.get()}")
 }
 
 test {

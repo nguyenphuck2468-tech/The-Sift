@@ -154,7 +154,7 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         }, 200L);
         // Runs on the first tick, after every plugin (including ones that depend on The Sift) has enabled.
         getServer().getScheduler().runTask(this, this::verifyRequiredPlugins);
-        getLogger().info("The Sift fan-made Paper 26.3 plugin enabled; not affiliated with Mojang or Microsoft.");
+        getLogger().info("The Sift fan-made Paper 26.3+ plugin enabled; not affiliated with Mojang or Microsoft.");
     }
 
     /** Lazily creates and returns the single shared {@link SiftiteContent} used by all managers. */
@@ -366,7 +366,8 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         if (args.length == 1 && args[0].equalsIgnoreCase("doctor")) {
             sender.sendMessage(Messages.get("sift.version", "The Sift foundation: %version%")
                     .replace("%version%", getPluginMeta().getVersion()));
-            Messages.send(sender, "sift.runtime-target", "Runtime target: Paper 26.3 / Paper API 26.3.build.218-stable");
+            sender.sendMessage(Messages.get("sift.runtime-target", "Runtime server: %version%")
+                    .replace("%version%", getServer().getBukkitVersion()));
             sender.sendMessage(contentPackStatus());
             for (Map.Entry<ContentId, Boolean> entry : contentRegistry.snapshot().entrySet()) {
                 sender.sendMessage("- " + entry.getKey().key() + ": "
