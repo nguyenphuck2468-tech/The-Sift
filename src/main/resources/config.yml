@@ -45,7 +45,7 @@ content:
   ichor_bucket: true
   ichor_shard: true
   ichor_snowball: true
-  # Triển khai một phần: Sifter spawn theo đàn + drop đã hoạt động; chưa có cơ chế sàng lọc item như mod.
+  # Sifter parity: spawn theo đàn, delayed bite attack và raw meat drop đã hoạt động.
   sifter: true
   # Fan-made, KHÔNG có trong mod gốc (Arta48/Mielons-The-Sift không có "Spire Tyrant" hay
   # Crimson Keep; advancement thesift:tyrant cũng là fan-made). Biến thể boss randomly thay
@@ -90,6 +90,11 @@ echo-golem:
   # kính, không xuyên toàn thế giới).
   charoite-protection: true
   drop-siftite: true
+  # Quét Soul Block theo từng pulse để tránh quét toàn bộ vùng trong một tick.
+  soul-search-radius: 10
+  soul-search-vertical-radius: 4
+  soul-search-budget: 256
+  soul-search-chunk-radius: 2
 
 # Tham chiếu bằng dưới (đọc bởi code với giá trị mặc định nếu thiếu).
 mobs:

@@ -66,6 +66,8 @@ final class AncientCityGateManager implements Listener {
     private final Map<String, Gate> knownGates = new LinkedHashMap<>();
     private final Set<UUID> travelling = new HashSet<>();
     private final Set<UUID> transientBeams = new HashSet<>();
+    private final Set<String> openingGates = new HashSet<>();
+    private final Map<String, Integer> portalAnimationTasks = new HashMap<>();
     private int taskId = -1;
     private int visualTaskId = -1;
 
@@ -98,11 +100,14 @@ final class AncientCityGateManager implements Listener {
             var entity = Bukkit.getEntity(id);
             if (entity != null) entity.remove();
         }
+        for (int task : portalAnimationTasks.values()) Bukkit.getScheduler().cancelTask(task);
+        portalAnimationTasks.clear();
         transientBeams.clear();
         searchedCells.clear();
         knownGates.clear();
         travelling.clear();
         melodies.clear();
+        openingGates.clear();
     }
 
     Optional<Location> locate(Player player) {
@@ -267,6 +272,13 @@ final class AncientCityGateManager implements Listener {
 
     /** True when the block is one of a known gate's Sonorous positions, i.e. gate-owned. */
     boolean ownsSonorous(Block block) {
+        if (block == null) return false;
+        // Note Block events are delivered for the block above the Sonorous base.
+        // Normalize that position so the legacy Rift listener cannot consume a
+        // gate-owned console before this manager handles it.
+        if (block.getType() == Material.NOTE_BLOCK) {
+            block = block.getRelative(org.bukkit.block.BlockFace.DOWN);
+        }
         for (Gate gate : knownGates.values()) {
             if (gate.world() != block.getWorld()) continue;
             for (AncientCityFrame.BlockPos pos : gate.frame().sonorousPositions(gate.side())) {
@@ -488,9 +500,7 @@ final class AncientCityGateManager implements Listener {
             event.getPlayer().playSound(noteBlock.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 0.8f, 0.6f);
             Messages.actionBar(event.getPlayer(), "sonorous.wrong-note", "§cWrong note; the gate melody resets.");
         } else if (result == AncientCityMelodyTracker.Result.COMPLETE) {
-            replayMelody(gate);
-            if (openPortal(gate, event.getPlayer()))
-                Messages.send(event.getPlayer(), "gate.opened", "§bThe Ancient City portal opens into The Sift!");
+            beginPortalOpening(gate, event.getPlayer());
         } else event.getPlayer().sendActionBar(Messages.get("sonorous.melody", "§bAncient City melody: %progress%/8")
                 .replace("%progress%", String.valueOf(melodies.progress(event.getPlayer().getUniqueId(), gate.key))));
     }
@@ -568,14 +578,41 @@ final class AncientCityGateManager implements Listener {
                 .findFirst().orElse(null);
     }
 
-    private void replayMelody(Gate gate) {
-        for (int note : AncientCityMelodyTracker.SONG) {
-            for (AncientCityFrame.BlockPos position : gate.frame.sonorousPositions(gate.side)) {
-                gate.world.spawnParticle(Particle.DUST, position.x() + 0.5, position.y() + 1.1,
-                        position.z() + 0.5, 3, 0.1, 0.1, 0.1,
-                        new Particle.DustOptions(Color.fromRGB(SonorousPalette.noteRgb(note)), 1.25f));
+    private void beginPortalOpening(Gate gate, Player opener) {
+        if (gate.open || !openingGates.add(gate.key)) return;
+        List<AncientCityFrame.BlockPos> positions = gate.frame.sonorousPositions(gate.side);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (gate.open || !knownGates.containsKey(gate.key)) {
+                openingGates.remove(gate.key);
+                return;
             }
+            playOpeningMelody(gate, positions, 0, opener);
+        }, 10L);
+    }
+
+    private void playOpeningMelody(Gate gate, List<AncientCityFrame.BlockPos> positions,
+                                   int index, Player opener) {
+        if (gate.open || !knownGates.containsKey(gate.key)) {
+            openingGates.remove(gate.key);
+            return;
         }
+        int note = AncientCityMelodyTracker.SONG[index];
+        for (AncientCityFrame.BlockPos position : positions) {
+            gate.world.spawnParticle(Particle.DUST, position.x() + 0.5, position.y() + 1.1,
+                    position.z() + 0.5, 3, 0.1, 0.1, 0.1,
+                    new Particle.DustOptions(Color.fromRGB(SonorousPalette.noteRgb(note)), 1.25f));
+        }
+        Location center = gate.center();
+        gate.world.playSound(center, Sound.BLOCK_NOTE_BLOCK_HARP, 0.9f,
+                (float) Math.pow(2.0, (note - 1) / 12.0));
+        if (index + 1 < AncientCityMelodyTracker.SONG.length) {
+            Bukkit.getScheduler().runTaskLater(plugin,
+                    () -> playOpeningMelody(gate, positions, index + 1, opener), 4L);
+            return;
+        }
+        openingGates.remove(gate.key);
+        if (openPortal(gate, opener) && opener.isOnline())
+            Messages.send(opener, "gate.opened", "§bThe Ancient City portal opens into The Sift!");
     }
 
     private void spawnSonorousBeam(Block base, int note) {
@@ -795,10 +832,44 @@ final class AncientCityGateManager implements Listener {
             Quaternionf rotation = frame.longAxis() == AncientCityFrame.Axis.X
                     ? new Quaternionf() : new Quaternionf().rotationY((float) (Math.PI / 2.0));
             entity.setTransformation(new Transformation(new Vector3f(), rotation,
-                    new Vector3f(20.0f, 6.0f, 0.05f), new Quaternionf()));
+                    new Vector3f(0.1f, 0.1f, 0.05f), new Quaternionf()));
             entity.setGlowColorOverride(Color.fromRGB(SonorousPalette.PORTAL_TEAL_RGB));
+            animatePortalSurface(gate, entity, rotation);
         });
         gate.displayId = display.getUniqueId();
+    }
+
+    private void animatePortalSurface(Gate gate, ItemDisplay display, Quaternionf rotation) {
+        Integer previous = portalAnimationTasks.remove(gate.key);
+        if (previous != null) Bukkit.getScheduler().cancelTask(previous);
+        int task = Bukkit.getScheduler().runTaskTimer(plugin, new Runnable() {
+            private int tick;
+
+            @Override
+            public void run() {
+                if (!display.isValid() || !knownGates.containsKey(gate.key)) {
+                    cancel();
+                    return;
+                }
+                float progress = Math.min(1.0f, ++tick / 20.0f);
+                float eased = progress * progress * (3.0f - 2.0f * progress);
+                display.setTransformation(new Transformation(new Vector3f(), rotation,
+                        new Vector3f(0.1f + 19.9f * eased, 0.1f + 5.9f * eased, 0.05f),
+                        new Quaternionf()));
+                if (tick % 2 == 0) {
+                    Location center = gate.center().add(0, 0.5, 0);
+                    gate.world.spawnParticle(Particle.END_ROD, center, 5,
+                            0.3 + eased * 2.0, 0.3 + eased * 0.7, 0.05);
+                }
+                if (progress >= 1.0f) cancel();
+            }
+
+            private void cancel() {
+                Integer id = portalAnimationTasks.remove(gate.key);
+                if (id != null) Bukkit.getScheduler().cancelTask(id);
+            }
+        }, 1L, 1L).getTaskId();
+        portalAnimationTasks.put(gate.key, task);
     }
 
     private void drawPortalParticles(Gate gate) {

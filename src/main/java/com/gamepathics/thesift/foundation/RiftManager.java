@@ -50,7 +50,6 @@ public final class RiftManager implements Listener {
     private final JavaPlugin plugin;
     private AncientCityGateManager gateOwner;
     private final NamespacedKey riftLastRewardKey;
-    private final java.util.Map<java.util.UUID, Long> noteConsoleLookupAt = new java.util.HashMap<>();
     private final NamespacedKey riftKey;
     private final SiftMobFactory mobFactory;
     private final ExternalBlockBridge blockBridge;
@@ -571,11 +570,8 @@ public final class RiftManager implements Listener {
                 Sound.BLOCK_NOTE_BLOCK_HARP, 0.8f, 1.0f);
         block.getWorld().spawnParticle(Particle.NOTE, block.getLocation().add(0.5, 1.2, 0.5), 1,
                 0, 0, 0, (played - 1) / 24.0);
-        // findConsole walks connected note blocks; cap repeat lookups to 4 ticks per player.
-        Long nextAllowed = noteConsoleLookupAt.get(player.getUniqueId());
-        long nowMs = System.currentTimeMillis();
-        if (nextAllowed != null && nowMs < nextAllowed) return;
-        noteConsoleLookupAt.put(player.getUniqueId(), nowMs + 200L);
+        // findConsole walks the connected note blocks. The reference mod accepts every
+        // played note, so this path must not throttle quick melody input.
         java.util.List<Block> console = findConsole(block);
         Block anchor = console.stream()
                 .min(java.util.Comparator.<Block>comparingInt(Block::getY)
@@ -729,7 +725,6 @@ public final class RiftManager implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         portalSongTracker.remove(event.getPlayer().getUniqueId());
-        noteConsoleLookupAt.remove(event.getPlayer().getUniqueId());
     }
 
     boolean canHandlePortalSong(Block noteBlock) {

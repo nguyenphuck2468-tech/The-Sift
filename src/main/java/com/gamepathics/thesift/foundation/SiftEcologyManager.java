@@ -113,11 +113,16 @@ public final class SiftEcologyManager implements Listener {
     private final SiftiteContent content;
     private final BukkitTask tideTask;
     private final BukkitTask darkSnifferCombatTask;
+    private final BukkitTask sifterCombatTask;
     private final AtomicLong providerPlacementFailures = new AtomicLong();
     private final AtomicLong deferredDecorationRetries = new AtomicLong();
     private final java.util.Map<String, AtomicLong> providerPlacementFailuresById = new ConcurrentHashMap<>();
     private volatile String lastProviderPlacementFailure = "none";
     private long tideTick;
+    private final NamespacedKey sifterBiteTargetKey;
+    private final NamespacedKey sifterBiteStartedKey;
+    private final NamespacedKey sifterBiteSoundKey;
+    private final NamespacedKey sifterBiteAppliedKey;
 
     public SiftEcologyManager(JavaPlugin plugin, ResonanceManager resonanceManager,
                               EchoGolemManager echoGolemManager, RiftManager riftManager) {
@@ -176,6 +181,10 @@ public final class SiftEcologyManager implements Listener {
         this.wardenPettingStartKey = new NamespacedKey(plugin, "warden_petting_start");
         this.wardenPettingHeartAtKey = new NamespacedKey(plugin, "warden_petting_heart_at");
         this.darkSnifferPettingWardenKey = new NamespacedKey(plugin, "dark_sniffer_petting_warden");
+        this.sifterBiteTargetKey = new NamespacedKey(plugin, "sifter_bite_target");
+        this.sifterBiteStartedKey = new NamespacedKey(plugin, "sifter_bite_started");
+        this.sifterBiteSoundKey = new NamespacedKey(plugin, "sifter_bite_sound");
+        this.sifterBiteAppliedKey = new NamespacedKey(plugin, "sifter_bite_applied");
         // Shared instances are injected by the plugin lifecycle; fall back to local ones only
         // for standalone/test construction.
         this.mobFactory = sharedMobFactory != null ? sharedMobFactory : new SiftMobFactory(plugin);
@@ -193,11 +202,14 @@ public final class SiftEcologyManager implements Listener {
             tickDarkSnifferCombat();
             tickWardenPetting();
         }, 1L, 2L);
+        this.sifterCombatTask = Bukkit.getScheduler().runTaskTimer(plugin,
+                this::tickSifterCombat, 1L, 2L);
     }
 
     public void shutdown() {
         tideTask.cancel();
         darkSnifferCombatTask.cancel();
+        sifterCombatTask.cancel();
         sifterHerdAnchors.clear();
     }
 
@@ -1287,6 +1299,26 @@ public final class SiftEcologyManager implements Listener {
         }
     }
 
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onSifterAttack(org.bukkit.event.entity.EntityDamageByEntityEvent event) {
+        if (!(event.getDamager() instanceof Mob sifter)
+                || !"sifter".equals(sifter.getPersistentDataContainer()
+                .get(creatureKey, PersistentDataType.STRING))
+                || !(event.getEntity() instanceof LivingEntity target)) {
+            return;
+        }
+        var pdc = sifter.getPersistentDataContainer();
+        if (pdc.has(sifterBiteAppliedKey, PersistentDataType.BYTE)) {
+            pdc.remove(sifterBiteAppliedKey);
+            return;
+        }
+        event.setCancelled(true);
+        if (!pdc.has(sifterBiteTargetKey, PersistentDataType.STRING)) {
+            pdc.set(sifterBiteTargetKey, PersistentDataType.STRING, target.getUniqueId().toString());
+            pdc.set(sifterBiteStartedKey, PersistentDataType.LONG, sifter.getWorld().getGameTime());
+        }
+    }
+
     /** Smelt Raw Sifter Meat into Cooked Sifter Meat (mod parity for the food chain). */
     @EventHandler(ignoreCancelled = true)
     public void onSmeltSifterMeat(org.bukkit.event.inventory.FurnaceSmeltEvent event) {
@@ -1298,6 +1330,54 @@ public final class SiftEcologyManager implements Listener {
             ItemStack cooked = content.item(Material.COOKED_PORKCHOP, "cooked_sifter_meat", "Cooked Sifter Meat");
             if (cooked != null) event.setResult(cooked);
         }
+    }
+
+    private void tickSifterCombat() {
+        World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
+        if (sift == null) return;
+        long now = sift.getGameTime();
+        for (Entity entity : indexedMobs(sift, "sifter")) {
+            if (!(entity instanceof Mob sifter)) continue;
+            var pdc = sifter.getPersistentDataContainer();
+            String targetId = pdc.get(sifterBiteTargetKey, PersistentDataType.STRING);
+            Long started = pdc.get(sifterBiteStartedKey, PersistentDataType.LONG);
+            if (targetId == null || started == null) continue;
+
+            Entity target;
+            try {
+                target = Bukkit.getEntity(UUID.fromString(targetId));
+            } catch (IllegalArgumentException ignored) {
+                target = null;
+            }
+            if (!(target instanceof LivingEntity living) || living.isDead()
+                    || !living.isValid() || !living.getWorld().equals(sift)) {
+                clearSifterBite(pdc);
+                continue;
+            }
+            long age = now - started;
+            if (age >= 8 && !pdc.has(sifterBiteSoundKey, PersistentDataType.BYTE)) {
+                pdc.set(sifterBiteSoundKey, PersistentDataType.BYTE, (byte) 1);
+                sifter.getWorld().playSound(sifter.getLocation(),
+                        "thesift:entity.sifter.attack", 0.9f, 1.15f);
+            }
+            if (age >= 13 && !pdc.has(sifterBiteAppliedKey, PersistentDataType.BYTE)) {
+                pdc.set(sifterBiteAppliedKey, PersistentDataType.BYTE, (byte) 1);
+                if (sifter.getLocation().distanceSquared(living.getLocation()) <= 6.25
+                        && sifter.hasLineOfSight(living)) {
+                    living.damage(plugin.getConfig().getDouble("mobs.sifter.attack-damage", 10.0), sifter);
+                } else {
+                    pdc.remove(sifterBiteAppliedKey);
+                }
+            }
+            if (age >= 14) clearSifterBite(pdc);
+        }
+    }
+
+    private void clearSifterBite(org.bukkit.persistence.PersistentDataContainer pdc) {
+        pdc.remove(sifterBiteTargetKey);
+        pdc.remove(sifterBiteStartedKey);
+        pdc.remove(sifterBiteSoundKey);
+        pdc.remove(sifterBiteAppliedKey);
     }
 
     public boolean summonCreature(String species, Location location) {
