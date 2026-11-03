@@ -502,13 +502,13 @@ public final class SiftEcologyManager implements Listener {
             for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++)
                 if (Math.abs(dx) + Math.abs(dz) < 4)
                     placeBlock(world.getBlockAt(x + dx, y + height - 1, z + dz),
-                            "sift_leaves", Material.CHERRY_LEAVES);
+                    "overgrown_willow_foliage", Material.CHERRY_LEAVES);
         } else {
             int radius = 2 + random.nextInt(3);
             for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++)
                 if (random.nextInt(3) == 0)
                     placeBlock(world.getBlockAt(x + dx, y + random.nextInt(3), z + dz),
-                            "siftstone", Material.TUFF);
+                    "siftslate", Material.TUFF);
         }
     }
 
@@ -597,7 +597,7 @@ public final class SiftEcologyManager implements Listener {
                 for (int dz = -radius; dz <= radius; dz++) {
                     if (random.nextInt(3) != 0) continue;
                     int dy = random.nextInt(3);
-                    placeBlock(world.getBlockAt(x + dx, y + dy, z + dz), "siftstone",
+                    placeBlock(world.getBlockAt(x + dx, y + dy, z + dz), "siftslate",
                             rocks[random.nextInt(rocks.length)]);
                 }
             }
@@ -610,7 +610,7 @@ public final class SiftEcologyManager implements Listener {
             }
             for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
                 if (Math.abs(dx) + Math.abs(dz) < 4) {
-                    placeBlock(world.getBlockAt(x + dx, y + trunk - 1, z + dz), "sift_leaves", leaves);
+                    placeBlock(world.getBlockAt(x + dx, y + trunk - 1, z + dz), "overgrown_willow_foliage", leaves);
                 }
             }
             world.getBlockAt(x, y + trunk, z).setType(Material.SHROOMLIGHT, false);
@@ -619,7 +619,7 @@ public final class SiftEcologyManager implements Listener {
             for (int dy = 0; dy < 5; dy++) placeBlock(world.getBlockAt(x, y + dy, z), "overgrown_willow_log", wood);
             for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
                 if (Math.abs(dx) + Math.abs(dz) < 4) {
-                    placeBlock(world.getBlockAt(x + dx, y + 4, z + dz), "sift_leaves", Material.CHERRY_LEAVES);
+                    placeBlock(world.getBlockAt(x + dx, y + 4, z + dz), "overgrown_willow_foliage", Material.CHERRY_LEAVES);
                 }
             }
         } else if (biome.contains("sift_wastes") || biome.contains("sift_deep_dark")) {
@@ -627,7 +627,7 @@ public final class SiftEcologyManager implements Listener {
             int radius = 2 + random.nextInt(2);
             for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++) {
                 if (dx * dx + dz * dz <= radius * radius + 1) {
-                    placeBlock(world.getBlockAt(x + dx, y, z + dz), "siftstone_bricks",
+                    placeBlock(world.getBlockAt(x + dx, y, z + dz), "siftslate_bricks",
                             shell[random.nextInt(shell.length)]);
                 }
             }

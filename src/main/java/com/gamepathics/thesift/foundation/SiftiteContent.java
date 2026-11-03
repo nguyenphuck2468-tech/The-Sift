@@ -373,9 +373,7 @@ public final class SiftiteContent implements Listener {
             case "siftslate" -> Material.DEEPSLATE;
             case "sonorous_deepslate" -> Material.REINFORCED_DEEPSLATE;
             case "soul_block" -> Material.SOUL_SOIL;
-            case "sift_soil" -> Material.ROOTED_DIRT;
-            case "sift_grass", "healthy_sculk" -> id.equals("healthy_sculk") ? Material.SCULK : Material.MOSS_BLOCK;
-            case "sift_log" -> Material.CHERRY_LOG;
+            case "healthy_sculk" -> Material.SCULK;
             case "overgrown_willow" -> Material.OAK_LOG;
             case "overgrown_willow_log" -> Material.OAK_LOG;
             case "overgrown_willow_wood" -> Material.OAK_WOOD;
@@ -406,13 +404,6 @@ public final class SiftiteContent implements Listener {
             case "siftslate_wall" -> Material.POLISHED_DEEPSLATE_WALL;
             case "chiseled_siftslate" -> Material.CHISELED_DEEPSLATE;
             case "reinforced_siftslate" -> Material.REINFORCED_DEEPSLATE;
-            case "sift_rubble" -> Material.GRAVEL;
-            case "sift_leaves" -> Material.CHERRY_LEAVES;
-            case "sift_planks" -> Material.CHERRY_PLANKS;
-            case "siftstone" -> Material.TUFF;
-            case "siftstone_bricks" -> Material.TUFF_BRICKS;
-            case "chiseled_siftstone", "sift_altar" -> Material.CHISELED_DEEPSLATE;
-            case "shard_ore" -> Material.AMETHYST_BLOCK;
             case "charoite_ore" -> Material.DEEPSLATE_LAPIS_ORE;
             case "siftite_ore" -> Material.DEEPSLATE_DIAMOND_ORE;
             case "charoite" -> Material.LAPIS_LAZULI;
@@ -428,10 +419,6 @@ public final class SiftiteContent implements Listener {
         };
         if (material == null) return null;
         String displayName = switch (id) {
-            case "sift_grass" -> "Sift Grass";
-            case "sift_log" -> "Sift Log";
-            case "sift_leaves" -> "Sift Leaves";
-            case "sift_planks" -> "Sift Planks";
             default -> title(id);
         };
         return item(material, id, displayName);

@@ -78,19 +78,13 @@ Do not copy these assets without verifying the license or obtaining permission.
 
 The original LICENSE by Mielon (MIT) applies to the ported code and data as noted above.
 
-## Original fan-made content (NOT from the reference mod)
+## Removed plugin-original content
 
-The following exist only in this plugin and must never be described as mod
-parity: the Spire Tyrant boss variant, its Spire Fragment drop and the bundled
-`thesift:tyrant` advancement (the reference mod contains no such creature,
-item or advancement — it has no Crimson Keep either), the Echo Golem resonance
-heal pulse (`echo-golem.heal-enabled`, default off), Prism Warden, Rift Key,
-Sifter-herd tuning constants, and all config keys introduced for them. The
-Spire Tyrant spawn variant is additionally disabled by default
-(`content.spire_tyrant: false`). The bundled `soul_block` crafting recipe is
-also fan-made: in the original mod, Soul Blocks are not craftable and only
-generate naturally in Soul Canyons; the recipe exists here only to provide a
-survival-mode acquisition path for the standalone plugin.
+The earlier plugin-original additions were removed from the runtime, catalog,
+provider definitions, datapack, tests, and packaged assets. This includes the
+Spire Tyrant/Prism Warden branches, Rift Key and gate items, fan-made discs,
+Blub Meat, duplicate terrain families, extra biomes, and other stand-in mobs.
+They must not be reintroduced or described as parity with Mielon's mod.
 
 ## Verified third-party material included
 
@@ -101,33 +95,12 @@ contributors (ImpSteve, Fuzja Jądrowa, Echo_Dev, StrawberrySushi_) is NOT
 included; do not treat reference research as proof that anything beyond the
 listed files was copied or licensed.
 
-## Plugin-original content (not part of Mielon's mod)
+## Current content scope
 
-A group of content IDs in `integrations/content-spec.json` does NOT exist in
-Mielon's The Sift or its NeoForge port. They originate from earlier iterations
-of this port and community design references; they are plugin-original fan-made
-content, and `scripts/audit_spec_sync.py` plus the import provenance scan mark
-every one of them `fanmade: true` so they stay out of the mandatory strict
-readiness set. The families include:
-
-- Sift tree/terrain stand-ins: `sift_log`, `sift_leaves`, `sift_grass`,
-  `sift_planks`, `sift_soil`, `siftstone`, `siftstone_bricks`,
-  `chiseled_siftstone`, `polished_siftslate`, `siftslate_tiles`, `ichor_water`.
-- Shard/prism gear and fragments: `shard_sword`, `shard_axe`, `shard_pickaxe`,
-  `shard_ore`, `sift_shard`, `sift_core`, `sift_altar`, `sift_catalyst`,
-  `sift_crown`, `heart_of_the_sift`, `sky_fragment`, `spire_fragment`,
-  `prism_*`, `phase_boots`, `lumen_tulip`, `bulb_glow`.
-- Discs, keys and gate display items: `wellspring_disc`, `rift_disc`,
-  `rift_key`, `rift_gate`.
-- Fan stand-in mobs and their items: `loomer`, `sunspore`, `thornback`,
-  `glimmerwing`, `glowbell`, `violet_wisp`, `hollow_bulb`, `frost_stalker`,
-  `drifter`, `prismite`, `shardling`, `prism_warden`, `the_sifter` (boss
-  variant; the mod's own herd mob is `sifter`), and the sift_wastes_stalker.
-
-These are NOT claimed to be part of Mielon's mod and no third-party attribution
-is asserted for them beyond this project's own MIT grant. Names that coincide
-with unrelated community projects are names only; no code, art or audio was
-taken from closed-source plugins.
+`integrations/content-spec.json` is the authoritative mod-only catalog. It
+contains only the reference mobs, items, blocks, and the ten reference biomes
+that this Paper port can represent with provider-backed content or documented
+vanilla stand-ins. Legacy IDs from earlier plugin iterations are not supported.
 
 ## Research reference only
 
