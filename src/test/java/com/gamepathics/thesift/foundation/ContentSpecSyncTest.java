@@ -60,14 +60,11 @@ class ContentSpecSyncTest {
     }
 
     @Test
-    void bossVariantTheSifterIsFlaggedFanmade() throws Exception {
+    void coreSifterIsPresentWithoutFanmadeVariants() throws Exception {
         Spec spec = load();
-        assertTrue(spec.mobs().get("the_sifter").get("fanmade").getAsBoolean(),
-                "the_sifter is a plugin boss variant, not a mod mob — it must leave the mandatory readiness set");
-        assertTrue(spec.mobs().get("spire_tyrant").get("fanmade").getAsBoolean());
-        assertFalse(spec.mobs().get("sifter").get("fanmade") != null
-                        && spec.mobs().get("sifter").get("fanmade").getAsBoolean(),
-                "the herd mob 'sifter' is a core mod mob and must stay mandatory");
+        assertTrue(spec.mobs().containsKey("sifter"));
+        assertFalse(spec.mobs().containsKey("the_sifter"));
+        assertFalse(spec.mobs().containsKey("spire_tyrant"));
     }
 
     @Test
@@ -84,29 +81,13 @@ class ContentSpecSyncTest {
         assertEquals(0, damage(spec.mobs().get("echo_golem")));
         assertEquals("RABBIT", spec.mobs().get("blub").get("type").getAsString(),
                 "blub's spec type must match the summonCreature fallback (RABBIT)");
-        assertEquals("WITCH", spec.mobs().get("sift_wastes_stalker").get("type").getAsString(),
-                "sift_wastes_stalker's spec type must match the summonCreature fallback (WITCH)");
     }
 
     @Test
     void sifterMeatItemsExistForTheDropAndSmeltRecipe() throws Exception {
         Spec spec = load();
-        for (String id : new String[]{"raw_sifter_meat", "cooked_sifter_meat",
-                "blub_meat", "cooked_blub_meat"}) {
+        for (String id : new String[]{"raw_sifter_meat", "cooked_sifter_meat"}) {
             assertTrue(spec.items().containsKey(id), "item '" + id + "' is missing from the spec");
         }
-    }
-
-    @Test
-    void fanmadeContentIsFlaggedSoStrictModeCanFilterIt() throws Exception {
-        Spec spec = load();
-        assertTrue(spec.items().get("raw_loomer").get("fanmade").getAsBoolean(),
-                "Loomer is fan-made; its meat must not join the mandatory readiness set");
-        assertTrue(spec.items().get("cooked_loomer").get("fanmade").getAsBoolean());
-        assertTrue(spec.items().get("blub_meat").get("fanmade").getAsBoolean(),
-                "blub_meat is a plugin extension, not a mod item");
-        assertTrue(spec.items().get("cooked_blub_meat").get("fanmade").getAsBoolean());
-        assertFalse(spec.items().get("raw_sifter_meat").has("fanmade"),
-                "raw_sifter_meat is a mod item and must stay mandatory");
     }
 }

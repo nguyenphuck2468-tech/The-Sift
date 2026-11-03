@@ -95,7 +95,7 @@ class MessagesCatalogTest {
                 "sift.return-console-only", "sift.ichor-disabled", "sift.rift-disabled",
                 "sift.siftite-disabled", "sift.singer-disabled", "sift.echo-golem-disabled",
                 "sift.creature-disabled", "sift.player-not-found", "sift.bottle-unresolved",
-                "sift.key-unavailable", "sift.item-unresolved", "sift.gave", "sift.summon-usage",
+                "sift.item-unresolved", "sift.gave", "sift.summon-usage",
                 "sift.summon-usage-echo", "sift.summon-usage-rift", "sift.summon-usage-generic",
                 "sift.summoned", "sift.unknown-creature", "sift.usage", "sift.locked",
                 "sift.locked-no-world",

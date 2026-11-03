@@ -54,7 +54,6 @@ class PaperPdcCustomDataTest {
                 "datapack/data/thesift/recipe/soul_block.json",
                 "datapack/data/thesift/loot_table/block/soul_block.json",
                 "datapack/data/thesift/loot_table/block/sonorous_deepslate.json",
-                "datapack/data/thesift/loot_table/entity/blub.json",
                 "datapack/data/thesift/loot_table/entity/sifter.json"
         );
 

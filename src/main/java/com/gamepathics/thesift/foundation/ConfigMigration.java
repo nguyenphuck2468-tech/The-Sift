@@ -38,7 +38,6 @@ public final class ConfigMigration {
             // 4 -> 5: the overnight hardening defaults. Only add keys the config lacks;
             // a value the owner already set must survive untouched.
             if (!config.contains("rift.reward-drops")) config.set("rift.reward-drops", 0);
-            if (!config.contains("rift.rift-key-chance")) config.set("rift.rift-key-chance", 0.0);
             if (!config.contains("rift.reward-cooldown-minutes")) config.set("rift.reward-cooldown-minutes", 30);
         }
         if (version < CURRENT_VERSION) {

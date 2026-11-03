@@ -44,7 +44,9 @@ public final class EchoGolemManager implements Listener {
     private final NamespacedKey cargoKey;
     private final ExternalBlockBridge blockBridge;
     private final java.util.Set<UUID> trackedGolems = java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private final Map<UUID, Integer> soulSearchCursors = new java.util.concurrent.ConcurrentHashMap<>();
     private java.util.function.Predicate<Entity> singerTest;
+    private java.util.function.Predicate<LivingEntity> singerSoulReceiver;
     private SiftMobFactory mobFactory;
     private final Map<UUID, BossBar> bars = new HashMap<>();
     private long tick;
@@ -110,6 +112,7 @@ public final class EchoGolemManager implements Listener {
             bar.setVisible(false);
         }
         bars.clear();
+        soulSearchCursors.clear();
     }
 
     public LivingEntity summonEchoGolem(Location location) {
@@ -176,42 +179,6 @@ public final class EchoGolemManager implements Listener {
         if (tick % period != 0) {
             updateBars();
             return;
-        }
-        // Fan-made resonance heal pulse. The reference mod's Echo Golem has no healing
-        // behaviour at all (its only stat is MAX_HEALTH 34), so this mechanic is gated off
-        // by default; admins can opt in with echo-golem.heal-enabled: true. Charoite kinship
-        // (protectedByCharoite) only widens the radius when the pulse is enabled — it never
-        // makes the heal world-wide on its own.
-        if (!plugin.getConfig().getBoolean("echo-golem.heal-enabled", false)) {
-            updateBars();
-            return;
-        }
-        java.util.Set<UUID> seen = new java.util.HashSet<>();
-        double range = Math.max(1, plugin.getConfig().getDouble("echo-golem.resonance-range", 20.0));
-        // Scan each world once (chunk-based) instead of per-player entity queries: cheaper and
-        // avoids duplicate/missed pulses when several players stand near the same golem.
-        for (World world : Bukkit.getWorlds()) {
-            for (Player centerPlayer : world.getPlayers()) {
-                for (Entity entity : world.getNearbyEntities(centerPlayer.getLocation(), range, range, range)) {
-                    if (!(entity instanceof LivingEntity golem) || !isEchoGolem(entity)
-                            || !seen.add(entity.getUniqueId())) continue;
-                    Location center = entity.getLocation();
-                    world.spawnParticle(Particle.END_ROD, center.clone().add(0, 1.5, 0), 1);
-                    world.playSound(center, Sound.ENTITY_WARDEN_HEARTBEAT, 0.3f, 0.8f);
-                    Player owner = owner(entity);
-                    if (owner != null && owner.getWorld().equals(world)) {
-                        double effectiveRange = protectedByCharoite(owner) ? range * 2 : range;
-                        if (owner.getLocation().distanceSquared(center) <= effectiveRange * effectiveRange) {
-                            double heal = plugin.getConfig().getDouble("echo-golem.heal-amount", 4.0);
-                            Location ownerLocation = owner.getLocation();
-                            owner.setHealth(Math.min(owner.getHealth() + heal,
-                                    owner.getAttribute(Attribute.MAX_HEALTH) == null ? 20.0
-                                            : owner.getAttribute(Attribute.MAX_HEALTH).getValue()));
-                            world.spawnParticle(Particle.HEART, ownerLocation.add(0, 1.2, 0), 2);
-                        }
-                    }
-                }
-            }
         }
         updateBars();
     }
@@ -327,9 +294,7 @@ public final class EchoGolemManager implements Listener {
         var pdc = golem.getPersistentDataContainer();
         String owner = pdc.get(ownerKey, PersistentDataType.STRING);
         ItemStack hand = player.getInventory().getItemInMainHand();
-        if (sharedContent().is(hand, "heart_of_the_sift")) return;
         if (hand.getType() == Material.ECHO_SHARD
-                && !sharedContent().is(hand, "heart_of_the_sift")
                 && (owner == null || owner.equals(player.getUniqueId().toString()))) {
             if (hand.getAmount() == 1) player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
             else hand.setAmount(hand.getAmount() - 1);
@@ -380,10 +345,14 @@ public final class EchoGolemManager implements Listener {
         this.singerTest = singerTest;
     }
 
+    /** Wire the Singer soul-exchange callback (package-private). */
+    void setSingerSoulReceiver(java.util.function.Predicate<LivingEntity> singerSoulReceiver) {
+        this.singerSoulReceiver = singerSoulReceiver;
+    }
+
     /**
-     * Reference-mod loop for bonded Echo Golems: a free golem walks to the nearest Soul
-     * Block stand-in and picks it up, then carries it to a Singer. The hand-over grants the
-     * mod's like_father_and_son advancement to everyone within 16 blocks.
+     * Reference-mod loop: an unbonded golem carries Soul Blocks to a Singer, while a bonded
+     * golem returns them to its owner. Both states can explore and pick up generated Soul Soil.
      */
     private void pulseSoulDelivery() {
         for (UUID id : java.util.List.copyOf(trackedGolems)) {
@@ -399,22 +368,46 @@ public final class EchoGolemManager implements Listener {
             if (golemEntity.isDead() || !golemEntity.isValid()
                     || !isEchoGolem(golemEntity)) {
                 trackedGolems.remove(id);
+                soulSearchCursors.remove(id);
                 continue;
             }
             if (!(golemEntity instanceof Mob golem)) {
                 trackedGolems.remove(id);
+                soulSearchCursors.remove(id);
                 continue;
             }
             // Vanilla Iron Golem hostility can survive restarts (target set before this
             // listener registered); drop any stray target every pulse (review P1).
             if (golem.getTarget() != null) golem.setTarget(null);
             var pdc = golem.getPersistentDataContainer();
-            if (pdc.get(ownerKey, PersistentDataType.STRING) == null) continue; // only bonded golems work
             if (pdc.has(cargoKey, PersistentDataType.BYTE)) {
+                Player owner = owner(golem);
+                boolean bonded = pdc.has(ownerKey, PersistentDataType.STRING);
+                if (bonded && (owner == null || !owner.getWorld().equals(golem.getWorld()))) {
+                    continue;
+                }
+                if (owner != null) {
+                    if (golem.getLocation().distanceSquared(owner.getLocation()) > 4) {
+                        golem.getPathfinder().moveTo(owner.getLocation());
+                        continue;
+                    }
+                    ItemStack soul = sharedContent().forId("soul_block");
+                    if (soul == null) continue;
+                    pdc.remove(cargoKey);
+                    owner.getInventory().addItem(soul).values()
+                            .forEach(leftover -> owner.getWorld().dropItemNaturally(owner.getLocation(), leftover));
+                    SiftAdvancementGrant.grant(plugin, owner, "friend_of_the_sift");
+                    owner.getWorld().spawnParticle(Particle.HEART,
+                            owner.getLocation().add(0, 1.2, 0), 4, 0.25, 0.3, 0.25, 0.02);
+                    continue;
+                }
                 LivingEntity singer = nearestSinger(golem.getLocation(), 32);
                 if (singer == null) continue;
                 if (golem.getLocation().distanceSquared(singer.getLocation()) > 4) {
                     golem.getPathfinder().moveTo(singer.getLocation());
+                    continue;
+                }
+                if (singerSoulReceiver != null && !singerSoulReceiver.test(singer)) {
                     continue;
                 }
                 pdc.remove(cargoKey);
@@ -426,12 +419,15 @@ public final class EchoGolemManager implements Listener {
                         SiftAdvancementGrant.grant(plugin, player, "like_father_and_son");
                     }
                 }
-            } else if (golem.getTarget() == null) {
-                Block soul = findNearbySoulBlock(golem.getLocation(), 5);
+            } else {
+                Block soul = findNearbySoulBlock(golem.getUniqueId(), golem.getLocation());
+                if (soul == null) soul = findLoadedCanyonSoulBlock(golem.getLocation());
                 if (soul == null) continue;
                 if (golem.getLocation().distanceSquared(soul.getLocation()) > 2.25) {
                     golem.getPathfinder().moveTo(soul.getLocation().add(0.5, 0, 0.5));
                 } else {
+                    SoulBlockListener.unmarkGenerated(plugin, soul);
+                    soulSearchCursors.remove(golem.getUniqueId());
                     soul.setType(Material.AIR);
                     pdc.set(cargoKey, PersistentDataType.BYTE, (byte) 1);
                     golem.getWorld().spawnParticle(Particle.SOUL,
@@ -441,23 +437,66 @@ public final class EchoGolemManager implements Listener {
         }
     }
 
-    private Block findNearbySoulBlock(Location center, int radius) {
+    private Block findNearbySoulBlock(UUID golemId, Location center) {
         World world = center.getWorld();
         if (world == null) return null;
-        for (int dx = -radius; dx <= radius; dx++) {
-            for (int dy = -2; dy <= 2; dy++) {
-                for (int dz = -radius; dz <= radius; dz++) {
-                    Block block = world.getBlockAt(
-                            center.getBlockX() + dx, center.getBlockY() + dy, center.getBlockZ() + dz);
-                    // The Soul Block stand-in is soul soil (mod parity); generated Soul Canyons are made of it.
-                    // A provider may place a custom block instead — check via the block bridge.
-                    if (SoulBlockListener.isMarked(plugin, block)
-                            && (block.getType() == Material.SOUL_SOIL
-                            || blockBridge.isBlock("soul_block", block))) return block;
+        int radius = Math.max(2, Math.min(24,
+                plugin.getConfig().getInt("echo-golem.soul-search-radius", 10)));
+        int verticalRadius = Math.max(2, Math.min(8,
+                plugin.getConfig().getInt("echo-golem.soul-search-vertical-radius", 4)));
+        int budget = Math.max(32, Math.min(1024,
+                plugin.getConfig().getInt("echo-golem.soul-search-budget", 256)));
+        int diameter = radius * 2 + 1;
+        int verticalDiameter = verticalRadius * 2 + 1;
+        int total = diameter * diameter * verticalDiameter;
+        int cursor = Math.floorMod(soulSearchCursors.getOrDefault(golemId, 0), total);
+        for (int checked = 0; checked < budget; checked++) {
+            int index = (cursor + checked) % total;
+            int dx = index % diameter - radius;
+            int layer = index / diameter;
+            int dz = layer % diameter - radius;
+            int dy = layer / diameter - verticalRadius;
+            Block block = world.getBlockAt(
+                    center.getBlockX() + dx, center.getBlockY() + dy, center.getBlockZ() + dz);
+            // The Soul Block stand-in is soul soil; provider-backed Soul Blocks use the same
+            // marker and are checked through the block bridge.
+            if (SoulBlockListener.isMarked(plugin, block)
+                    && (block.getType() == Material.SOUL_SOIL
+                    || blockBridge.isBlock("soul_block", block))) {
+                soulSearchCursors.remove(golemId);
+                return block;
+            }
+        }
+        soulSearchCursors.put(golemId, (cursor + budget) % total);
+        return null;
+    }
+
+    private Block findLoadedCanyonSoulBlock(Location center) {
+        World world = center.getWorld();
+        if (world == null) return null;
+        int chunkRadius = Math.max(1, Math.min(6,
+                plugin.getConfig().getInt("echo-golem.soul-search-chunk-radius", 2)));
+        int centerChunkX = center.getBlockX() >> 4;
+        int centerChunkZ = center.getBlockZ() >> 4;
+        double bestDistance = Double.MAX_VALUE;
+        Block best = null;
+        for (int dx = -chunkRadius; dx <= chunkRadius; dx++) {
+            for (int dz = -chunkRadius; dz <= chunkRadius; dz++) {
+                int chunkX = centerChunkX + dx;
+                int chunkZ = centerChunkZ + dz;
+                if (!world.isChunkLoaded(chunkX, chunkZ)) continue;
+                for (Block block : SoulBlockListener.markedBlocks(plugin, world.getChunkAt(chunkX, chunkZ))) {
+                    if (block.getType() != Material.SOUL_SOIL
+                            && !blockBridge.isBlock("soul_block", block)) continue;
+                    double distance = block.getLocation().distanceSquared(center);
+                    if (distance < bestDistance) {
+                        bestDistance = distance;
+                        best = block;
+                    }
                 }
             }
         }
-        return null;
+        return best;
     }
 
     private LivingEntity nearestSinger(Location center, double range) {

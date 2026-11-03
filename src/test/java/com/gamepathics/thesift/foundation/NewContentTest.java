@@ -110,35 +110,6 @@ class RiftManagerTest {
     }
 
     @Test
-    void createRiftKey_returnsItemWithPersistentData() {
-        ItemStack key = riftManager.createRiftKey();
-        
-        assertNotNull(key);
-        assertEquals(Material.TRIAL_KEY, key.getType());
-        assertTrue(key.hasItemMeta());
-        assertEquals("§5§lRift Key", key.getItemMeta().getDisplayName());
-    }
-
-    @Test
-    void isRiftKey_returnsTrueForCreatedKey() {
-        ItemStack key = riftManager.createRiftKey();
-        
-        assertTrue(riftManager.isRiftKey(key));
-    }
-
-    @Test
-    void isRiftKey_returnsFalseForNull() {
-        assertFalse(riftManager.isRiftKey(null));
-    }
-
-    @Test
-    void isRiftKey_returnsFalseForRegularItem() {
-        ItemStack item = new ItemStack(Material.DIAMOND);
-        
-        assertFalse(riftManager.isRiftKey(item));
-    }
-
-    @Test
     void shutdown_doesNotThrow() {
         assertDoesNotThrow(() -> riftManager.shutdown());
     }
@@ -221,17 +192,10 @@ class MeatFoodChainTest {
 
         ItemStack rawSifter = content.forId("raw_sifter_meat");
         ItemStack cookedSifter = content.forId("cooked_sifter_meat");
-        ItemStack blubMeat = content.forId("blub_meat");
-        ItemStack cookedBlub = content.forId("cooked_blub_meat");
-
         assertNotNull(rawSifter);
         assertNotNull(cookedSifter);
-        assertNotNull(blubMeat);
-        assertNotNull(cookedBlub);
         assertTrue(content.is(rawSifter, "raw_sifter_meat"));
         assertTrue(content.is(cookedSifter, "cooked_sifter_meat"));
-        assertTrue(content.is(blubMeat, "blub_meat"));
-        assertTrue(content.is(cookedBlub, "cooked_blub_meat"));
     }
 
     @Test

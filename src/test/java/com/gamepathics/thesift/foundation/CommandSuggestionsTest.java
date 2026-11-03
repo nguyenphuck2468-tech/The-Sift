@@ -15,7 +15,7 @@ class CommandSuggestionsTest {
         org.junit.jupiter.api.Assertions.assertFalse(TheSiftFoundationPlugin.requiresAdminPermission(new String[]{"dimension"}));
         org.junit.jupiter.api.Assertions.assertFalse(TheSiftFoundationPlugin.requiresAdminPermission(new String[]{"enter"}));
         org.junit.jupiter.api.Assertions.assertFalse(TheSiftFoundationPlugin.requiresAdminPermission(new String[]{"return"}));
-        org.junit.jupiter.api.Assertions.assertTrue(TheSiftFoundationPlugin.requiresAdminPermission(new String[]{"give", "rift_key", "Alex"}));
+        org.junit.jupiter.api.Assertions.assertTrue(TheSiftFoundationPlugin.requiresAdminPermission(new String[]{"give", "siftite_ingot", "Alex"}));
         org.junit.jupiter.api.Assertions.assertTrue(TheSiftFoundationPlugin.requiresAdminPermission(new String[]{"doctor"}));
     }
 
@@ -28,18 +28,12 @@ class CommandSuggestionsTest {
     }
 
     @Test
-    void summonSuggestionsHideDisabledFanContent() {
-        // Fan stand-ins are hidden unless their gate is on (review: the old list always
-        // offered prism_warden, spire_tyrant, loomer... even with every fan flag off).
-        var gateOn = TheSiftFoundationPlugin.commandSuggestions(
+    void summonSuggestionsContainOnlyReferenceContent() {
+        var suggestions = TheSiftFoundationPlugin.commandSuggestions(
                 new String[]{"summon", ""}, List.of(), species -> true);
-        var gateOff = TheSiftFoundationPlugin.commandSuggestions(
-                new String[]{"summon", ""}, List.of(),
-                species -> species.equals("singer") || species.equals("blub") || species.equals("rift"));
-        assertTrue(gateOn.contains("prism_warden") && gateOn.contains("loomer"));
-        assertFalse(gateOff.contains("prism_warden"));
-        assertFalse(gateOff.contains("loomer"));
-        assertTrue(gateOff.contains("singer") && gateOff.contains("blub") && gateOff.contains("rift"),
-                "core mobs and rift stay suggested");
+        assertTrue(suggestions.containsAll(List.of("singer", "echo_golem", "dark_sniffer", "blub", "sifter", "rift")));
+        assertFalse(suggestions.contains("prism_warden"));
+        assertFalse(suggestions.contains("spire_tyrant"));
+        assertFalse(suggestions.contains("loomer"));
     }
 }

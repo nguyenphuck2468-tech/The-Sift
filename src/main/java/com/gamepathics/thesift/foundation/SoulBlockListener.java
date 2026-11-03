@@ -3,6 +3,7 @@ package com.gamepathics.thesift.foundation;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
+import org.bukkit.Chunk;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -127,6 +128,38 @@ public final class SoulBlockListener implements Listener {
         NamespacedKey key = new NamespacedKey(plugin, "soul_block_positions");
         String value = block.getChunk().getPersistentDataContainer().get(key, PersistentDataType.STRING);
         return value != null && Arrays.asList(value.split(";")).contains(key(block));
+    }
+
+    static java.util.List<Block> markedBlocks(JavaPlugin plugin, Chunk chunk) {
+        NamespacedKey key = new NamespacedKey(plugin, "soul_block_positions");
+        String value = chunk.getPersistentDataContainer().get(key, PersistentDataType.STRING);
+        if (value == null || value.isBlank()) return java.util.List.of();
+        java.util.List<Block> result = new java.util.ArrayList<>();
+        for (String encoded : value.split(";")) {
+            String[] coordinates = encoded.split(",", -1);
+            if (coordinates.length != 3) continue;
+            try {
+                result.add(chunk.getWorld().getBlockAt(
+                        Integer.parseInt(coordinates[0]),
+                        Integer.parseInt(coordinates[1]),
+                        Integer.parseInt(coordinates[2])));
+            } catch (NumberFormatException ignored) {
+                // Ignore a malformed legacy marker without breaking the ecology pulse.
+            }
+        }
+        return result;
+    }
+
+    static void unmarkGenerated(JavaPlugin plugin, Block block) {
+        NamespacedKey key = new NamespacedKey(plugin, "soul_block_positions");
+        var pdc = block.getChunk().getPersistentDataContainer();
+        String value = pdc.get(key, PersistentDataType.STRING);
+        if (value == null) return;
+        String remaining = Arrays.stream(value.split(";"))
+                .filter(part -> !part.equals(key(block)))
+                .collect(Collectors.joining(";"));
+        if (remaining.isBlank()) pdc.remove(key);
+        else pdc.set(key, PersistentDataType.STRING, remaining);
     }
 
     private void mark(Block block) {

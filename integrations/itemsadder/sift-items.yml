@@ -1,438 +1,448 @@
-# Copy to plugins/ItemsAdder/contents/thesift/sift-items.yml.
-# Copy assets/thesift/models and textures from TheSift-resource-pack.zip into
-# this namespace as models/ and textures/ before running /iazip.
+# Generated from integrations/content-spec.json; copy to plugins/ItemsAdder/contents/thesift/configs/
 info:
   namespace: thesift
 items:
-  sift_shard:
-    display_name: "Sift Shard"
-    resource:
-      material: AMETHYST_SHARD
-      generate: false
-      model_path: item/sift_shard
-  spire_fragment:
-    display_name: "Spire Fragment"
-    resource:
-      material: AMETHYST_SHARD
-      generate: false
-      model_path: item/spire_fragment
-  sky_fragment:
-    display_name: "Sky Fragment"
-    resource:
-      material: PHANTOM_MEMBRANE
-      generate: false
-      model_path: item/sky_fragment
-  frost_fragment:
-    display_name: "Frost Fragment"
-    resource:
-      material: PRISMARINE_SHARD
-      generate: false
-      model_path: item/frost_fragment
-  sift_core:
-    display_name: "Heart of the Sift"
-    resource:
-      material: ECHO_SHARD
-      generate: false
-      model_path: item/sift_core
-  sift_catalyst:
-    display_name: "Sift Catalyst"
-    resource:
-      material: BLAZE_POWDER
-      generate: false
-      model_path: item/sift_catalyst
-  sift_crown:
-    display_name: "Sift Crown"
-    resource:
-      material: GOLDEN_HELMET
-      generate: false
-      model_path: item/sift_crown
-  rift_key:
-    display_name: "Rift Key"
-    resource:
-      material: TRIAL_KEY
-      generate: false
-      model_path: item/rift_key
-  raw_loomer:
-    display_name: "Raw Loomer"
-    resource:
-      material: RABBIT
-      generate: false
-      model_path: item/raw_loomer
-  cooked_loomer:
-    display_name: "Cooked Loomer"
-    resource:
-      material: COOKED_RABBIT
-      generate: false
-      model_path: item/cooked_loomer
-  bulb_glow:
-    display_name: "Bulb Glow"
-    resource:
-      material: GLOWSTONE_DUST
-      generate: false
-      model_path: item/bulb_glow
-  prism_blade:
-    display_name: "Prism Blade"
-    resource:
-      material: NETHERITE_SWORD
-      generate: false
-      model_path: item/prism_blade
-  prism_helmet:
-    display_name: "Prism Helmet"
-    resource:
-      material: NETHERITE_HELMET
-      generate: false
-      model_path: item/prism_helmet
-  prism_chestplate:
-    display_name: "Prism Chestplate"
-    resource:
-      material: NETHERITE_CHESTPLATE
-      generate: false
-      model_path: item/prism_chestplate
-  prism_leggings:
-    display_name: "Prism Leggings"
-    resource:
-      material: NETHERITE_LEGGINGS
-      generate: false
-      model_path: item/prism_leggings
-  prism_boots:
-    display_name: "Prism Boots"
-    resource:
-      material: NETHERITE_BOOTS
-      generate: false
-      model_path: item/prism_boots
-  phase_boots:
-    display_name: "Phase Boots"
-    resource:
-      material: DIAMOND_BOOTS
-      generate: false
-      model_path: item/phase_boots
-  shard_sword:
-    display_name: "Shard Sword"
-    resource:
-      material: NETHERITE_SWORD
-      generate: false
-      model_path: item/shard_sword
-  shard_pickaxe:
-    display_name: "Shard Pickaxe"
-    resource:
-      material: NETHERITE_PICKAXE
-      generate: false
-      model_path: item/shard_pickaxe
-  shard_axe:
-    display_name: "Shard Axe"
-    resource:
-      material: NETHERITE_AXE
-      generate: false
-      model_path: item/shard_axe
-  bulb:
-    display_name: "Bulb"
-    resource:
-      material: SLIME_BALL
-      generate: false
-      model_path: item/bulb
-  chiseled_siftstone:
-    display_name: "Chiseled Siftstone"
-    resource:
-      material: CHISELED_DEEPSLATE
-      generate: false
-      model_path: item/chiseled_siftstone
-  drifter:
-    display_name: "Drifter"
-    resource:
-      material: ENDERMAN_SPAWN_EGG
-      generate: false
-      model_path: item/drifter
-  frost_stalker:
-    display_name: "Frost Stalker"
-    resource:
-      material: STRAY_SPAWN_EGG
-      generate: false
-      model_path: item/frost_stalker
-  glimmerwing:
-    display_name: "Glimmerwing"
-    resource:
-      material: BEE_SPAWN_EGG
-      generate: false
-      model_path: item/glimmerwing
-  glowbell:
-    display_name: "Glowbell"
-    resource:
-      material: BAT_SPAWN_EGG
-      generate: false
-      model_path: item/glowbell
-  heart_of_the_sift:
-    display_name: "Heart Of The Sift"
-    resource:
-      material: ECHO_SHARD
-      generate: false
-      model_path: item/heart_of_the_sift
-  hollow_bulb:
-    display_name: "Hollow Bulb"
-    resource:
-      material: ZOMBIE_SPAWN_EGG
-      generate: false
-      model_path: item/hollow_bulb
-  koi:
-    display_name: "Koi"
-    resource:
-      material: TROPICAL_FISH_SPAWN_EGG
-      generate: false
-      model_path: item/koi
-  loomer:
-    display_name: "Loomer"
-    resource:
-      material: RABBIT_SPAWN_EGG
-      generate: false
-      model_path: item/loomer
-  lumen_tulip:
-    display_name: "Lumen Tulip"
-    resource:
-      material: TORCHFLOWER_SEEDS
-      generate: false
-      model_path: item/lumen_tulip
-  prism_warden:
-    display_name: "Prism Warden"
-    resource:
-      material: WARDEN_SPAWN_EGG
-      generate: false
-      model_path: item/prism_warden
-  prismite:
-    display_name: "Prismite"
-    resource:
-      material: SILVERFISH_SPAWN_EGG
-      generate: false
-      model_path: item/prismite
-  rift_gate:
-    display_name: "Rift Gate"
-    resource:
-      material: CRYING_OBSIDIAN
-      generate: false
-      model_path: item/rift_gate
-  shard_ore:
-    display_name: "Shard Ore"
-    resource:
-      material: AMETHYST_BLOCK
-      generate: false
-      model_path: item/shard_ore
-  shardling:
-    display_name: "Shardling"
-    resource:
-      material: ENDERMITE_SPAWN_EGG
-      generate: false
-      model_path: item/shardling
-  sift_altar:
-    display_name: "Sift Altar"
-    resource:
-      material: CHISELED_DEEPSLATE
-      generate: false
-      model_path: item/sift_altar
-  sift_grass:
-    display_name: "Sift Grass"
-    resource:
-      material: MOSS_BLOCK
-      generate: false
-      model_path: item/sift_grass
-  sift_leaves:
-    display_name: "Sift Leaves"
-    resource:
-      material: CHERRY_LEAVES
-      generate: false
-      model_path: item/sift_leaves
-  sift_log:
-    display_name: "Sift Log"
-    resource:
-      material: CHERRY_LOG
-      generate: false
-      model_path: item/sift_log
-  sift_planks:
-    display_name: "Sift Planks"
-    resource:
-      material: CHERRY_PLANKS
-      generate: false
-      model_path: item/sift_planks
-  sift_soil:
-    display_name: "Sift Soil"
-    resource:
-      material: ROOTED_DIRT
-      generate: false
-      model_path: item/sift_soil
-  siftstone:
-    display_name: "Siftstone"
-    resource:
-      material: TUFF
-      generate: false
-      model_path: item/siftstone
-  siftstone_bricks:
-    display_name: "Siftstone Bricks"
-    resource:
-      material: TUFF_BRICKS
-      generate: false
-      model_path: item/siftstone_bricks
-  sunspore:
-    display_name: "Sunspore"
-    resource:
-      material: MOOSHROOM_SPAWN_EGG
-      generate: false
-      model_path: item/sunspore
-  the_sifter:
-    display_name: "The Sifter"
-    resource:
-      material: RAVAGER_SPAWN_EGG
-      generate: false
-      model_path: item/the_sifter
-  thornback:
-    display_name: "Thornback"
-    resource:
-      material: TURTLE_SPAWN_EGG
-      generate: false
-      model_path: item/thornback
-  violet_wisp:
-    display_name: "Violet Wisp"
-    resource:
-      material: VEX_SPAWN_EGG
-      generate: false
-      model_path: item/violet_wisp
-  wisp:
-    display_name: "Wisp"
-    resource:
-      material: ALLAY_SPAWN_EGG
-      generate: false
-      model_path: item/wisp
   charoite:
     display_name: "Charoite"
     resource:
       material: LAPIS_LAZULI
       generate: false
       model_path: item/charoite
-  siftite_ingot:
-    display_name: "Siftite Ingot"
-    resource:
-      material: NETHERITE_INGOT
-      generate: false
-      model_path: item/siftite_ingot
   siftite_nugget:
     display_name: "Siftite Nugget"
     resource:
       material: IRON_NUGGET
       generate: false
       model_path: item/siftite_nugget
-  siftite_sword:
-    display_name: "Siftite Sword"
+  siftite_ingot:
+    display_name: "Siftite Ingot"
     resource:
-      material: NETHERITE_SWORD
+      material: NETHERITE_INGOT
       generate: false
-      model_path: item/siftite_sword
-  siftite_axe:
-    display_name: "Siftite Axe"
-    resource:
-      material: NETHERITE_AXE
-      generate: false
-      model_path: item/siftite_axe
-  siftite_pickaxe:
-    display_name: "Siftite Pickaxe"
-    resource:
-      material: NETHERITE_PICKAXE
-      generate: false
-      model_path: item/siftite_pickaxe
-  siftite_shovel:
-    display_name: "Siftite Shovel"
-    resource:
-      material: NETHERITE_SHOVEL
-      generate: false
-      model_path: item/siftite_shovel
-  siftite_hoe:
-    display_name: "Siftite Hoe"
-    resource:
-      material: NETHERITE_HOE
-      generate: false
-      model_path: item/siftite_hoe
-  siftite_helmet:
-    display_name: "Siftite Helmet"
-    resource:
-      material: NETHERITE_HELMET
-      generate: false
-      model_path: item/siftite_helmet
-  siftite_chestplate:
-    display_name: "Siftite Chestplate"
-    resource:
-      material: NETHERITE_CHESTPLATE
-      generate: false
-      model_path: item/siftite_chestplate
-  siftite_leggings:
-    display_name: "Siftite Leggings"
-    resource:
-      material: NETHERITE_LEGGINGS
-      generate: false
-      model_path: item/siftite_leggings
-  siftite_boots:
-    display_name: "Siftite Boots"
-    resource:
-      material: NETHERITE_BOOTS
-      generate: false
-      model_path: item/siftite_boots
+      model_path: item/siftite_ingot
   ichor_bottle:
     display_name: "Ichor Bottle"
     resource:
       material: GLASS_BOTTLE
       generate: false
-      model_path: item/ichor_bottle
+      model_path: minecraft:item/glass_bottle
   ichor_glass:
     display_name: "Ichor Glass"
     resource:
       material: GLASS
       generate: false
-      model_path: item/ichor_glass
+      model_path: minecraft:block/glass
   ichor_glass_pane:
     display_name: "Ichor Glass Pane"
     resource:
       material: GLASS_PANE
       generate: false
-      model_path: item/ichor_glass_pane
+      model_path: minecraft:item/glass_pane
   ichor_snow:
     display_name: "Ichor Snow"
     resource:
       material: SNOW
       generate: false
-      model_path: item/ichor_snow
+      model_path: minecraft:item/snow
   ichor_snow_block:
     display_name: "Ichor Snow Block"
     resource:
       material: SNOW_BLOCK
       generate: false
-      model_path: item/ichor_snow_block
+      model_path: minecraft:item/snow
+  siftite_sword:
+    display_name: "Siftite Sword"
+    resource:
+      material: NETHERITE_SWORD
+      generate: false
+      model_path: thesift:item/siftite_sword
+  siftite_axe:
+    display_name: "Siftite Axe"
+    resource:
+      material: NETHERITE_AXE
+      generate: false
+      model_path: thesift:item/siftite_axe
+  siftite_pickaxe:
+    display_name: "Siftite Pickaxe"
+    resource:
+      material: NETHERITE_PICKAXE
+      generate: false
+      model_path: thesift:item/siftite_pickaxe
+  siftite_shovel:
+    display_name: "Siftite Shovel"
+    resource:
+      material: NETHERITE_SHOVEL
+      generate: false
+      model_path: thesift:item/siftite_shovel
+  siftite_hoe:
+    display_name: "Siftite Hoe"
+    resource:
+      material: NETHERITE_HOE
+      generate: false
+      model_path: thesift:item/siftite_hoe
+  siftite_helmet:
+    display_name: "Siftite Helmet"
+    resource:
+      material: NETHERITE_HELMET
+      generate: false
+      model_path: thesift:item/siftite_helmet
+  siftite_chestplate:
+    display_name: "Siftite Chestplate"
+    resource:
+      material: NETHERITE_CHESTPLATE
+      generate: false
+      model_path: thesift:item/siftite_chestplate
+  siftite_leggings:
+    display_name: "Siftite Leggings"
+    resource:
+      material: NETHERITE_LEGGINGS
+      generate: false
+      model_path: thesift:item/siftite_leggings
+  siftite_boots:
+    display_name: "Siftite Boots"
+    resource:
+      material: NETHERITE_BOOTS
+      generate: false
+      model_path: thesift:item/siftite_boots
   charoite_ore:
     display_name: "Charoite Ore"
     resource:
-      material: AMETHYST_BLOCK
+      material: DEEPSLATE_LAPIS_ORE
       generate: false
-      model_path: item/charoite_ore
+      model_path: thesift:item/charoite_ore
+    behaviours:
+      block:
+        placed_model:
+          type: REAL_NOTE
   siftite_upgrade_smithing_template:
     display_name: "Siftite Upgrade Smithing Template"
     resource:
       material: NETHERITE_UPGRADE_SMITHING_TEMPLATE
       generate: false
-      model_path: item/siftite_upgrade_smithing_template
+      model_path: thesift:item/siftite_upgrade_smithing_template
   siftite_spear:
     display_name: "Siftite Spear"
     resource:
-      material: NETHERITE_SWORD
+      material: NETHERITE_SPEAR
       generate: false
-      model_path: item/siftite_spear
+      model_path: thesift:item/siftite_spear
   healthy_sculk:
     display_name: "Healthy Sculk"
     resource:
       material: SCULK
       generate: false
-      model_path: item/healthy_sculk
+      model_path: thesift:item/healthy_sculk
   overgrown_willow:
     display_name: "Overgrown Willow"
     resource:
       material: CHERRY_LOG
       generate: false
-      model_path: item/overgrown_willow
+      model_path: thesift:item/overgrown_willow
   siftslate:
     display_name: "Siftslate"
     resource:
       material: DEEPSLATE
       generate: false
-      model_path: item/siftslate
+      model_path: thesift:item/siftslate
+    behaviours:
+      block:
+        placed_model:
+          type: REAL_NOTE
+  soul_block:
+    display_name: "Soul Block"
+    resource:
+      material: SOUL_SOIL
+      generate: false
+      model_path: thesift:item/soul_block
+    behaviours:
+      block:
+        placed_model:
+          type: REAL_NOTE
+  sonorous_deepslate:
+    display_name: "Sonorous Deepslate"
+    resource:
+      material: REINFORCED_DEEPSLATE
+      generate: false
+      model_path: thesift:item/siftslate
+    behaviours:
+      block:
+        placed_model:
+          type: REAL_NOTE
+  sculkflower_seeds:
+    display_name: "Sculkflower Seeds"
+    resource:
+      material: TORCHFLOWER_SEEDS
+      generate: false
+      model_path: thesift:item/sculkflower_seeds
+  sculkflower:
+    display_name: "Sculkflower"
+    resource:
+      material: CACTUS_FLOWER
+      generate: false
+      model_path: thesift:item/sculkflower
+    behaviours:
+      block:
+        placed_model:
+          type: REAL_NOTE
+  ichor_bucket:
+    display_name: "Ichor Bucket"
+    resource:
+      material: WATER_BUCKET
+      generate: false
+      model_path: item/ichor_bucket
+  ichor_shard:
+    display_name: "Ichor Shard"
+    resource:
+      material: PRISMARINE_SHARD
+      generate: false
+      model_path: item/ichor_shard
+  ichor_snowball:
+    display_name: "Ichor Snowball"
+    resource:
+      material: SNOWBALL
+      generate: false
+      model_path: item/ichor_snowball
+  overgrown_willow_log:
+    display_name: "Overgrown Willow Log"
+    resource:
+      material: OAK_LOG
+      generate: false
+      model_path: item/overgrown_willow_log
+  overgrown_willow_wood:
+    display_name: "Overgrown Willow Wood"
+    resource:
+      material: OAK_WOOD
+      generate: false
+      model_path: item/overgrown_willow_wood
+  stripped_overgrown_willow_log:
+    display_name: "Stripped Overgrown Willow Log"
+    resource:
+      material: STRIPPED_CHERRY_LOG
+      generate: false
+      model_path: item/stripped_overgrown_willow_log
+  stripped_overgrown_willow_wood:
+    display_name: "Stripped Overgrown Willow Wood"
+    resource:
+      material: STRIPPED_CHERRY_WOOD
+      generate: false
+      model_path: item/stripped_overgrown_willow_wood
+  overgrown_willow_planks:
+    display_name: "Overgrown Willow Planks"
+    resource:
+      material: OAK_PLANKS
+      generate: false
+      model_path: item/overgrown_willow_planks
+  overgrown_willow_stairs:
+    display_name: "Overgrown Willow Stairs"
+    resource:
+      material: OAK_STAIRS
+      generate: false
+      model_path: item/overgrown_willow_stairs
+  overgrown_willow_slab:
+    display_name: "Overgrown Willow Slab"
+    resource:
+      material: OAK_SLAB
+      generate: false
+      model_path: item/overgrown_willow_slab
+  overgrown_willow_fence:
+    display_name: "Overgrown Willow Fence"
+    resource:
+      material: OAK_FENCE
+      generate: false
+      model_path: item/overgrown_willow_fence
+  overgrown_willow_fence_gate:
+    display_name: "Overgrown Willow Fence Gate"
+    resource:
+      material: OAK_FENCE_GATE
+      generate: false
+      model_path: item/overgrown_willow_fence_gate
+  overgrown_willow_door:
+    display_name: "Overgrown Willow Door"
+    resource:
+      material: OAK_DOOR
+      generate: false
+      model_path: item/overgrown_willow_door
+  overgrown_willow_trapdoor:
+    display_name: "Overgrown Willow Trapdoor"
+    resource:
+      material: OAK_TRAPDOOR
+      generate: false
+      model_path: item/overgrown_willow_trapdoor
+  overgrown_willow_pressure_plate:
+    display_name: "Overgrown Willow Pressure Plate"
+    resource:
+      material: OAK_PRESSURE_PLATE
+      generate: false
+      model_path: item/overgrown_willow_pressure_plate
+  overgrown_willow_button:
+    display_name: "Overgrown Willow Button"
+    resource:
+      material: OAK_BUTTON
+      generate: false
+      model_path: item/overgrown_willow_button
+  overgrown_willow_sign:
+    display_name: "Overgrown Willow Sign"
+    resource:
+      material: OAK_SIGN
+      generate: false
+      model_path: item/overgrown_willow_sign
+  overgrown_willow_hanging_sign:
+    display_name: "Overgrown Willow Hanging Sign"
+    resource:
+      material: OAK_HANGING_SIGN
+      generate: false
+      model_path: item/overgrown_willow_hanging_sign
+  overgrown_willow_boat:
+    display_name: "Overgrown Willow Boat"
+    resource:
+      material: OAK_BOAT
+      generate: false
+      model_path: item/overgrown_willow_boat
+  overgrown_willow_chest_boat:
+    display_name: "Overgrown Willow Chest Boat"
+    resource:
+      material: OAK_CHEST_BOAT
+      generate: false
+      model_path: item/overgrown_willow_chest_boat
+  overgrown_willow_foliage:
+    display_name: "Overgrown Willow Foliage"
+    resource:
+      material: OAK_LEAVES
+      generate: false
+      model_path: item/overgrown_willow_foliage
+  overgrown_willow_sapling:
+    display_name: "Overgrown Willow Sapling"
+    resource:
+      material: OAK_SAPLING
+      generate: false
+      model_path: item/overgrown_willow_sapling
+  overgrown_willow_vines:
+    display_name: "Overgrown Willow Vines"
+    resource:
+      material: VINE
+      generate: false
+      model_path: item/overgrown_willow_vines
+  cobbled_siftslate:
+    display_name: "Cobbled Siftslate"
+    resource:
+      material: COBBLED_DEEPSLATE
+      generate: false
+      model_path: item/cobbled_siftslate
+  siftslate_bricks:
+    display_name: "Siftslate Bricks"
+    resource:
+      material: DEEPSLATE_BRICKS
+      generate: false
+      model_path: item/siftslate_bricks
+  siftslate_brick_stairs:
+    display_name: "Siftslate Brick Stairs"
+    resource:
+      material: DEEPSLATE_BRICK_STAIRS
+      generate: false
+      model_path: item/siftslate_brick_stairs
+  siftslate_brick_slab:
+    display_name: "Siftslate Brick Slab"
+    resource:
+      material: DEEPSLATE_BRICK_SLAB
+      generate: false
+      model_path: item/siftslate_brick_slab
+  siftslate_brick_wall:
+    display_name: "Siftslate Brick Wall"
+    resource:
+      material: DEEPSLATE_BRICK_WALL
+      generate: false
+      model_path: item/siftslate_brick_wall
+  siftslate_stairs:
+    display_name: "Siftslate Stairs"
+    resource:
+      material: DEEPSLATE_STAIRS
+      generate: false
+      model_path: item/siftslate_stairs
+  siftslate_slab:
+    display_name: "Siftslate Slab"
+    resource:
+      material: DEEPSLATE_SLAB
+      generate: false
+      model_path: item/siftslate_slab
+  siftslate_wall:
+    display_name: "Siftslate Wall"
+    resource:
+      material: DEEPSLATE_WALL
+      generate: false
+      model_path: item/siftslate_wall
+  chiseled_siftslate:
+    display_name: "Chiseled Siftslate"
+    resource:
+      material: CHISELED_DEEPSLATE
+      generate: false
+      model_path: item/chiseled_siftslate
+  reinforced_siftslate:
+    display_name: "Reinforced Siftslate"
+    resource:
+      material: REINFORCED_DEEPSLATE
+      generate: false
+      model_path: item/reinforced_siftslate
+  overgrown_willow_shelf:
+    display_name: "Overgrown Willow Shelf"
+    resource:
+      material: OAK_SHELF
+      generate: false
+      model_path: item/overgrown_willow_shelf
+  raw_sifter_meat:
+    display_name: "Raw Sifter Meat"
+    resource:
+      material: PORKCHOP
+      generate: false
+      model_path: minecraft:item/beef
+  cooked_sifter_meat:
+    display_name: "Cooked Sifter Meat"
+    resource:
+      material: COOKED_PORKCHOP
+      generate: false
+      model_path: minecraft:item/cooked_beef
+  music_disc_rift:
+    display_name: "Rift Music Disc"
+    resource:
+      material: MUSIC_DISC_OTHERSIDE
+      generate: false
+      model_path: minecraft:item/music_disc_otherside
+  siftite_ore:
+    display_name: "Siftite ore"
+    resource:
+      material: DEEPSLATE_DIAMOND_ORE
+      generate: false
+      model_path: block/siftite_ore
+    behaviours:
+      block:
+        placed_model:
+          type: REAL_NOTE
+  ichor_water:
+    display_name: "Ichor water"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: block/ichor_water
+    behaviours:
+      block:
+        placed_model:
+          type: REAL_NOTE
+  sculkflower_crop_stage0:
+    display_name: "Sculkflower crop stage0"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: block/sculkflower_crop_stage0
+    behaviours:
+      block:
+        placed_model:
+          type: REAL_NOTE
+  sculkflower_crop_stage1:
+    display_name: "Sculkflower crop stage1"
+    resource:
+      material: PAPER
+      generate: false
+      model_path: block/sculkflower_crop_stage1
+    behaviours:
+      block:
+        placed_model:
+          type: REAL_NOTE

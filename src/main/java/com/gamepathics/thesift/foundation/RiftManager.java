@@ -45,13 +45,9 @@ public final class RiftManager implements Listener {
         CLOSING
     }
 
-    private static final String RIFT_KEY_ID = "rift_key";
-
     private final JavaPlugin plugin;
     private AncientCityGateManager gateOwner;
     private final NamespacedKey riftLastRewardKey;
-    private final java.util.Map<java.util.UUID, Long> noteConsoleLookupAt = new java.util.HashMap<>();
-    private final NamespacedKey riftKey;
     private final SiftMobFactory mobFactory;
     private final ExternalBlockBridge blockBridge;
     private final SonorousBlockRegistry sonorousBlocks;
@@ -75,7 +71,6 @@ public final class RiftManager implements Listener {
         this.plugin = plugin;
         this.providerReadiness = providerReadiness;
         this.dimensionManager = new SiftDimensionManager(plugin, providerReadiness);
-        this.riftKey = new NamespacedKey(plugin, "rift_key");
         // Prefer the injected plugin-wide factory; fall back to a local one for standalone use.
         this.mobFactory = sharedMobFactory != null ? sharedMobFactory : new SiftMobFactory(plugin);
         this.blockBridge = new ExternalBlockBridge(plugin);
@@ -330,22 +325,6 @@ public final class RiftManager implements Listener {
         for (Player player : Bukkit.getOnlinePlayers()) portalSongTracker.remove(player.getUniqueId());
     }
 
-    public ItemStack createRiftKey() {
-        ItemStack key = riftContent().item(Material.TRIAL_KEY, RIFT_KEY_ID, "Rift Key");
-        if (key == null) return null;
-        ItemMeta meta = key.getItemMeta();
-        meta.setDisplayName("§5§lRift Key");
-        meta.getPersistentDataContainer().set(riftKey, PersistentDataType.STRING, RIFT_KEY_ID);
-        key.setItemMeta(meta);
-        return key;
-    }
-
-    public boolean isRiftKey(ItemStack item) {
-        if (item == null || !item.hasItemMeta()) return false;
-        return RIFT_KEY_ID.equals(item.getItemMeta().getPersistentDataContainer()
-                .get(riftKey, PersistentDataType.STRING));
-    }
-
     public boolean openRift(Location location, Player opener) {
         return openRift(location, opener, false);
     }
@@ -518,21 +497,6 @@ public final class RiftManager implements Listener {
         });
     }
 
-    @EventHandler
-    public void onRiftKeyUse(PlayerInteractEvent event) {
-        if (event.getHand() != EquipmentSlot.HAND || event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-        ItemStack item = event.getItem();
-        if (!isRiftKey(item)) return;
-
-        Block block = event.getClickedBlock();
-        if (block == null || block.getType() != Material.BEDROCK) return; // Rift opens on bedrock
-
-        if (!openRift(block.getLocation().add(0, 1, 0), event.getPlayer())) return;
-        event.setCancelled(true);
-        if (item.getAmount() <= 1) event.getPlayer().getInventory().setItemInMainHand(new ItemStack(Material.AIR));
-        else item.setAmount(item.getAmount() - 1);
-    }
-
     /**
      * Sift portal interaction, ported from the reference mod: right-click cycles a Sonorous note 1-8,
      * left-click plays it. Each console (a connected group of Sonorous note blocks) keeps a sliding
@@ -571,11 +535,8 @@ public final class RiftManager implements Listener {
                 Sound.BLOCK_NOTE_BLOCK_HARP, 0.8f, 1.0f);
         block.getWorld().spawnParticle(Particle.NOTE, block.getLocation().add(0.5, 1.2, 0.5), 1,
                 0, 0, 0, (played - 1) / 24.0);
-        // findConsole walks connected note blocks; cap repeat lookups to 4 ticks per player.
-        Long nextAllowed = noteConsoleLookupAt.get(player.getUniqueId());
-        long nowMs = System.currentTimeMillis();
-        if (nextAllowed != null && nowMs < nextAllowed) return;
-        noteConsoleLookupAt.put(player.getUniqueId(), nowMs + 200L);
+        // findConsole walks the connected note blocks. The reference mod accepts every
+        // played note, so this path must not throttle quick melody input.
         java.util.List<Block> console = findConsole(block);
         Block anchor = console.stream()
                 .min(java.util.Comparator.<Block>comparingInt(Block::getY)
@@ -709,7 +670,7 @@ public final class RiftManager implements Listener {
                 || event.getClickedBlock().getType() != Material.JUKEBOX) return;
         ItemStack held = event.getItem();
         if (held == null || !held.hasItemMeta()
-                || !"rift_disc".equals(held.getItemMeta().getPersistentDataContainer()
+                || !"music_disc_rift".equals(held.getItemMeta().getPersistentDataContainer()
                 .get(new NamespacedKey(plugin, "content"), PersistentDataType.STRING))) return;
         // Reference-mod parity: the disc goes into an EMPTY jukebox within 16 blocks of an
         // open rift (the plugin previously accepted 48 and never checked the jukebox).
@@ -729,7 +690,6 @@ public final class RiftManager implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         portalSongTracker.remove(event.getPlayer().getUniqueId());
-        noteConsoleLookupAt.remove(event.getPlayer().getUniqueId());
     }
 
     boolean canHandlePortalSong(Block noteBlock) {
@@ -814,8 +774,6 @@ public final class RiftManager implements Listener {
 
             createExit();
 
-            // Spawn initial mobs from the configured value.
-            if (!portal) spawnRiftMobs(Math.max(0, plugin.getConfig().getInt("rift.initial-mobs", 3)));
         }
 
         private void createExit() {
@@ -838,38 +796,6 @@ public final class RiftManager implements Listener {
             exitCenter = new Location(targetWorld, x, y, z);
             targetWorld.spawnParticle(Particle.REVERSE_PORTAL, exitCenter, 45, 1.2, 1.5, 1.2, 0.05);
             targetWorld.playSound(exitCenter, Sound.BLOCK_PORTAL_TRIGGER, 1.0f, 0.8f);
-        }
-
-        private void pulseResonance() {
-            // Plan default: the fan-made rift resonance pulse is OFF (content.rift_walker_waves).
-            if (!plugin.getConfig().getBoolean("content.rift_walker_waves", false)) return;
-            center.getWorld().playSound(center, Sound.ENTITY_WARDEN_SONIC_BOOM, 1.0f, 0.6f);
-            center.getWorld().spawnParticle(Particle.SONIC_BOOM, center.clone().add(0, 1, 0), 1);
-            for (Player p : center.getWorld().getPlayers()) {
-                double range = plugin.getConfig().getDouble("rift.resonance-range", 20.0);
-                if (p.getLocation().distanceSquared(center) <= range * range) {
-                    p.addPotionEffect(new PotionEffect(PotionEffectType.DARKNESS, 100, 0));
-                    p.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 60, 0));
-                }
-            }
-        }
-
-        private void spawnRiftMobs(int count) {
-            if (!plugin.getConfig().getBoolean("content.rift_walker_waves", false)) return;
-            for (int i = 0; i < count; i++) {
-                Location spawnLoc = center.clone().add(
-                    ThreadLocalRandom.current().nextDouble(-5, 5),
-                    0,
-                    ThreadLocalRandom.current().nextDouble(-5, 5)
-                );
-            spawnLoc = spawnLoc.getWorld().getHighestBlockAt(spawnLoc).getLocation().add(0.5, 1, 0.5);
-                
-                // Spawn Enderman-like or custom mob
-                Entity entity = mobFactory.spawn("rift_walker", spawnLoc, EntityType.ENDERMAN);
-                if (entity == null) continue;
-                entity.setCustomName("§5Rift Walker");
-                entity.setCustomNameVisible(true);
-            }
         }
 
         private void beginClosing() {
@@ -922,12 +848,6 @@ public final class RiftManager implements Listener {
                         ThreadLocalRandom.current().nextDouble(-2, 2));
                 dropLoc.getWorld().dropItemNaturally(dropLoc, reward.clone());
             }
-            // Rift Key fragment chance
-            if (ThreadLocalRandom.current().nextDouble()
-                    < plugin.getConfig().getDouble("rift.rift-key-chance", 0.0)) {
-                ItemStack key = createRiftKey();
-                if (key != null) center.getWorld().dropItemNaturally(center.clone().add(0, 1, 0), key);
-            }
         }
 
         public void forceClose() {
@@ -952,16 +872,7 @@ public final class RiftManager implements Listener {
                 int duration = portal
                         ? Math.max(1, plugin.getConfig().getInt("rift.portal-active-seconds", 900))
                         : Math.max(1, plugin.getConfig().getInt("rift.active-duration-seconds", 300));
-                int interval = Math.max(1, plugin.getConfig().getInt("rift.mob-spawn-interval-seconds", 60));
-                int pulseInterval = Math.max(1,
-                        plugin.getConfig().getInt("rift.resonance-pulse-interval-seconds", 60));
                 if (gate == null && stateTimer >= duration) beginClosing();
-                else {
-                    if (!portal && stateTimer % interval == 0) {
-                        spawnRiftMobs(Math.max(0, plugin.getConfig().getInt("rift.periodic-mobs", 1)));
-                    }
-                    if (!portal && stateTimer % pulseInterval == 0) pulseResonance();
-                }
             } else if (state == RiftState.CLOSING) {
                 stateTimer++;
                 if (stateTimer >= Math.max(1, plugin.getConfig().getInt("rift.closing-duration-seconds", 5))) close();

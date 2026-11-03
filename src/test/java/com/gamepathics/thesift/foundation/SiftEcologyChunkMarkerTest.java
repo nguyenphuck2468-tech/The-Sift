@@ -58,10 +58,10 @@ class SiftEcologyChunkMarkerTest {
         java.util.List<String> failures = new java.util.ArrayList<>();
 
         assertThrows(IllegalStateException.class, () -> SiftEcologyManager.placeBlock(
-                block, "sift_grass", Material.MOSS_BLOCK, true, () -> false, failures::add));
+                block, "overgrown_willow_foliage", Material.MOSS_BLOCK, true, () -> false, failures::add));
         assertEquals(Material.AIR, block.getType());
         assertEquals(1, failures.size());
-        assertTrue(failures.getFirst().contains("sift_grass"));
+        assertTrue(failures.getFirst().contains("overgrown_willow_foliage"));
         assertTrue(failures.getFirst().contains("3,70,5"));
     }
 
@@ -70,7 +70,7 @@ class SiftEcologyChunkMarkerTest {
         var world = server.addSimpleWorld("sift-dev-placement");
         var block = world.getBlockAt(3, 70, 5);
         block.setType(Material.AIR);
-        assertTrue(SiftEcologyManager.placeBlock(block, "sift_grass", Material.MOSS_BLOCK,
+        assertTrue(SiftEcologyManager.placeBlock(block, "overgrown_willow_foliage", Material.MOSS_BLOCK,
                 false, () -> false, ignored -> fail("dev fallback must not count as strict failure")));
         assertEquals(Material.MOSS_BLOCK, block.getType());
     }
@@ -80,7 +80,7 @@ class SiftEcologyChunkMarkerTest {
         var block = server.addSimpleWorld("sift-idempotent-retry").getBlockAt(3, 70, 5);
         AtomicInteger placeCalls = new AtomicInteger();
 
-        assertTrue(SiftEcologyManager.placeBlock(block, "sift_grass", Material.MOSS_BLOCK,
+        assertTrue(SiftEcologyManager.placeBlock(block, "overgrown_willow_foliage", Material.MOSS_BLOCK,
                 true, () -> true, () -> { placeCalls.incrementAndGet(); return true; },
                 ignored -> fail("recognized provider block should be kept")));
 
@@ -96,13 +96,13 @@ class SiftEcologyChunkMarkerTest {
         block.setType(Material.AIR);
 
         assertThrows(IllegalStateException.class, () -> SiftEcologyManager.decorateChunkOnce(chunk, marker,
-                () -> SiftEcologyManager.placeBlock(block, "sift_grass", Material.MOSS_BLOCK,
+                () -> SiftEcologyManager.placeBlock(block, "overgrown_willow_foliage", Material.MOSS_BLOCK,
                         true, () -> false, ignored -> {})));
         assertFalse(chunk.getPersistentDataContainer().has(marker, PersistentDataType.BYTE));
         assertEquals(Material.AIR, block.getType());
 
         assertTrue(SiftEcologyManager.decorateChunkOnce(chunk, marker,
-                () -> assertTrue(SiftEcologyManager.placeBlock(block, "sift_grass", Material.MOSS_BLOCK,
+                () -> assertTrue(SiftEcologyManager.placeBlock(block, "overgrown_willow_foliage", Material.MOSS_BLOCK,
                         true, () -> { block.setType(Material.DIAMOND_BLOCK); return true; }, ignored -> {}))));
         assertEquals((byte) 2, chunk.getPersistentDataContainer().get(marker, PersistentDataType.BYTE));
         assertEquals(Material.DIAMOND_BLOCK, block.getType());

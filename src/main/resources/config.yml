@@ -45,13 +45,8 @@ content:
   ichor_bucket: true
   ichor_shard: true
   ichor_snowball: true
-  # Triển khai một phần: Sifter spawn theo đàn + drop đã hoạt động; chưa có cơ chế sàng lọc item như mod.
+  # Sifter parity: spawn theo đàn, delayed bite attack và raw meat drop đã hoạt động.
   sifter: true
-  # Fan-made, KHÔNG có trong mod gốc (Arta48/Mielons-The-Sift không có "Spire Tyrant" hay
-  # Crimson Keep; advancement thesift:tyrant cũng là fan-made). Biến thể boss randomly thay
-  # thế The Sifter trong shattered/siftslate peaks. Mặc định TẮT để giữ parity — bật nếu
-  # muốn nội dung tự chế này xuất hiện trong spawn.
-  spire_tyrant: false
   rift: true
   sift_dimension: true
 
@@ -82,14 +77,13 @@ echo-golem:
   max-health: 34.0
   resonance-period: 8
   resonance-range: 20.0
-  # Fan-made (KHÔNG có trong mod gốc): nhịp hồi máu cho chủ sở hữu. Mặc định TẮT để giữ
-  # parity; bật lên nếu muốn cơ chế cộng hưởng tự chế này hoạt động.
-  heal-enabled: false
-  heal-amount: 4.0
-  # Khi heal-enabled=true, người mang Charoite nhận tầm hồi máu gấp đôi (vẫn giới hạn bán
-  # kính, không xuyên toàn thế giới).
   charoite-protection: true
   drop-siftite: true
+  # Quét Soul Block theo từng pulse để tránh quét toàn bộ vùng trong một tick.
+  soul-search-radius: 10
+  soul-search-vertical-radius: 4
+  soul-search-budget: 256
+  soul-search-chunk-radius: 2
 
 # Tham chiếu bằng dưới (đọc bởi code với giá trị mặc định nếu thiếu).
 mobs:
@@ -102,17 +96,11 @@ rift:
   enabled: true
   # Quyết định mặc định qua đêm: Rift không phải nguồn thu nhập trừ khi chủ server bật.
   reward-drops: 0
-  rift-key-chance: 0.0
   # Số phút tối thiểu giữa hai lần một người chơi nhận thưởng Rift (0 = tắt giới hạn).
   reward-cooldown-minutes: 30
   opening-duration-seconds: 5
   active-duration-seconds: 300
   closing-duration-seconds: 5
-  mob-spawn-interval-seconds: 60
-  initial-mobs: 3
-  periodic-mobs: 1
-  resonance-pulse-interval-seconds: 60
-  resonance-range: 20.0
   # Incomplete melodies expire after this many seconds without a note.
   portal-song-timeout-seconds: 60
 
@@ -186,7 +174,7 @@ resource-pack:
   auto-send: false
   # URL http(s) công khai để client tải zip (bắt buộc cho đường native; file:// bị client từ chối).
   server-url: ""
-  title: "The Sift (fan-made)"
+  title: "The Sift"
   prompt: "Texture mob/blok The Sift"
 
 integrations:
@@ -208,11 +196,10 @@ integrations:
       level: 1
       definitions: {}
     modelengine:
-      # Map Sift IDs to installed ModelEngine model IDs, for example prism_warden: sift:prism_warden.
+      # Map Sift IDs to installed ModelEngine model IDs.
       models: {}
 
 sift-world:
-  tide-period-seconds: 120
   ichor-weather-period-seconds: 900
 
 # Mod-parity spawn eggs (vanilla stand-in eggs tagged with a Sift content id).

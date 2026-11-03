@@ -43,9 +43,9 @@ Ngày: 2026-11-01 · Branch: `overnight/hardening` @ `025f03b` · So với mod `
 | Mob | Gameplay (code verified) | Hình ảnh |
 |---|---|---|
 | **Singer** | Allay stand-in; Goat Horn đánh thức, resonance, Soul Event, barter 20 mục, advancement | Allay model — không có hình dáng mod |
-| **Echo Golem** | Iron Golem stand-in; bond Echo Shard, **tự tìm Soul Block (5 block radius) → nhặt → mang đến Singer (32 block) → trao** (như mod), advancement `like_father_and_son` | Iron Golem model — không có animation đi lại |
+| **Echo Golem** | Iron Golem stand-in; bond Echo Shard, **quét dần vùng Soul Block có giới hạn ngân sách → nhặt → mang đến Singer (32 block) hoặc trả chủ** (như mod), advancement `like_father_and_son` / `friend_of_the_sift` | Iron Golem model — không có animation đi lại |
 | **Blub** | Rabbit stand-in; **thuần 1/3**, **thu hút bởi Soul Block**, follow, **defend owner**, **stay/follow toggle**, advancement `blub` | Rabbit — không có tai cụp theo máu |
-| **Sifter** | Ravager stand-in; **đàn 3–5 (per-herd anchor, prune rỗng)**, spawn Overgrown Forest, Raw Sifter Meat → Cooked, advancement | Ravager — không có hành vi săn mồi tốc độ cao |
+| **Sifter** | Ravager stand-in; **đàn 3–5 (per-herd anchor, prune rỗng)**, delayed bite attack theo mod, spawn Overgrown Forest, Raw Sifter Meat → Cooked, advancement | Ravager — không có model/animation cắn riêng |
 | **Dark Sniffer** | Sniffer stand-in; **nhiễm sculk → 30s biến đổi**, hostile, Sonic Sniff kéo mục tiêu, đào Sculkflower Seeds, **Warden không đánh**, combat damage theo config | Sniffer — không có model nhiễm sculk |
 
 **Điểm yếu thật:** 5 mob đều dùng vanilla entity — không có model, texture, animation riêng. Đây là giới hạn Paper vs Fabric/NeoForge, không phải thiếu nỗ lực.
@@ -165,8 +165,7 @@ Kèm 6 trigger vanilla (Ancient City visit, biome visits) handled by datapack.
 | Ichor là fluid thật | 🔴 | Paper không hỗ trợ custom fluid registration |
 | Âm thanh gốc (Rift disc, 8 nốt Sonorous, ambient) | 🟡 | Cần OGG files + quyền phân phối |
 | ~80 hardcoded sendMessage | 🟡 | Pattern có sẵn, cần thời gian wire |
-| Echo Golem hành trình Soul Canyon đầy đủ | 🟡 | Hiện là tìm 5 block + mang 32 block, không phải khám phá địa hình |
-| Sifter "sàng lọc item" như mod | 🟡 | Đàn + meat drop có, hành vi sàng lọc chưa |
+| Echo Golem hành trình Soul Canyon đầy đủ | 🟡 | Đã có quét dần vùng Soul Block và tìm cụm trong các chunk đang tải; chưa có route/landmark Soul Canyon đầy đủ |
 | Integration test end-to-end | 🟡 | Unit test mạnh, chưa có test gameplay trên server thật |
 | God class SiftEcologyManager (2189 dòng) | 🟡 | Đã trích 3 class, còn DarkSnifferController + ChunkDecorationManager |
 | Brigadier command tree | 🟡 | Hiện if-chain, không phải bug nhưng không tối ưu |
