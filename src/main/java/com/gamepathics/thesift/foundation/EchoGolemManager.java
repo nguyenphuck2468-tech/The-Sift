@@ -46,6 +46,7 @@ public final class EchoGolemManager implements Listener {
     private final java.util.Set<UUID> trackedGolems = java.util.concurrent.ConcurrentHashMap.newKeySet();
     private final Map<UUID, Integer> soulSearchCursors = new java.util.concurrent.ConcurrentHashMap<>();
     private java.util.function.Predicate<Entity> singerTest;
+    private java.util.function.Predicate<LivingEntity> singerSoulReceiver;
     private SiftMobFactory mobFactory;
     private final Map<UUID, BossBar> bars = new HashMap<>();
     private long tick;
@@ -344,6 +345,11 @@ public final class EchoGolemManager implements Listener {
         this.singerTest = singerTest;
     }
 
+    /** Wire the Singer soul-exchange callback (package-private). */
+    void setSingerSoulReceiver(java.util.function.Predicate<LivingEntity> singerSoulReceiver) {
+        this.singerSoulReceiver = singerSoulReceiver;
+    }
+
     /**
      * Reference-mod loop: an unbonded golem carries Soul Blocks to a Singer, while a bonded
      * golem returns them to its owner. Both states can explore and pick up generated Soul Soil.
@@ -399,6 +405,9 @@ public final class EchoGolemManager implements Listener {
                 if (singer == null) continue;
                 if (golem.getLocation().distanceSquared(singer.getLocation()) > 4) {
                     golem.getPathfinder().moveTo(singer.getLocation());
+                    continue;
+                }
+                if (singerSoulReceiver != null && !singerSoulReceiver.test(singer)) {
                     continue;
                 }
                 pdc.remove(cargoKey);

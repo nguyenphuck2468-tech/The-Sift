@@ -108,7 +108,10 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             echoGolemManager = new EchoGolemManager(this, sharedContent(), sharedMobFactory());
             getServer().getPluginManager().registerEvents(echoGolemManager, this);
             echoGolemManager.start();
-            if (resonanceManager != null) echoGolemManager.setSingerTest(resonanceManager::isSinger);
+            if (resonanceManager != null) {
+                echoGolemManager.setSingerTest(resonanceManager::isSinger);
+                echoGolemManager.setSingerSoulReceiver(resonanceManager::receiveSoulFromEchoGolem);
+            }
         }
         if (contentRegistry.isEnabled(ContentId.RIFT)) {
             riftManager = new RiftManager(this, providerReadiness, sharedContent(), sharedMobFactory());

@@ -97,6 +97,27 @@ public final class ResonanceManager implements Listener {
     }
 
     /**
+     * Starts the reference mod's Singer soul exchange when an Echo Golem arrives with a
+     * Soul Block. Paper has no custom Singer state machine, so the existing invulnerability
+     * window is the compatible server-side representation of the exchange phase.
+     */
+    boolean receiveSoulFromEchoGolem(LivingEntity singer) {
+        if (!isSinger(singer) || !singer.isValid()) return false;
+        int soulEventSeconds = Math.max(0,
+                plugin.getConfig().getInt("resonance.singer.soul-event-seconds", 60));
+        if (soulEventSeconds > 0) {
+            long now = System.currentTimeMillis();
+            soulEventUntil.put(singer.getUniqueId(), now + soulEventSeconds * 1000L);
+            singer.setInvulnerable(false);
+            scheduleInvulnerabilityRestore(singer, soulEventSeconds);
+        }
+        singer.getWorld().playSound(singer.getLocation(), Sound.ENTITY_ALLAY_ITEM_GIVEN, 1.0f, 0.96f);
+        singer.getWorld().spawnParticle(Particle.HEART,
+                singer.getLocation().add(0, 1.1, 0), 6, 0.3, 0.35, 0.3, 0.02);
+        return true;
+    }
+
+    /**
      * Mod parity: the Singer is invulnerable outside its soul event. Holding a Soul Block at
      * main hand and right-clicking the Singer opens a resonance.singer.soul-event-seconds
      * window during which damage is allowed; without one, the hit is cancelled with feedback.
