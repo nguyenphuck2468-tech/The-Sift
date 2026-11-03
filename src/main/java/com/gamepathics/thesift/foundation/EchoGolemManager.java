@@ -179,42 +179,6 @@ public final class EchoGolemManager implements Listener {
             updateBars();
             return;
         }
-        // Fan-made resonance heal pulse. The reference mod's Echo Golem has no healing
-        // behaviour at all (its only stat is MAX_HEALTH 34), so this mechanic is gated off
-        // by default; admins can opt in with echo-golem.heal-enabled: true. Charoite kinship
-        // (protectedByCharoite) only widens the radius when the pulse is enabled — it never
-        // makes the heal world-wide on its own.
-        if (!plugin.getConfig().getBoolean("echo-golem.heal-enabled", false)) {
-            updateBars();
-            return;
-        }
-        java.util.Set<UUID> seen = new java.util.HashSet<>();
-        double range = Math.max(1, plugin.getConfig().getDouble("echo-golem.resonance-range", 20.0));
-        // Scan each world once (chunk-based) instead of per-player entity queries: cheaper and
-        // avoids duplicate/missed pulses when several players stand near the same golem.
-        for (World world : Bukkit.getWorlds()) {
-            for (Player centerPlayer : world.getPlayers()) {
-                for (Entity entity : world.getNearbyEntities(centerPlayer.getLocation(), range, range, range)) {
-                    if (!(entity instanceof LivingEntity golem) || !isEchoGolem(entity)
-                            || !seen.add(entity.getUniqueId())) continue;
-                    Location center = entity.getLocation();
-                    world.spawnParticle(Particle.END_ROD, center.clone().add(0, 1.5, 0), 1);
-                    world.playSound(center, Sound.ENTITY_WARDEN_HEARTBEAT, 0.3f, 0.8f);
-                    Player owner = owner(entity);
-                    if (owner != null && owner.getWorld().equals(world)) {
-                        double effectiveRange = protectedByCharoite(owner) ? range * 2 : range;
-                        if (owner.getLocation().distanceSquared(center) <= effectiveRange * effectiveRange) {
-                            double heal = plugin.getConfig().getDouble("echo-golem.heal-amount", 4.0);
-                            Location ownerLocation = owner.getLocation();
-                            owner.setHealth(Math.min(owner.getHealth() + heal,
-                                    owner.getAttribute(Attribute.MAX_HEALTH) == null ? 20.0
-                                            : owner.getAttribute(Attribute.MAX_HEALTH).getValue()));
-                            world.spawnParticle(Particle.HEART, ownerLocation.add(0, 1.2, 0), 2);
-                        }
-                    }
-                }
-            }
-        }
         updateBars();
     }
 
@@ -329,9 +293,7 @@ public final class EchoGolemManager implements Listener {
         var pdc = golem.getPersistentDataContainer();
         String owner = pdc.get(ownerKey, PersistentDataType.STRING);
         ItemStack hand = player.getInventory().getItemInMainHand();
-        if (sharedContent().is(hand, "heart_of_the_sift")) return;
         if (hand.getType() == Material.ECHO_SHARD
-                && !sharedContent().is(hand, "heart_of_the_sift")
                 && (owner == null || owner.equals(player.getUniqueId().toString()))) {
             if (hand.getAmount() == 1) player.getInventory().setItemInMainHand(new ItemStack(Material.AIR));
             else hand.setAmount(hand.getAmount() - 1);

@@ -435,26 +435,6 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
             }
             return true;
         }
-        if (args.length == 3 && args[0].equalsIgnoreCase("give")
-                && args[1].equalsIgnoreCase("rift_key")) {
-            if (riftManager == null) {
-                Messages.send(sender, "sift.rift-disabled", "Rift content is disabled.");
-                return true;
-            }
-            Player target = getServer().getPlayerExact(args[2]);
-            if (target == null) {
-                Messages.send(sender, "sift.player-not-found", "Player not found.");
-            } else {
-                ItemStack key = riftManager.createRiftKey();
-                if (key == null) Messages.send(sender, "sift.key-unavailable", "Item ID 'rift_key' is unavailable in strict provider mode. Run /sift doctor.");
-                else {
-                    giveOrDrop(target, key);
-                    sender.sendMessage(Messages.get("sift.gave", "Gave %item% to %target%.")
-                            .replace("%item%", "Rift Key").replace("%target%", target.getName()));
-                }
-            }
-            return true;
-        }
         if (args.length == 3 && args[0].equalsIgnoreCase("give")) {
             if (siftiteContent == null) {
                 Messages.send(sender, "sift.siftite-disabled", "Charoite/Siftite content is disabled.");
@@ -564,12 +544,10 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
                 + "; required: " + getServer().isResourcePackRequired();
     }
 
-    /** Suggestion gate mirroring summonCreature's acceptance: core mobs always, fan mobs
-     *  only when content.sift_standin_mobs is on, rifts follow content.rift. */
+    /** Suggestion gate mirroring the reference mod's core summonable entities. */
     private boolean speciesSuggestionEnabled(String species) {
         if (species.equals("rift")) return getConfig().getBoolean("content.rift", true);
-        return SiftEcologyManager.FAN_CORE_MOBS.contains(species)
-                || getConfig().getBoolean("content.sift_standin_mobs", false);
+        return SiftEcologyManager.FAN_CORE_MOBS.contains(species);
     }
 
     static java.util.List<String> commandSuggestions(String[] args, java.util.Collection<String> players,
@@ -579,16 +557,14 @@ public final class TheSiftFoundationPlugin extends JavaPlugin {
         else if (args.length == 2 && args[0].equalsIgnoreCase("datapack")) candidates = java.util.List.of("list", "enable", "disable");
         else if (args.length == 3 && args[0].equalsIgnoreCase("datapack") && !args[1].equalsIgnoreCase("list")) candidates = java.util.List.of("dimension", "progression");
         else if (args.length == 2 && args[0].equalsIgnoreCase("give")) candidates = java.util.List.of(
-                "ichor_bottle", "ichor_bucket", "ichor_shard", "ichor_snowball", "rift_key", "soul_block",
+                "ichor_bottle", "ichor_bucket", "ichor_shard", "ichor_snowball", "soul_block",
                 "sonorous_deepslate", "siftslate", "siftslate_bricks", "charoite",
                 "overgrown_willow_log", "overgrown_willow_planks", "overgrown_willow_boat",
-                "rift_disc", "wellspring_disc", "sift_rubble",
+                "music_disc_rift",
                 "siftite_ingot", "siftite_nugget", "siftite_upgrade_smithing_template");
         else if (args.length == 2 && args[0].equalsIgnoreCase("summon")) candidates = java.util.List.of(
-                "singer", "echo_golem", "rift", "blub", "dark_sniffer", "bulb", "loomer", "wisp",
-                "violet_wisp", "koi", "hollow_bulb", "glowbell", "thornback", "glimmerwing",
-                "the_sifter", "spire_tyrant", "sifter", "frost_stalker", "sunspore", "drifter", "shardling",
-                "prism_warden", "prismite", "lumen_tulip").stream().filter(speciesEnabled).toList();
+                "singer", "echo_golem", "rift", "blub", "dark_sniffer", "sifter")
+                .stream().filter(speciesEnabled).toList();
         else if (args.length == 3 && (args[0].equalsIgnoreCase("give")
                 || args[0].equalsIgnoreCase("summon"))) candidates = java.util.List.copyOf(players);
         else return java.util.List.of();

@@ -31,8 +31,8 @@ Thư viện biên dịch mặc định là Paper API `26.3.build.218-stable`. Gh
 khác: `gradle build -PpaperApiVersion=<phiên-bản>`.
 
 Plugin đăng ký dimension datapack qua lifecycle datapack-discovery của Paper; cần Paper 26.3 trở
-lên. Chiều không gian gồm 15 biome (10 của mod tham chiếu cộng 5 biome tự viết) trên noise router
-port từ mod, với cả ba carver đã được nối vào mọi biome. Custom block dùng vanilla stand-in ở
+lên. Chiều không gian gồm 10 biome từ mod tham chiếu trên noise router port từ mod, với cả ba
+carver đã được nối vào mọi biome. Custom block dùng vanilla stand-in ở
 những chỗ chưa có provider.
 
 ## Ngôn ngữ
@@ -55,15 +55,14 @@ sửa jar; key thiếu sẽ lần lượt fallback sang tiếng Anh rồi đến
   bar, drop.
 - `/sift doctor` xem trạng thái; `/sift reload` kiểm tra migration; `/sift dimension` và
   `/sift return` dành cho người chơi; `/sift locate` chỉ thướccompass tới Ancient City gate.
-- Chiều không The Sift với 15 biome, vào bằng `/sift dimension`, ra bằng `/sift return`.
-- Trang trí chunk lần đầu: rừng anh đào, rừng hành bulb, tháp pha lê, cánh đồng đá vỡ, mốc
-  Carapace; suối Ichor (một khối nguồn — không tạo nguồn vô hạn),portal đổ nát có rương loot,
+- Chiều không The Sift với 10 biome gốc, vào bằng `/sift dimension`, ra bằng `/sift return`.
+- Trang trí chunk lần đầu: rừng Overgrown Willow, sườn núi Siftslate, đỉnh tuyết Ichor; suối
+  Ichor (một khối nguồn — không tạo nguồn vô hạn), portal đổ nát có rương loot,
   Soul Canyon, hang Sniffer, vòm đá, monolith.
 - Đàn Sifter tự nhiên (3–5 con, hiếm) trong Overgrown Forest, mỗi đàn một anchor riêng; Blub hoang
   bị thu hút bởi người cầm Soul Block và thuần hoá theo tỉ lệ 1/3 đúng mod (`mobs.blub.tame-chance`).
 - Ném giáo Siftite: giáo bay là projectile thật, gây `siftite.spear-damage` và rơi lại nơi trúng
   để nhặt.
-- Sift Tide xoay vòng hiệu ứng di chuyển/khai thác.
 - Cổng Sonorous Deepslate: đặt block có tag, đặt note block phía trên, chuột phải để tune, chơi
   đúng giai điệu `1, 3, 7, 6, 5, 2, 4, 8` để mở Rift. Advancestream của mod đã được nối 6/8
   trigger còn thiếu; `false_alarm` có sẵn qua Ichor Snowball.
@@ -115,19 +114,14 @@ chặn cho đến khi backend item/block/mob resolve đủ mọi ID bắt buộc
 Với `auto`, thứ tự ưu tiên item/block: Sift service → Nexo → ItemsAdder → Oraxen; mob: Sift
 service → ItemsAdder entity → MythicMobs → EliteMobs. ModelEngine chỉ phụ trách render.
 
-## Phân loại nội dung: Gốc / Fan-made / Stand-in
+## Phạm vi nội dung: mod gốc / Paper stand-in
 
 Đánh giá parity đúng cách cần tách ba loại nội dung:
 
 | Loại | Nội dung |
 |---|---|
-| **Chuyển thể từ mod** | 10 biome gốc, họ Overgrown Willow (21 mục), họ Siftslate (12 mục), 5 biến thể ore, Charoite + enchanting, Siftite trọn bộ (có cả Spear với recipe smithing riêng), Ichor (bottle/bucket/cauldron/snow/snowball/shard), Soul Canyon, Sniffer Cave, Monolith, Cliff Arch, Abandoned Portal + loot odds (disc 50%, template 40%), cổng Sonorous 8 nốt, Rift (natural/mini recovery/chở phương tiện), 5 mob với hành vi cốt lõi (Singer, Echo Golem giao Soul Block tự động, Blub thuần 1/3 + stay, Sifter đàn ≤5, Dark Sniffer nhiễm → Sonic Sniff), 22 advancement đúng trigger |
-Từ bản hardening, các nhóm fan-made (mob, boss, tide, wave) **mặc định TẮT** bằng cờ cấu hình — riêng 5 biome fan-made vẫn sinh trong dimension
-(`content.prism_warden`, `content.sift_standin_mobs`, `content.sift_tide`, `content.rift_walker_waves`,
-`content.spire_tyrant`) — bật từng cờ nếu muốn chơi bản mở rộng. 5 mob lõi của mod không bị gate.
-
-| **Fan-made (mod không có)** | 5 biome tự viết, Prism Warden, Prism equipment, Prismite, Rift Key, Shard equipment, Sift Catalyst/Crown, Frost/Sky/Spire Fragment, Sift Tide, Spire Tyrant (mặc định TẮT) |
-| **Stand-in cần asset riêng** | Model/texture/animation mob và block (họ cherry/deepslate thay hình dạng gốc), nhạc Rift Disc + 8 âm Sonorous + âm thanh mob (chờ asset), bầu trời động (client-side), Ichor là chất lỏng thật (giới hạn Paper) |
+| **Chuyển thể từ mod** | 10 biome gốc, họ Overgrown Willow, họ Siftslate, Charoite, Siftite, Ichor, Soul Canyon, Sniffer Cave, Monolith, Cliff Arch, Abandoned Portal, cổng Sonorous 8 nốt, Rift và 5 mob lõi (Singer, Echo Golem, Blub, Sifter, Dark Sniffer) |
+| **Paper stand-in** | Model/texture/animation custom, custom block/entity không có API đăng ký tương đương, nhạc và âm thanh cần resource pack, Ichor dạng chất lỏng thật |
 
 ## Chiều không gian The Sift
 

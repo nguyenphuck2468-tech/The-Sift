@@ -91,7 +91,6 @@ sift:
   creature-disabled: "Sift creature content is disabled."
   player-not-found: "Player not found."
   bottle-unresolved: "Item ID 'ichor_bottle' is unresolved by the selected provider. Run /sift doctor."
-  key-unavailable: "Item ID 'rift_key' is unavailable in strict provider mode. Run /sift doctor."
   item-unresolved: "Item ID '%item%' is unknown or unresolved by the selected provider. Run /sift doctor."
   gave: "Gave %item% to %target%."
   summon-usage: "Usage: /sift summon singer <player>"

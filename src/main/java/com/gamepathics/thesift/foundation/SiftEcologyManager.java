@@ -118,7 +118,6 @@ public final class SiftEcologyManager implements Listener {
     private final AtomicLong deferredDecorationRetries = new AtomicLong();
     private final java.util.Map<String, AtomicLong> providerPlacementFailuresById = new ConcurrentHashMap<>();
     private volatile String lastProviderPlacementFailure = "none";
-    private long tideTick;
     private final NamespacedKey sifterBiteTargetKey;
     private final NamespacedKey sifterBiteStartedKey;
     private final NamespacedKey sifterBiteSoundKey;
@@ -191,7 +190,6 @@ public final class SiftEcologyManager implements Listener {
         this.blockBridge = new ExternalBlockBridge(plugin);
         this.content = sharedContent != null ? sharedContent : new SiftiteContent(plugin);
         this.tideTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            if (plugin.getConfig().getBoolean("content.sift_tide", false)) tickTide();
             tickIchorWeather();
             tickDarkSniffers();
             blubController.tick();
@@ -417,7 +415,7 @@ public final class SiftEcologyManager implements Listener {
             generateAbandonedPortal(chunk, random);
             generationOperations++;
         }
-        if ((key.contains("overgrown") || (key.endsWith("carapace") || key.endsWith("sift_wastes"))) && random.nextInt(24) == 0) {
+        if ((key.contains("overgrown") || key.endsWith("sift_wastes")) && random.nextInt(24) == 0) {
             generateIchorSpring(chunk, random);
             generationOperations++;
         }
@@ -431,30 +429,16 @@ public final class SiftEcologyManager implements Listener {
         if (random.nextInt(48) == 0) generateFossil(chunk, random);
         spawnSiftWildlife(chunk, key, random);
         generationOperations++;
-        if ((key.endsWith("pink_meadows") || key.endsWith("overgrown_clearing")) && random.nextInt(22) == 0) {
+        if (key.endsWith("overgrown_clearing") && random.nextInt(22) == 0) {
             summonSinger(chunk, random);
             generationOperations++;
-        } else if ((key.endsWith("crystal_spires") || key.endsWith("siftslate_slopes")) && random.nextInt(55) == 0) {
+        } else if (key.endsWith("siftslate_slopes") && random.nextInt(55) == 0) {
             summonEchoGolem(chunk, random);
             generationOperations++;
         }
-        if ((key.endsWith("shattered_peaks") || key.endsWith("siftslate_peaks")) && plugin.getConfig().getBoolean("content.rift-events", true)
+        if (key.endsWith("siftslate_peaks") && plugin.getConfig().getBoolean("content.rift-events", true)
                 && random.nextInt(120) == 0) {
             openNaturalRift(chunk);
-            generationOperations++;
-        }
-        if (plugin.getConfig().getBoolean("content.prism_warden", false)
-                && (key.endsWith("bulb_forest") || key.endsWith("overgrown_forest")) && random.nextInt(160) == 0) {
-            spawnBoss(chunk, EntityType.WARDEN, "Prism Warden", "prism_warden", 180.0, 28.0);
-            generationOperations++;
-        } else if ((key.endsWith("shattered_peaks") || key.endsWith("siftslate_peaks")) && random.nextInt(120) == 0) {
-            // Spire Tyrant variant: crimson-named Sifter boss in the peaks; killing it grants
-            // the bundled "tyrant" advancement (see SiftAdvancementManager.onCreatureDeath).
-            boolean tyrant = plugin.getConfig().getBoolean("content.spire_tyrant", false)
-                    && random.nextBoolean();
-            spawnBoss(chunk, EntityType.RAVAGER,
-                    tyrant ? "Spire Tyrant" : "The Sifter",
-                    tyrant ? "spire_tyrant" : "the_sifter", 220.0, 24.0);
             generationOperations++;
         }
         return generationOperations;
@@ -469,7 +453,7 @@ public final class SiftEcologyManager implements Listener {
         // These are vanilla-safe (deepslate/tuff/soul sand structures) except the Ichor
         // spring and portal-ruin chest, whose provider-aware placements fail-and-retry by
         // design until a provider resolves - the same behaviour as any strict decoration.
-        if ((biome.contains("overgrown") || biome.endsWith("carapace") || biome.endsWith("sift_wastes"))
+        if ((biome.contains("overgrown") || biome.endsWith("sift_wastes"))
                 && random.nextInt(24) == 0) generateIchorSpring(chunk, random);
         if (biome.contains("overgrown") && random.nextInt(18) == 0) generateAbandonedPortal(chunk, random);
         if (random.nextInt(32) == 0) {
@@ -481,24 +465,14 @@ public final class SiftEcologyManager implements Listener {
         }
         if (random.nextInt(48) == 0) generateFossil(chunk, random);
         spawnSiftWildlife(chunk, biome, random);
-        if ((biome.endsWith("pink_meadows") || biome.endsWith("overgrown_clearing")) && random.nextInt(22) == 0) summonSinger(chunk, random);
-        else if ((biome.endsWith("crystal_spires") || biome.endsWith("siftslate_slopes")) && random.nextInt(55) == 0) summonEchoGolem(chunk, random);
-        if ((biome.endsWith("shattered_peaks") || biome.endsWith("siftslate_peaks")) && plugin.getConfig().getBoolean("content.rift-events", true)
+        if (biome.endsWith("overgrown_clearing") && random.nextInt(22) == 0) summonSinger(chunk, random);
+        else if (biome.endsWith("siftslate_slopes") && random.nextInt(55) == 0) summonEchoGolem(chunk, random);
+        if (biome.endsWith("siftslate_peaks") && plugin.getConfig().getBoolean("content.rift-events", true)
                 && random.nextInt(120) == 0) openNaturalRift(chunk);
-        if (plugin.getConfig().getBoolean("content.prism_warden", false)
-                && (biome.endsWith("bulb_forest") || biome.endsWith("overgrown_forest")) && random.nextInt(160) == 0)
-            spawnBoss(chunk, EntityType.WARDEN, "Prism Warden", "prism_warden", 180.0, 28.0);
-        else if ((biome.endsWith("shattered_peaks") || biome.endsWith("siftslate_peaks")) && random.nextInt(120) == 0) {
-            boolean tyrant = plugin.getConfig().getBoolean("content.spire_tyrant", false)
-                    && random.nextBoolean();
-            spawnBoss(chunk, EntityType.RAVAGER,
-                    tyrant ? "Spire Tyrant" : "The Sifter",
-                    tyrant ? "spire_tyrant" : "the_sifter", 220.0, 24.0);
-        }
     }
 
     private void decorateStrictSurface(Chunk chunk, String biome, Random random) {
-        if (!((biome.endsWith("pink_meadows") || biome.endsWith("overgrown_clearing")) || (biome.endsWith("bulb_forest") || biome.endsWith("overgrown_forest"))
+        if (!(biome.endsWith("overgrown_clearing") || biome.endsWith("overgrown_forest")
                 || biome.contains("overgrown"))) return;
         World world = chunk.getWorld();
         for (int i = 0; i < 28; i++) {
@@ -508,7 +482,7 @@ public final class SiftEcologyManager implements Listener {
             if (y <= world.getMinHeight() || y >= world.getMaxHeight() - 4) continue;
             Block ground = world.getBlockAt(x, y, z);
             if (ground.getType() == Material.GRASS_BLOCK)
-                placeBlock(ground, "sift_grass", Material.MOSS_BLOCK);
+                placeBlock(ground, "overgrown_willow_foliage", Material.MOSS_BLOCK);
         }
     }
 
@@ -519,12 +493,12 @@ public final class SiftEcologyManager implements Listener {
         int z = chunk.getZ() * 16 + 3 + random.nextInt(10);
         int y = world.getHighestBlockYAt(x, z) + 1;
         if (y <= world.getMinHeight() || y >= world.getMaxHeight() - 12) return;
-        boolean forest = (biome.endsWith("bulb_forest") || biome.endsWith("overgrown_forest")) || (biome.endsWith("pink_meadows") || biome.endsWith("overgrown_clearing"))
+        boolean forest = biome.endsWith("overgrown_forest") || biome.endsWith("overgrown_clearing")
                 || biome.contains("overgrown_forest") || biome.contains("overgrown_clearing");
         if (forest) {
             int height = 4 + random.nextInt(4);
             for (int dy = 0; dy < height; dy++)
-                placeBlock(world.getBlockAt(x, y + dy, z), "sift_log", Material.CHERRY_LOG);
+                placeBlock(world.getBlockAt(x, y + dy, z), "overgrown_willow_log", Material.CHERRY_LOG);
             for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++)
                 if (Math.abs(dx) + Math.abs(dz) < 4)
                     placeBlock(world.getBlockAt(x + dx, y + height - 1, z + dz),
@@ -549,33 +523,23 @@ public final class SiftEcologyManager implements Listener {
             Material surface = ground.getType();
             if (!surface.isSolid() || surface == Material.BEDROCK) continue;
 
-            if (biome.endsWith("pink_meadows")) {
+            if (biome.endsWith("overgrown_clearing")) {
                 if (surface == Material.GRASS_BLOCK && random.nextInt(4) == 0) {
-                    placeBlock(ground, "sift_grass", random.nextBoolean() ? Material.MOSS_BLOCK : Material.DIRT);
+                    placeBlock(ground, "overgrown_willow_foliage", Material.MOSS_BLOCK);
                 }
                 placePlant(world, x, y + 1, z,
                         List.of(Material.PINK_PETALS, Material.PINK_TULIP, Material.AZURE_BLUET,
                                 Material.LILAC, Material.CHERRY_SAPLING), random);
-            } else if (biome.endsWith("bulb_forest")) {
+            } else if (biome.endsWith("overgrown_forest")) {
                 if (surface == Material.GRASS_BLOCK && random.nextInt(3) == 0) {
-                    placeBlock(ground, "sift_grass", Material.MOSS_BLOCK);
+                    placeBlock(ground, "overgrown_willow_foliage", Material.MOSS_BLOCK);
                 }
                 placePlant(world, x, y + 1, z,
                         List.of(Material.FERN, Material.LARGE_FERN, Material.GLOW_LICHEN,
                                 Material.RED_MUSHROOM, Material.BROWN_MUSHROOM, Material.AZALEA), random);
-            } else if (biome.endsWith("crystal_spires")) {
-                if (surface == Material.GRASS_BLOCK || surface == Material.STONE) {
-                    ground.setType(random.nextBoolean() ? Material.CALCITE : Material.TUFF, false);
-                }
-            } else if (biome.endsWith("shattered_peaks")) {
-                if (surface == Material.GRASS_BLOCK) ground.setType(Material.TUFF, false);
-            } else if (biome.endsWith("carapace")) {
-                if (surface == Material.GRASS_BLOCK || surface == Material.DIRT) {
-                    ground.setType(random.nextBoolean() ? Material.PACKED_MUD : Material.CALCITE, false);
-                }
             } else if (biome.contains("overgrown")) {
                 if (surface == Material.GRASS_BLOCK && random.nextBoolean()) {
-                    placeBlock(ground, "sift_grass", Material.MOSS_BLOCK);
+                    placeBlock(ground, "overgrown_willow_foliage", Material.MOSS_BLOCK);
                 }
                 placePlant(world, x, y + 1, z,
                         List.of(Material.FERN, Material.LARGE_FERN, Material.GLOW_LICHEN,
@@ -613,7 +577,7 @@ public final class SiftEcologyManager implements Listener {
         int y = world.getHighestBlockYAt(x, z) + 1;
         if (y <= world.getMinHeight() || y >= world.getMaxHeight() - 12) return;
 
-        if (biome.endsWith("crystal_spires") || biome.contains("siftslate_peaks")
+        if (biome.contains("siftslate_peaks")
                 || biome.contains("overgrown_peaks") || biome.contains("ichor_snowy_peaks")) {
             int height = 4 + random.nextInt(9);
             for (int dy = 0; dy < height; dy++) {
@@ -625,7 +589,7 @@ public final class SiftEcologyManager implements Listener {
                 }
             }
             world.getBlockAt(x, y + height, z).setType(Material.AMETHYST_CLUSTER, false);
-        } else if (biome.endsWith("shattered_peaks") || biome.contains("siftslate_slopes")
+        } else if (biome.contains("siftslate_slopes")
                 || biome.contains("overgrown_slopes")) {
             Material[] rocks = {Material.TUFF, Material.CALCITE, Material.ANDESITE, Material.COBBLED_DEEPSLATE};
             int radius = 2 + random.nextInt(3);
@@ -637,12 +601,12 @@ public final class SiftEcologyManager implements Listener {
                             rocks[random.nextInt(rocks.length)]);
                 }
             }
-        } else if (biome.endsWith("bulb_forest") || biome.contains("overgrown_forest")) {
+        } else if (biome.contains("overgrown_forest")) {
             Material wood = random.nextBoolean() ? Material.MANGROVE_LOG : Material.DARK_OAK_LOG;
             Material leaves = random.nextBoolean() ? Material.MANGROVE_LEAVES : Material.AZALEA_LEAVES;
             int trunk = 4 + random.nextInt(4);
             for (int dy = 0; dy < trunk; dy++) {
-                placeBlock(world.getBlockAt(x, y + dy, z), "sift_log", wood);
+                placeBlock(world.getBlockAt(x, y + dy, z), "overgrown_willow_log", wood);
             }
             for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
                 if (Math.abs(dx) + Math.abs(dz) < 4) {
@@ -650,16 +614,15 @@ public final class SiftEcologyManager implements Listener {
                 }
             }
             world.getBlockAt(x, y + trunk, z).setType(Material.SHROOMLIGHT, false);
-        } else if (biome.endsWith("pink_meadows") || biome.contains("overgrown_clearing")) {
+        } else if (biome.contains("overgrown_clearing")) {
             Material wood = Material.CHERRY_LOG;
-            for (int dy = 0; dy < 5; dy++) placeBlock(world.getBlockAt(x, y + dy, z), "sift_log", wood);
+            for (int dy = 0; dy < 5; dy++) placeBlock(world.getBlockAt(x, y + dy, z), "overgrown_willow_log", wood);
             for (int dx = -2; dx <= 2; dx++) for (int dz = -2; dz <= 2; dz++) {
                 if (Math.abs(dx) + Math.abs(dz) < 4) {
                     placeBlock(world.getBlockAt(x + dx, y + 4, z + dz), "sift_leaves", Material.CHERRY_LEAVES);
                 }
             }
-        } else if (biome.endsWith("carapace") || biome.contains("sift_wastes")
-                || biome.contains("sift_deep_dark")) {
+        } else if (biome.contains("sift_wastes") || biome.contains("sift_deep_dark")) {
             Material[] shell = {Material.TUFF_BRICKS, Material.PACKED_MUD, Material.PRISMARINE_BRICKS};
             int radius = 2 + random.nextInt(2);
             for (int dx = -radius; dx <= radius; dx++) for (int dz = -radius; dz <= radius; dz++) {
@@ -691,7 +654,7 @@ public final class SiftEcologyManager implements Listener {
         if (chest.getState() instanceof Container container) {
             addIfPresent(container, content.item(Material.LAPIS_LAZULI, "charoite", "Charoite"));
             addIfPresent(container, content.forId("overgrown_willow"));
-            if (random.nextBoolean()) addIfPresent(container, content.forId("rift_disc"));
+            if (random.nextBoolean()) addIfPresent(container, content.forId("music_disc_rift"));
             if (random.nextInt(100) < 40) addIfPresent(container, content.forId("siftite_upgrade_smithing_template"));
             if (random.nextInt(100) < 12) addIfPresent(container, content.forId("siftite_nugget"));
             if (random.nextBoolean()) container.getInventory().addItem(new org.bukkit.inventory.ItemStack(
@@ -806,15 +769,6 @@ public final class SiftEcologyManager implements Listener {
             placeBlock(ore, "charoite_ore", Material.DEEPSLATE_LAPIS_ORE);
             SiftiteListener.markGeneratedOre(plugin, ore);
         }
-    }
-
-    /**
-     * Fan-made stand-in wildlife gate (plan: content.sift_standin_mobs, default FALSE). The
-     * five core mod mobs (Singer, Echo Golem, Blub, Sifter, Dark Sniffer) are NOT affected;
-     * the wildlife tables above mix them, so each table entry checks its own id here.
-     */
-    private boolean fanMobEnabled(String mobId) {
-        return plugin.getConfig().getBoolean("content.sift_standin_mobs", false);
     }
 
     /** Ore veins required for ordinary survival progression in a biome set with no data-driven features. */
@@ -1022,52 +976,10 @@ public final class SiftEcologyManager implements Listener {
             int z = chunk.getZ() * 16 + 2 + random.nextInt(12);
             int y = world.getHighestBlockYAt(x, z) + 1;
             if (y <= world.getMinHeight() || y >= world.getMaxHeight() - 3) continue;
-            EntityType type;
-            String name;
-            if (biome.endsWith("carapace")) {
-                String[][] carapace = {{"TURTLE", "Thornback"}, {"RABBIT", "Blub"},
-                        {"SILVERFISH", "Prismite"}, {"ALLAY", "Wisp"}};
-                String[] mob = carapace[random.nextInt(carapace.length)];
-                type = EntityType.valueOf(mob[0]); name = mob[1];
-            } else if (biome.endsWith("pink_meadows") || biome.contains("overgrown_clearing")) {
-                String[][] meadow = {{"RABBIT", "Loomer"}, {"BEE", "Glimmerwing"},
-                        {"ALLAY", "Wisp"}, {"MOOSHROOM", "Sunspore"}};
-                String[] mob = meadow[random.nextInt(meadow.length)];
-                type = EntityType.valueOf(mob[0]); name = mob[1];
-            } else if (biome.endsWith("bulb_forest") || biome.contains("overgrown_forest")) {
-                String[][] forest = {{"BAT", "Glowbell"}, {"ZOMBIE", "Hollow Bulb"},
-                        {"VEX", "Violet Wisp"}, {"SILVERFISH", "Prismite"}};
-                String[] mob = forest[random.nextInt(forest.length)];
-                type = EntityType.valueOf(mob[0]); name = mob[1];
-            } else if (biome.endsWith("crystal_spires") || biome.contains("siftslate_peaks")) {
-                String[][] spires = {{"SILVERFISH", "Prismite"}, {"ENDERMITE", "Shardling"},
-                        {"ALLAY", "Wisp"}};
-                String[] mob = spires[random.nextInt(spires.length)];
-                type = EntityType.valueOf(mob[0]); name = mob[1];
-            } else if (biome.contains("deep_dark")) {
-                String[][] deep = {{"SNIFFER", "Dark Sniffer"}, {"WARDEN", "Prism Warden"},
-                        {"ENDERMITE", "Shardling"}};
-                String[] mob = deep[random.nextInt(deep.length)];
-                type = EntityType.valueOf(mob[0]); name = mob[1];
-            } else if (biome.contains("ichor_snowy") || biome.contains("siftslate_slopes")
-                    || biome.contains("overgrown_slopes") || biome.contains("overgrown_peaks")) {
-                String[][] cold = {{"STRAY", "Frost Stalker"}, {"GOAT", "Thornback"},
-                        {"ENDERMAN", "Drifter"}};
-                String[] mob = cold[random.nextInt(cold.length)];
-                type = EntityType.valueOf(mob[0]); name = mob[1];
-            } else if (biome.contains("sift_wastes")) {
-                String[][] wastes = {{"HUSK", "Sift Wastes Stalker"}, {"ENDERMAN", "Drifter"},
-                        {"SILVERFISH", "Prismite"}};
-                String[] mob = wastes[random.nextInt(wastes.length)];
-                type = EntityType.valueOf(mob[0]); name = mob[1];
-            } else {
-                String[][] peaks = {{"STRAY", "Frost Stalker"}, {"GOAT", "Thornback"},
-                        {"ENDERMAN", "Drifter"}};
-                String[] mob = peaks[random.nextInt(peaks.length)];
-                type = EntityType.valueOf(mob[0]); name = mob[1];
-            }
+            EntityType type = biome.contains("deep_dark") ? EntityType.SNIFFER : EntityType.RABBIT;
+            String name = biome.contains("deep_dark") ? "Dark Sniffer" : "Blub";
             String mobId = name.toLowerCase(Locale.ROOT).replace(' ', '_');
-            if (!FAN_CORE_MOBS.contains(mobId) && !fanMobEnabled(mobId)) continue;
+            if (!FAN_CORE_MOBS.contains(mobId)) continue;
             if ("blub".equals(mobId) && !plugin.getConfig().getBoolean("content.blub", true)) continue;
             if ("sifter".equals(mobId) && !plugin.getConfig().getBoolean("content.sifter", true)) continue;
             Location spawnAt = new Location(world, x + .5, y, z + .5);
@@ -1252,25 +1164,6 @@ public final class SiftEcologyManager implements Listener {
     @EventHandler
     public void onSiftBossDeath(EntityDeathEvent event) {
         String id = event.getEntity().getPersistentDataContainer().get(creatureKey, PersistentDataType.STRING);
-        if ("prism_warden".equals(id) || "the_sifter".equals(id) || "spire_tyrant".equals(id)) {
-            // content.item returns null in strict mode when no provider resolves the ID;
-            // a null entry in the drop list would break the drop processing downstream.
-            ItemStack heart = content.item(Material.ECHO_SHARD, "heart_of_the_sift", "Heart of the Sift");
-            if (heart != null) event.getDrops().add(heart);
-            ItemStack shard = content.item(Material.AMETHYST_SHARD, "sift_shard", "Sift Shard");
-            if (shard != null) event.getDrops().add(shard);
-            // Spire Fragment is a fan-made token for the bundled tyrant.json advancement icon.
-            // The reference mod has no such item; admins can disable the whole variant with
-            // content.spire_tyrant (default off), which also removes this drop.
-            if (plugin.getConfig().getBoolean("content.spire_tyrant", false)) {
-                int fragments = "spire_tyrant".equals(id) ? 2 : 1;
-                for (int i = 0; i < fragments; i++) {
-                    ItemStack fragment = content.item(Material.AMETHYST_SHARD,
-                            "spire_fragment", "Spire Fragment");
-                    if (fragment != null) event.getDrops().add(fragment);
-                }
-            }
-        }
         // Reference-mod parity (food_chain): a tamed Blub that kills a Dark Snifter earns its
         // owner the advancement - the player taught the mob to fight for them.
         if ("dark_sniffer".equals(id) && event.getEntity().getKiller() == null
@@ -1290,12 +1183,6 @@ public final class SiftEcologyManager implements Listener {
         if ("sifter".equals(id)) {
             ItemStack raw = content.item(Material.PORKCHOP, "raw_sifter_meat", "Raw Sifter Meat");
             if (raw != null) event.getDrops().add(raw);
-        }
-        // Blub tamed by the owner who killed it keeps nothing; wild/tamed Blub drops its own meat
-        // so the food chain (Blub -> Dark Sniffer) reads correctly in survival.
-        if ("blub".equals(id)) {
-            ItemStack meat = content.item(Material.MUTTON, "blub_meat", "Blub Meat");
-            if (meat != null) event.getDrops().add(meat);
         }
     }
 
@@ -1394,30 +1281,10 @@ public final class SiftEcologyManager implements Listener {
         switch (id) {
             case "blub" -> { type = EntityType.RABBIT; display = "Blub"; }
             case "dark_sniffer" -> { type = EntityType.SNIFFER; display = "Dark Sniffer"; }
-            case "bulb" -> { type = EntityType.SLIME; display = "Bulb"; }
-            case "loomer" -> { type = EntityType.RABBIT; display = "Loomer"; }
-            case "wisp" -> { type = EntityType.ALLAY; display = "Wisp"; }
-            case "violet_wisp" -> { type = EntityType.VEX; display = "Violet Wisp"; }
-            case "koi" -> { type = EntityType.TROPICAL_FISH; display = "Koi"; }
-            case "hollow_bulb" -> { type = EntityType.ZOMBIE; display = "Hollow Bulb"; }
-            case "glowbell" -> { type = EntityType.BAT; display = "Glowbell"; }
-            case "thornback" -> { type = EntityType.TURTLE; display = "Thornback"; }
-            case "glimmerwing" -> { type = EntityType.BEE; display = "Glimmerwing"; }
-            case "the_sifter" -> { type = EntityType.RAVAGER; display = "The Sifter"; }
-            case "spire_tyrant" -> { type = EntityType.RAVAGER; display = "Spire Tyrant"; }
             case "sifter" -> { type = EntityType.RAVAGER; display = "Sifter"; }
-            case "frost_stalker" -> { type = EntityType.STRAY; display = "Frost Stalker"; }
-            case "sunspore" -> { type = EntityType.MOOSHROOM; display = "Sunspore"; }
-            case "drifter" -> { type = EntityType.ENDERMAN; display = "Drifter"; }
-            case "shardling" -> { type = EntityType.ENDERMITE; display = "Shardling"; }
-            case "prism_warden" -> { type = EntityType.WARDEN; display = "Prism Warden"; }
-            case "prismite" -> { type = EntityType.SILVERFISH; display = "Prismite"; }
-            case "rift_walker" -> { type = EntityType.ENDERMAN; display = "Rift Walker"; }
-            case "sift_wastes_stalker" -> { type = EntityType.WITCH; display = "Sift Wastes Stalker"; }
             default -> { return false; }
         }
 
-        boolean boss = id.equals("the_sifter") || id.equals("prism_warden") || id.equals("spire_tyrant");
         // Mod parity (Sifter): herds cluster around a shared anchor instead of scattering.
         if ("sifter".equals(id)) {
             // Join the nearest herd anchor within 40 blocks while it has fewer than five
@@ -1447,29 +1314,13 @@ public final class SiftEcologyManager implements Listener {
         Entity entity = mobFactory.spawn(id, location, type);
         if (entity == null) return false;
         entity.setPersistent(true);
-        entity.setCustomName((boss ? "§5§l" : "§d") + display);
+        entity.setCustomName("§d" + display);
         entity.setCustomNameVisible(true);
         entity.getPersistentDataContainer().set(creatureKey, PersistentDataType.STRING, id);
         wildlifeIndexRefile(entity);
         if (entity instanceof LivingEntity living) {
             living.setRemoveWhenFarAway(false);
-            if (boss) {
-                // Spire Tyrant mirrors the Sifter boss statline (220 HP / 24 dmg); Prism Warden keeps 180/28.
-                boolean sifterLine = id.equals("the_sifter") || id.equals("spire_tyrant");
-                double health = sifterLine ? 220.0 : 180.0;
-                double damage = sifterLine ? 24.0 : 28.0;
-                if (living.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH) != null) {
-                    living.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).setBaseValue(health);
-                    living.setHealth(health);
-                }
-                if (living.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE) != null) {
-                    living.getAttribute(org.bukkit.attribute.Attribute.ATTACK_DAMAGE).setBaseValue(damage);
-                }
-            } else {
-                // Non-boss Sift mobs previously kept their vanilla stand-in stats; apply the
-                // reference mod's per-mob defaults (config-overridable via mobs.<id>.* keys).
-                SiftMobFactory.applyAttributes(living, modMobStats(id));
-            }
+            SiftMobFactory.applyAttributes(living, modMobStats(id));
         }
         return true;
     }
@@ -1570,37 +1421,6 @@ public final class SiftEcologyManager implements Listener {
 
     private boolean isSift(World world) {
         return world.getKey().toString().equals(DIMENSION);
-    }
-
-    private void tickTide() {
-        World sift = Bukkit.getWorld(NamespacedKey.fromString(DIMENSION));
-        if (sift == null || sift.getPlayers().isEmpty()) return;
-        int period = Math.max(30, plugin.getConfig().getInt("sift-world.tide-period-seconds", 120));
-        tideTick += 5;
-        boolean flow = (tideTick / period) % 2 == 0;
-        for (Player player : sift.getPlayers()) {
-            player.addPotionEffect(new PotionEffect(flow ? PotionEffectType.JUMP_BOOST : PotionEffectType.SLOWNESS,
-                    110, flow ? 0 : 0, true, false, true));
-            if (flow) player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 110, 0, true, false, true));
-            else player.addPotionEffect(new PotionEffect(PotionEffectType.MINING_FATIGUE, 110, 0, true, false, true));
-            player.getWorld().spawnParticle(flow ? Particle.END_ROD : Particle.REVERSE_PORTAL,
-                    player.getLocation().add(0, 1, 0), 5, 1.3, 0.7, 1.3, 0.01);
-            if (tideTick % 60 == 0) {
-                player.sendActionBar(net.kyori.adventure.text.Component.text(
-                        Messages.get(flow ? "tide.flowing" : "tide.ebbing",
-                                flow ? "The Sift tide is flowing around you" : "The Sift tide is ebbing"),
-                        flow ? net.kyori.adventure.text.format.NamedTextColor.AQUA
-                                : net.kyori.adventure.text.format.NamedTextColor.LIGHT_PURPLE));
-                player.playSound(player.getLocation(), Sound.BLOCK_AMETHYST_BLOCK_CHIME, 0.35f,
-                        flow ? 1.5f : 0.7f);
-            }
-            for (Entity nearby : player.getNearbyEntities(12, 8, 12)) {
-                if (nearby instanceof LivingEntity living && !(living instanceof Player)) {
-                    living.addPotionEffect(new PotionEffect(flow ? PotionEffectType.JUMP_BOOST
-                            : PotionEffectType.SLOWNESS, 110, 0, true, false, false));
-                }
-            }
-        }
     }
 
     /**

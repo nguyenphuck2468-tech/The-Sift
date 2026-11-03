@@ -1,7 +1,0 @@
-{
-  "parent": "minecraft:block/cube_column",
-  "textures": {
-    "end": "thesift:block/sift_log_top",
-    "side": "thesift:block/sift_log"
-  }
-}

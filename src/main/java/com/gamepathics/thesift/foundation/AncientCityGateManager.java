@@ -807,36 +807,7 @@ final class AncientCityGateManager implements Listener {
     }
 
     private void spawnPortalSurface(Gate gate) {
-        ItemStack model = items.create("rift_gate");
-        if (model == null) {
-            if (readiness.strict()) {
-                plugin.getLogger().severe("Cannot render The Sift portal: provider item ID 'rift_gate' failed to resolve.");
-                return;
-            }
-            drawPortalParticles(gate);
-            return;
-        }
-        AncientCityFrame frame = gate.frame;
-        Location location = frame.longAxis() == AncientCityFrame.Axis.X
-                ? new Location(gate.world, (frame.minX() + frame.maxX() + 1) / 2.0,
-                    (frame.minY() + frame.maxY() + 1) / 2.0, frame.minZ() + 0.5)
-                : new Location(gate.world, frame.minX() + 0.5,
-                    (frame.minY() + frame.maxY() + 1) / 2.0, (frame.minZ() + frame.maxZ() + 1) / 2.0);
-        ItemDisplay display = gate.world.spawn(location, ItemDisplay.class, entity -> {
-            entity.setItemStack(model);
-            entity.setPersistent(true);
-            entity.setGravity(false);
-            entity.setInvulnerable(true);
-            entity.setSilent(true);
-            entity.getPersistentDataContainer().set(portalDisplayKey, PersistentDataType.STRING, gate.key);
-            Quaternionf rotation = frame.longAxis() == AncientCityFrame.Axis.X
-                    ? new Quaternionf() : new Quaternionf().rotationY((float) (Math.PI / 2.0));
-            entity.setTransformation(new Transformation(new Vector3f(), rotation,
-                    new Vector3f(0.1f, 0.1f, 0.05f), new Quaternionf()));
-            entity.setGlowColorOverride(Color.fromRGB(SonorousPalette.PORTAL_TEAL_RGB));
-            animatePortalSurface(gate, entity, rotation);
-        });
-        gate.displayId = display.getUniqueId();
+        drawPortalParticles(gate);
     }
 
     private void animatePortalSurface(Gate gate, ItemDisplay display, Quaternionf rotation) {

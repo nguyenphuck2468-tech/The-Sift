@@ -64,8 +64,7 @@ public final class SiftiteContent implements Listener {
     public void registerRecipes() {
         Server server = plugin.getServer();
         for (String key : java.util.List.of("charoite", "siftite_nugget", "siftite_ingot",
-                "siftite_upgrade_smithing_template", "smelt_raw_sifter_meat", "smelt_blub_meat",
-                "blub_campfire")) {
+                "siftite_upgrade_smithing_template", "smelt_raw_sifter_meat")) {
             server.removeRecipe(new NamespacedKey(plugin, key));
         }
         for (String key : java.util.List.of("siftite_sword", "siftite_axe", "siftite_pickaxe",
@@ -85,16 +84,6 @@ public final class SiftiteContent implements Listener {
         registerFurnish("smelt_raw_sifter_meat",
                 item(Material.PORKCHOP, "raw_sifter_meat", "Raw Sifter Meat"),
                 item(Material.COOKED_PORKCHOP, "cooked_sifter_meat", "Cooked Sifter Meat"));
-        registerFurnish("smelt_blub_meat",
-                item(Material.MUTTON, "blub_meat", "Blub Meat"),
-                item(Material.COOKED_MUTTON, "cooked_blub_meat", "Cooked Blub Meat"));
-        // Campfire parity for the Blub food chain. Registered in Java (not the bundled
-        // datapack) with an ExactChoice so ONLY the tagged blub_meat cooks here — a
-        // material-only datapack recipe on minecraft:mutton would let plain vanilla mutton
-        // produce Cooked Blub Meat and race the vanilla campfire recipe.
-        registerCampfire("blub_campfire",
-                item(Material.MUTTON, "blub_meat", "Blub Meat"),
-                item(Material.COOKED_MUTTON, "cooked_blub_meat", "Cooked Blub Meat"));
         if (enabled("siftite_nugget", "siftite.enabled")) {
             addShapeless("siftite_nugget", item(Material.IRON_NUGGET, "siftite_nugget", "Siftite Nugget"),
                     Material.IRON_NUGGET, Material.AMETHYST_SHARD);
@@ -200,16 +189,12 @@ public final class SiftiteContent implements Listener {
         // ---- Siftslate stone family (vanilla deepslate shapes, tagged stand-ins) ----
         ItemStack slate = item(Material.DEEPSLATE, "siftslate", "Siftslate");
         if (slate != null && plugin.getConfig().getBoolean("recipes.enabled", true)) {
-            addShaped("polished_siftslate", item(Material.POLISHED_DEEPSLATE, "polished_siftslate", "Polished Siftslate"),
-                    "LL", "LL", "  ", 'L', exact(slate));
-            ItemStack polished = item(Material.POLISHED_DEEPSLATE, "polished_siftslate", "Polished Siftslate");
+            ItemStack polished = item(Material.POLISHED_DEEPSLATE, "siftslate_bricks", "Siftslate Bricks");
             if (polished != null) {
-                addShaped("siftslate_bricks", item(Material.DEEPSLATE_BRICKS, "siftslate_bricks", "Siftslate Bricks"),
-                        "LL", "LL", "  ", 'L', exact(polished));
-                ItemStack bricks = item(Material.DEEPSLATE_BRICKS, "siftslate_bricks", "Siftslate Bricks");
+                addShaped("siftslate_bricks", polished,
+                        "LL", "LL", "  ", 'L', exact(slate));
+                ItemStack bricks = polished;
                 if (bricks != null) {
-                    addShaped("siftslate_tiles", item(Material.DEEPSLATE_TILES, "siftslate_tiles", "Siftslate Tiles"),
-                            "LL", "LL", "  ", 'L', exact(bricks));
                     addShaped("siftslate_brick_stairs", item(Material.DEEPSLATE_BRICK_STAIRS, "siftslate_brick_stairs", "Siftslate Brick Stairs"),
                             "L  ", "LL ", "LLL", 'L', exact(bricks));
                     addShaped("siftslate_brick_slab", item(Material.DEEPSLATE_BRICK_SLAB, "siftslate_brick_slab", "Siftslate Brick Slab"),
@@ -370,7 +355,6 @@ public final class SiftiteContent implements Listener {
             case "overgrown_willow_vines" -> item(Material.VINE, id, "Overgrown Willow Vines");
             case "overgrown_willow_shelf" -> item(Material.OAK_SHELF, id, "Overgrown Willow Shelf");
             case "cobbled_siftslate" -> item(Material.COBBLED_DEEPSLATE, id, "Cobbled Siftslate");
-            case "polished_siftslate" -> item(Material.POLISHED_DEEPSLATE, id, "Polished Siftslate");
             case "siftslate_bricks" -> item(Material.DEEPSLATE_BRICKS, id, "Siftslate Bricks");
             case "siftslate_brick_stairs" -> item(Material.DEEPSLATE_BRICK_STAIRS, id, "Siftslate Brick Stairs");
             case "siftslate_brick_slab" -> item(Material.DEEPSLATE_BRICK_SLAB, id, "Siftslate Brick Slab");
@@ -378,12 +362,9 @@ public final class SiftiteContent implements Listener {
             case "siftslate_stairs" -> item(Material.POLISHED_DEEPSLATE_STAIRS, id, "Siftslate Stairs");
             case "siftslate_slab" -> item(Material.POLISHED_DEEPSLATE_SLAB, id, "Siftslate Slab");
             case "siftslate_wall" -> item(Material.POLISHED_DEEPSLATE_WALL, id, "Siftslate Wall");
-            case "siftslate_tiles" -> item(Material.DEEPSLATE_TILES, id, "Siftslate Tiles");
             case "chiseled_siftslate" -> item(Material.CHISELED_DEEPSLATE, id, "Chiseled Siftslate");
             case "reinforced_siftslate" -> item(Material.REINFORCED_DEEPSLATE, id, "Reinforced Siftslate");
-            case "rift_disc" -> item(Material.MUSIC_DISC_OTHERSIDE, id, "Rift Music Disc");
-            case "wellspring_disc" -> item(Material.MUSIC_DISC_MELLOHI, id, "Wellspring Music Disc");
-            case "sift_rubble" -> item(Material.GRAVEL, id, "Sift Rubble");
+            case "music_disc_rift" -> item(Material.MUSIC_DISC_OTHERSIDE, id, "Rift Music Disc");
             default -> null;
         };
         if (foundationItem != null) return foundationItem;
@@ -416,7 +397,6 @@ public final class SiftiteContent implements Listener {
             case "overgrown_willow_vines" -> Material.VINE;
             case "overgrown_willow_shelf" -> Material.OAK_SHELF;
             case "cobbled_siftslate" -> Material.COBBLED_DEEPSLATE;
-            case "polished_siftslate" -> Material.POLISHED_DEEPSLATE;
             case "siftslate_bricks" -> Material.DEEPSLATE_BRICKS;
             case "siftslate_brick_stairs" -> Material.DEEPSLATE_BRICK_STAIRS;
             case "siftslate_brick_slab" -> Material.DEEPSLATE_BRICK_SLAB;
@@ -424,7 +404,6 @@ public final class SiftiteContent implements Listener {
             case "siftslate_stairs" -> Material.POLISHED_DEEPSLATE_STAIRS;
             case "siftslate_slab" -> Material.POLISHED_DEEPSLATE_SLAB;
             case "siftslate_wall" -> Material.POLISHED_DEEPSLATE_WALL;
-            case "siftslate_tiles" -> Material.DEEPSLATE_TILES;
             case "chiseled_siftslate" -> Material.CHISELED_DEEPSLATE;
             case "reinforced_siftslate" -> Material.REINFORCED_DEEPSLATE;
             case "sift_rubble" -> Material.GRAVEL;
@@ -436,56 +415,15 @@ public final class SiftiteContent implements Listener {
             case "shard_ore" -> Material.AMETHYST_BLOCK;
             case "charoite_ore" -> Material.DEEPSLATE_LAPIS_ORE;
             case "siftite_ore" -> Material.DEEPSLATE_DIAMOND_ORE;
-            case "rift_gate" -> Material.CRYING_OBSIDIAN;
-            case "sift_shard", "spire_fragment" -> Material.AMETHYST_SHARD;
             case "charoite" -> Material.LAPIS_LAZULI;
-            case "sky_fragment" -> Material.PHANTOM_MEMBRANE;
-            case "frost_fragment" -> Material.PRISMARINE_SHARD;
-            case "sift_core", "heart_of_the_sift" -> Material.ECHO_SHARD;
-            case "sift_catalyst" -> Material.BLAZE_POWDER;
-            case "sift_crown" -> Material.GOLDEN_HELMET;
-            case "raw_loomer" -> Material.RABBIT;
-            case "cooked_loomer" -> Material.COOKED_RABBIT;
-            case "bulb_glow" -> Material.GLOWSTONE_DUST;
-            case "shard_sword", "prism_blade" -> Material.NETHERITE_SWORD;
-            case "shard_pickaxe" -> Material.NETHERITE_PICKAXE;
-            case "shard_axe" -> Material.NETHERITE_AXE;
-            case "prism_helmet" -> Material.NETHERITE_HELMET;
-            case "prism_chestplate" -> Material.NETHERITE_CHESTPLATE;
-            case "prism_leggings" -> Material.NETHERITE_LEGGINGS;
-            case "prism_boots" -> Material.NETHERITE_BOOTS;
-            case "phase_boots" -> Material.DIAMOND_BOOTS;
-            case "rift_key" -> Material.TRIAL_KEY;
-            case "rift_disc" -> Material.MUSIC_DISC_5;
-            case "bulb" -> Material.SLIME_BALL;
-            case "wisp", "violet_wisp" -> Material.ALLAY_SPAWN_EGG;
-            case "koi" -> Material.TROPICAL_FISH_SPAWN_EGG;
-            case "hollow_bulb" -> Material.ZOMBIE_SPAWN_EGG;
-            case "glowbell" -> Material.BAT_SPAWN_EGG;
-            case "thornback" -> Material.TURTLE_SPAWN_EGG;
-            case "glimmerwing" -> Material.BEE_SPAWN_EGG;
-            case "the_sifter" -> Material.RAVAGER_SPAWN_EGG;
-            case "spire_tyrant" -> Material.RAVAGER_SPAWN_EGG; // crimson Sifter-variant boss
-            case "frost_stalker" -> Material.STRAY_SPAWN_EGG;
-            case "sunspore" -> Material.MOOSHROOM_SPAWN_EGG;
-            case "drifter" -> Material.ENDERMAN_SPAWN_EGG;
-            case "shardling" -> Material.ENDERMITE_SPAWN_EGG;
-            case "prism_warden" -> Material.WARDEN_SPAWN_EGG;
-            case "lumen_tulip", "sculkflower_seeds" -> Material.TORCHFLOWER_SEEDS;
-            case "sculkflower" -> Material.CACTUS_FLOWER;
-            case "prismite" -> Material.SILVERFISH_SPAWN_EGG;
-            case "loomer" -> Material.RABBIT_SPAWN_EGG;
-            // Remaining spec mobs get vanilla stand-in spawn eggs so every id in
-            // integrations/content-spec.json resolves through forId().
+            case "sculkflower_seeds" -> Material.TORCHFLOWER_SEEDS;
             case "echo_golem" -> Material.IRON_GOLEM_SPAWN_EGG;
             case "singer" -> Material.ALLAY_SPAWN_EGG;
             case "dark_sniffer" -> Material.SNIFFER_SPAWN_EGG;
-            case "rift_walker" -> Material.ENDERMAN_SPAWN_EGG;
-            case "sift_wastes_stalker" -> Material.WITCH_SPAWN_EGG;
+            case "blub" -> Material.RABBIT_SPAWN_EGG;
+            case "sifter" -> Material.RAVAGER_SPAWN_EGG;
             case "raw_sifter_meat" -> Material.PORKCHOP;
             case "cooked_sifter_meat" -> Material.COOKED_PORKCHOP;
-            case "blub_meat" -> Material.MUTTON;
-            case "cooked_blub_meat" -> Material.COOKED_MUTTON;
             default -> null;
         };
         if (material == null) return null;
@@ -494,9 +432,6 @@ public final class SiftiteContent implements Listener {
             case "sift_log" -> "Sift Log";
             case "sift_leaves" -> "Sift Leaves";
             case "sift_planks" -> "Sift Planks";
-            case "sift_core" -> "Heart of the Sift";
-            case "prism_warden" -> "Prism Warden Spawn Egg";
-            case "lumen_tulip" -> "Lumen Tulip Seeds";
             default -> title(id);
         };
         return item(material, id, displayName);

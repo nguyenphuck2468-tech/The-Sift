@@ -91,7 +91,6 @@ sift:
   creature-disabled: "Nội dung sinh vật Sift đang bị tắt."
   player-not-found: "Không tìm thấy người chơi."
   bottle-unresolved: "Item ID 'ichor_bottle' chưa được provider giải quyết. Chạy /sift doctor."
-  key-unavailable: "Item ID 'rift_key' không khả dụng ở chế độ strict. Chạy /sift doctor."
   item-unresolved: "Item ID '%item%' không rõ hoặc provider chưa giải quyết. Chạy /sift doctor."
   gave: "Đã đưa %item% cho %target%."
   summon-usage: "Cách dùng: /sift summon singer <người chơi>"

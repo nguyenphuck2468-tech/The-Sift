@@ -242,23 +242,4 @@ class SiftiteRecipeTest {
         assertFalse(blockedPlain.get(), "plain vanilla ingredients must not trigger the guard");
     }
 
-    @Test
-    void blubCampfireRecipeOnlyAcceptsTaggedBlubMeat() {
-        // P1 regression: the campfire recipe must use an ExactChoice on the tagged blub_meat,
-        // never a bare MUTTON material choice that would let vanilla mutton cook into
-        // Cooked Blub Meat and race the vanilla campfire recipe.
-        Recipe registered = server.getRecipe(new NamespacedKey(plugin, "blub_campfire"));
-        assertInstanceOf(CampfireRecipe.class, registered);
-        CampfireRecipe campfire = (CampfireRecipe) registered;
-
-        RecipeChoice input = campfire.getInputChoice();
-        assertInstanceOf(RecipeChoice.ExactChoice.class, input);
-        assertTrue(input.test(content.item(Material.MUTTON, "blub_meat", "Blub Meat")),
-                "tagged blub_meat must cook on the campfire");
-        assertFalse(input.test(new ItemStack(Material.MUTTON)),
-                "plain vanilla mutton must NOT satisfy the Blub campfire ingredient");
-        assertEquals("cooked_blub_meat", campfire.getResult().getItemMeta().getPersistentDataContainer()
-                .get(new NamespacedKey(plugin, "content"),
-                        org.bukkit.persistence.PersistentDataType.STRING));
-    }
 }

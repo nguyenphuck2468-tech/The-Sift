@@ -24,17 +24,12 @@ class DatapackIntegrityTest {
     private static final Path PROGRESSION = Path.of("src/main/resources/datapack");
     private static final Path DIMENSION = Path.of("src/main/resources/sift_dimension_datapack");
     private static final Set<String> CANONICAL_BIOMES = Set.of(
-            "thesift:bulb_forest",
-            "thesift:carapace",
-            "thesift:crystal_spires",
             "thesift:ichor_snowy_peaks",
             "thesift:overgrown_clearing",
             "thesift:overgrown_forest",
             "thesift:overgrown_forest_slopes",
             "thesift:overgrown_peaks",
             "thesift:overgrown_slopes",
-            "thesift:pink_meadows",
-            "thesift:shattered_peaks",
             "thesift:sift_deep_dark",
             "thesift:sift_wastes",
             "thesift:siftslate_peaks",
@@ -79,8 +74,6 @@ class DatapackIntegrityTest {
         Path lootRoot = PROGRESSION.resolve("data/thesift/loot_table/entity");
         assertTrue(Files.exists(lootRoot.resolve("sifter.json")),
                 "datapack must bundle the Sifter loot table (raw_sifter_meat drop)");
-        assertTrue(Files.exists(lootRoot.resolve("blub.json")),
-                "datapack must bundle the Blub loot table (blub_meat drop)");
         try (Stream<Path> paths = Files.walk(lootRoot)) {
             for (Path json : paths.filter(path -> path.toString().endsWith(".json")).toList()) {
                 JsonParser.parseString(Files.readString(json)); // must be valid JSON
@@ -270,4 +263,3 @@ class DatapackIntegrityTest {
         return id.contains(":") ? id : "minecraft:" + id;
     }
 }
-
